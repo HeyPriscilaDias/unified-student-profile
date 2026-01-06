@@ -1,0 +1,218 @@
+{
+  "spacing": {
+    "0": {
+      "name": "0",
+      "value": 0,
+      "description": "No spacing"
+    },
+    "4": {
+      "name": "4",
+      "value": 4,
+      "description": "4px spacing"
+    },
+    "6": {
+      "name": "6",
+      "value": 6,
+      "description": "6px spacing"
+    },
+    "8": {
+      "name": "8",
+      "value": 8,
+      "description": "8px spacing"
+    },
+    "12": {
+      "name": "12",
+      "value": 12,
+      "description": "12px spacing"
+    },
+    "16": {
+      "name": "16",
+      "value": 16,
+      "description": "16px spacing"
+    },
+    "18": {
+      "name": "18",
+      "value": 18,
+      "description": "18px spacing"
+    },
+    "24": {
+      "name": "24",
+      "value": 24,
+      "description": "24px spacing"
+    },
+    "32": {
+      "name": "32",
+      "value": 32,
+      "description": "32px spacing"
+    },
+    "40": {
+      "name": "40",
+      "value": 40,
+      "description": "40px spacing"
+    },
+    "80": {
+      "name": "80",
+      "value": 80,
+      "description": "80px spacing"
+    }
+  },
+  "sizing": {
+    "radiusSm": {
+      "name": "radiusSm",
+      "value": 4,
+      "description": "Small border radius"
+    },
+    "radiusMd": {
+      "name": "radiusMd",
+      "value": 8,
+      "description": "Medium border radius"
+    },
+    "radiusLg": {
+      "name": "radiusLg",
+      "value": 10,
+      "description": "Large border radius"
+    },
+    "radiusFull": {
+      "name": "radiusFull",
+      "value": 1000,
+      "description": "Full border radius (circle)"
+    },
+    "iconSm": {
+      "name": "iconSm",
+      "value": 16,
+      "description": "Small icon size"
+    },
+    "iconMd": {
+      "name": "iconMd",
+      "value": 24,
+      "description": "Medium icon size"
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "heading": {
+        "name": "heading",
+        "value": "Poppins",
+        "description": "Font family for headings"
+      },
+      "body": {
+        "name": "body",
+        "value": "Inter",
+        "description": "Font family for body text"
+      }
+    },
+    "fontWeight": {
+      "regular": {
+        "name": "regular",
+        "value": 400,
+        "description": "Regular font weight"
+      },
+      "strong": {
+        "name": "strong",
+        "value": 600,
+        "description": "Semi Bold font weight"
+      }
+    },
+    "fontSize": {
+      "xs": {
+        "name": "xs",
+        "value": 12,
+        "description": "Extra small font size"
+      },
+      "sm": {
+        "name": "sm",
+        "value": 14,
+        "description": "Small font size"
+      },
+      "md": {
+        "name": "md",
+        "value": 16,
+        "description": "Medium font size (base)"
+      },
+      "lg": {
+        "name": "lg",
+        "value": 18,
+        "description": "Large font size"
+      },
+      "xl": {
+        "name": "xl",
+        "value": 22,
+        "description": "Extra large font size"
+      },
+      "2xl": {
+        "name": "2xl",
+        "value": 26,
+        "description": "2X large font size"
+      },
+      "3xl": {
+        "name": "3xl",
+        "value": 30,
+        "description": "3X large font size"
+      }
+    },
+    "lineHeight": {
+      "xxs": {
+        "name": "xxs",
+        "value": 16,
+        "description": "Extra extra small line height"
+      },
+      "xs": {
+        "name": "xs",
+        "value": 20,
+        "description": "Extra small line height"
+      },
+      "sm": {
+        "name": "sm",
+        "value": 24,
+        "description": "Small line height"
+      },
+      "md": {
+        "name": "md",
+        "value": 28,
+        "description": "Medium line height"
+      },
+      "lg": {
+        "name": "lg",
+        "value": 32,
+        "description": "Large line height"
+      },
+      "xl": {
+        "name": "xl",
+        "value": 36,
+        "description": "Extra large line height"
+      }
+    },
+    "letterSpacing": {
+      "n050": {
+        "name": "n050",
+        "value": -0.5,
+        "description": "Negative 0.5px letter spacing"
+      },
+      "none": {
+        "name": "none",
+        "value": 0,
+        "description": "No letter spacing"
+      },
+      "n100": {
+        "name": "n100",
+        "value": -1,
+        "description": "Negative 1px letter spacing"
+      },
+      "n150": {
+        "name": "n150",
+        "value": -1.5,
+        "description": "Negative 1.5px letter spacing"
+      },
+      "n200": {
+        "name": "n200",
+        "value": -2,
+        "description": "Negative 2px letter spacing"
+      },
+      "n500": {
+        "name": "n500",
+        "value": -5,
+        "description": "Negative 5px letter spacing"
+      }
+    }
+  }
+}

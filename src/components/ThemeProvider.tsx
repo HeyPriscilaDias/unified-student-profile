@@ -2,7 +2,7 @@
 
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import { theme } from "../../ui-kit/src/theme/createWillowTheme";
+import { theme } from "../theme/createWillowTheme";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
