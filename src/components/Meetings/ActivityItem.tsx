@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Typography } from '@mui/material';
-import { Pencil, Sparkles, Mic, CheckCircle } from 'lucide-react';
+import { Pencil, Sparkles, CheckCircle } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/dateUtils';
 import type { ActivityItem as ActivityItemType } from '@/types/student';
 
@@ -21,12 +21,6 @@ const typeConfig = {
     label: 'Alma Snapshot',
     bgColor: 'bg-amber-50',
     iconColor: 'text-amber-600',
-  },
-  meeting_transcript: {
-    icon: Mic,
-    label: 'Meeting Transcript',
-    bgColor: 'bg-blue-50',
-    iconColor: 'text-blue-600',
   },
   milestone_completion: {
     icon: CheckCircle,
@@ -51,11 +45,6 @@ export function ActivityItem({ activity }: ActivityItemProps) {
           <Typography className="text-xs font-medium text-neutral-500 uppercase tracking-wide">
             {config.label}
           </Typography>
-          {activity.duration && (
-            <Typography className="text-xs text-neutral-400">
-              • {activity.duration}
-            </Typography>
-          )}
         </Box>
 
         {activity.title && (

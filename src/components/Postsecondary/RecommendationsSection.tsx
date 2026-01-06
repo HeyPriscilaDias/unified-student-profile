@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Typography, IconButton } from '@mui/material';
-import { Bookmark, BookmarkCheck } from 'lucide-react';
-import { SectionCard, SubTabNavigation, TopPickBadge } from '@/components/shared';
+import { Box, Typography, Chip, Tabs, Tab } from '@mui/material';
+import { Bookmark, Star } from 'lucide-react';
 import type { Recommendation } from '@/types/student';
 
 interface RecommendationsSectionProps {
@@ -12,138 +11,505 @@ interface RecommendationsSectionProps {
 }
 
 function formatSalary(salary?: number): string {
-  if (!salary) return '-';
-  return `$${(salary / 1000).toFixed(0)}k`;
+  if (!salary) return 'Unknown';
+  return `$${salary.toLocaleString()}`;
 }
 
-function RecommendationRow({
-  recommendation,
-  onToggle,
-}: {
-  recommendation: Recommendation;
-  onToggle?: () => void;
-}) {
+// Top pick badge component
+function TopPickBadge() {
   return (
     <Box
-      className="flex items-center gap-4 py-3 border-b border-neutral-100 last:border-b-0 hover:bg-neutral-50 transition-colors"
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        backgroundColor: '#F0FFAC',
+        borderRadius: 1,
+        px: 1,
+        py: 0.5,
+        width: 'fit-content',
+      }}
     >
-      <IconButton
-        size="small"
-        onClick={onToggle}
-        className={recommendation.isBookmarked ? 'text-green-600' : 'text-neutral-300'}
-      >
-        {recommendation.isBookmarked ? (
-          <BookmarkCheck size={20} className="fill-green-100" />
-        ) : (
-          <Bookmark size={20} />
-        )}
-      </IconButton>
-
-      <Box className="flex-1 min-w-0">
-        <Box className="flex items-center gap-2 mb-1">
-          <Typography className="font-medium text-neutral-900 text-sm">
-            {recommendation.title}
-          </Typography>
-          {recommendation.isTopPick && <TopPickBadge />}
-        </Box>
-        <Box className="flex flex-wrap gap-1 items-center">
-          {recommendation.tags.map((tag, index) => (
-            <Typography
-              key={index}
-              className="text-xs text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded"
-            >
-              {tag}
-            </Typography>
-          ))}
-          <Typography className="text-xs text-slate-600">
-            Recommended by {recommendation.recommendedBy}
-          </Typography>
-        </Box>
-      </Box>
-
-      {recommendation.type === 'career' && (
-        <>
-          <Box className="w-24 text-right">
-            <Typography className="text-xs text-neutral-500 uppercase">
-              Median Salary
-            </Typography>
-            <Typography className="text-sm font-medium text-neutral-900">
-              {formatSalary(recommendation.medianSalary)}
-            </Typography>
-          </Box>
-          <Box className="w-20 text-right">
-            <Typography className="text-xs text-neutral-500 uppercase">
-              Education
-            </Typography>
-            <Typography className="text-sm font-medium text-neutral-900">
-              {recommendation.educationYears || '-'}
-            </Typography>
-          </Box>
-        </>
-      )}
+      <Star size={14} fill="#D4B300" color="#D4B300" />
+      <Typography sx={{ fontWeight: 600, fontSize: '12px', color: '#111827' }}>
+        Top pick for you
+      </Typography>
     </Box>
   );
 }
 
-export function RecommendationsSection({
-  recommendations,
-  onBookmarkToggle,
-}: RecommendationsSectionProps) {
-  const [filter, setFilter] = useState<'career' | 'school' | 'program'>('career');
+function CareerRow({
+  recommendation,
+  isFirst,
+}: {
+  recommendation: Recommendation;
+  isFirst: boolean;
+}) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        p: 2,
+        borderTop: isFirst ? 'none' : '1px solid #E5E7EB',
+        backgroundColor: 'white',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+        {/* Bookmark Icon */}
+        <Box
+          sx={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            backgroundColor: '#D1FAE5',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Bookmark size={20} color="#111827" />
+        </Box>
 
-  const filteredRecommendations = recommendations.filter((r) => r.type === filter);
-  const counts = {
-    career: recommendations.filter((r) => r.type === 'career').length,
-    school: recommendations.filter((r) => r.type === 'school').length,
-    program: recommendations.filter((r) => r.type === 'program').length,
+        {/* Career Info */}
+        <Box sx={{ flex: 1 }}>
+          <Typography
+            sx={{
+              fontWeight: 600,
+              fontSize: '18px',
+              color: '#111827',
+              mb: 0.5,
+            }}
+          >
+            {recommendation.title}
+          </Typography>
+
+          {/* Top pick indicator */}
+          {recommendation.isTopPick && (
+            <Box sx={{ mb: 1 }}>
+              <TopPickBadge />
+            </Box>
+          )}
+
+          {/* Tags */}
+          {recommendation.tags.length > 0 && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {recommendation.tags.map((tag, index) => (
+                <Chip
+                  key={index}
+                  label={tag}
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    fontSize: '12px',
+                    height: '24px',
+                    borderColor: '#D1D5DB',
+                    color: '#4B5563',
+                  }}
+                />
+              ))}
+            </Box>
+          )}
+        </Box>
+      </Box>
+
+      {/* Salary and Education */}
+      <Box sx={{ display: 'flex', gap: 4, minWidth: '240px' }}>
+        <Box sx={{ textAlign: 'center', flex: 1 }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '16px', color: '#111827' }}>
+            {formatSalary(recommendation.medianSalary)}
+          </Typography>
+        </Box>
+        <Box sx={{ textAlign: 'center', flex: 1 }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '16px', color: '#111827' }}>
+            {recommendation.educationYears || 'Unknown'}
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+function SchoolRow({
+  recommendation,
+  isFirst,
+}: {
+  recommendation: Recommendation;
+  isFirst: boolean;
+}) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        p: 2,
+        borderTop: isFirst ? 'none' : '1px solid #E5E7EB',
+        backgroundColor: 'white',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+        {/* Bookmark Icon */}
+        <Box
+          sx={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            backgroundColor: '#D1FAE5',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Bookmark size={20} color="#111827" />
+        </Box>
+
+        {/* School Info */}
+        <Box sx={{ flex: 1 }}>
+          <Typography
+            sx={{
+              fontWeight: 600,
+              fontSize: '18px',
+              color: '#111827',
+              mb: 0.5,
+            }}
+          >
+            {recommendation.title}
+          </Typography>
+
+          {/* Top pick indicator */}
+          {recommendation.isTopPick && (
+            <Box sx={{ mb: 1 }}>
+              <TopPickBadge />
+            </Box>
+          )}
+
+          {/* Tags */}
+          {recommendation.tags.length > 0 && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {recommendation.tags.map((tag, index) => (
+                <Chip
+                  key={index}
+                  label={tag}
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    fontSize: '12px',
+                    height: '24px',
+                    borderColor: '#D1D5DB',
+                    color: '#4B5563',
+                  }}
+                />
+              ))}
+            </Box>
+          )}
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+function ProgramRow({
+  recommendation,
+  isFirst,
+}: {
+  recommendation: Recommendation;
+  isFirst: boolean;
+}) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        p: 2,
+        borderTop: isFirst ? 'none' : '1px solid #E5E7EB',
+        backgroundColor: 'white',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+        {/* Bookmark Icon */}
+        <Box
+          sx={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            backgroundColor: '#D1FAE5',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Bookmark size={20} color="#111827" />
+        </Box>
+
+        {/* Program Info */}
+        <Box sx={{ flex: 1 }}>
+          <Typography
+            sx={{
+              fontWeight: 600,
+              fontSize: '18px',
+              color: '#111827',
+              mb: 0.5,
+            }}
+          >
+            {recommendation.title}
+          </Typography>
+
+          {/* Top pick indicator */}
+          {recommendation.isTopPick && (
+            <Box sx={{ mb: 1 }}>
+              <TopPickBadge />
+            </Box>
+          )}
+
+          {/* Tags */}
+          {recommendation.tags.length > 0 && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {recommendation.tags.map((tag, index) => (
+                <Chip
+                  key={index}
+                  label={tag}
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    fontSize: '12px',
+                    height: '24px',
+                    borderColor: '#D1D5DB',
+                    color: '#4B5563',
+                  }}
+                />
+              ))}
+            </Box>
+          )}
+        </Box>
+      </Box>
+
+      {/* Duration */}
+      <Box sx={{ minWidth: '120px', textAlign: 'center' }}>
+        <Typography sx={{ fontWeight: 600, fontSize: '16px', color: '#111827' }}>
+          {recommendation.educationYears || 'Unknown'}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+export function RecommendationsSection({ recommendations }: RecommendationsSectionProps) {
+  const [activeTab, setActiveTab] = useState(0);
+
+  const careerRecommendations = recommendations.filter((r) => r.type === 'career');
+  const schoolRecommendations = recommendations.filter((r) => r.type === 'school');
+  const programRecommendations = recommendations.filter((r) => r.type === 'program');
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
   };
 
-  // Only show tabs that have recommendations
-  const options = [
-    counts.career > 0 && { value: 'career', label: `Careers (${counts.career})` },
-    counts.school > 0 && { value: 'school', label: `Schools (${counts.school})` },
-    counts.program > 0 && { value: 'program', label: `Programs (${counts.program})` },
-  ].filter(Boolean) as { value: string; label: string }[];
+  const renderEmptyState = (message: string) => (
+    <Box
+      sx={{
+        border: '2px dashed #E5E7EB',
+        borderRadius: 2,
+        p: 3,
+        textAlign: 'center',
+      }}
+    >
+      <Typography sx={{ fontSize: '14px', color: '#6B7280' }}>
+        {message}
+      </Typography>
+    </Box>
+  );
 
   if (recommendations.length === 0) {
     return (
-      <SectionCard title="Recommendations">
-        <Typography className="text-neutral-500 text-sm py-4">
-          No recommendations yet. Staff can add recommendations for this student.
+      <Box>
+        <Typography
+          sx={{
+            fontFamily: '"Poppins", sans-serif',
+            fontWeight: 600,
+            fontSize: '28px',
+            color: '#111827',
+            mb: 3,
+          }}
+        >
+          Recommendations
         </Typography>
-      </SectionCard>
+        {renderEmptyState('No recommendations yet. Staff can add recommendations for this student.')}
+      </Box>
     );
   }
 
   return (
-    <SectionCard
-      title="Recommendations"
-      action={
-        options.length > 1 && (
-          <SubTabNavigation
-            options={options}
-            value={filter}
-            onChange={(v) => setFilter(v as typeof filter)}
-          />
-        )
-      }
-    >
-      {filteredRecommendations.length === 0 ? (
-        <Typography className="text-neutral-500 text-sm py-4">
-          No {filter} recommendations yet.
-        </Typography>
-      ) : (
-        <Box>
-          {filteredRecommendations.map((rec) => (
-            <RecommendationRow
-              key={rec.id}
-              recommendation={rec}
-              onToggle={() => onBookmarkToggle?.(rec)}
-            />
-          ))}
-        </Box>
+    <Box>
+      {/* Title */}
+      <Typography
+        sx={{
+          fontFamily: '"Poppins", sans-serif',
+          fontWeight: 600,
+          fontSize: '28px',
+          color: '#111827',
+          mb: 3,
+        }}
+      >
+        Recommendations
+      </Typography>
+
+      {/* Tabs */}
+      <Tabs
+        value={activeTab}
+        onChange={handleTabChange}
+        sx={{
+          mb: 3,
+          '& .MuiTabs-indicator': {
+            backgroundColor: '#111827',
+          },
+          '& .MuiTab-root': {
+            textTransform: 'none',
+            fontWeight: 500,
+            fontSize: '16px',
+            color: '#6B7280',
+            '&.Mui-selected': {
+              color: '#111827',
+              fontWeight: 600,
+            },
+          },
+        }}
+      >
+        <Tab label="Careers" />
+        <Tab label="Schools" />
+        <Tab label="Professional Programs" />
+      </Tabs>
+
+      {/* Careers Tab */}
+      {activeTab === 0 && (
+        <>
+          {careerRecommendations.length > 0 ? (
+            <Box>
+              {/* Column Headers */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  px: 2,
+                  py: 1,
+                }}
+              >
+                <Box sx={{ flex: 1 }} />
+                <Box sx={{ display: 'flex', gap: 4, minWidth: '240px' }}>
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      color: '#6B7280',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      textAlign: 'center',
+                      flex: 1,
+                    }}
+                  >
+                    Median Salary
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      color: '#6B7280',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      textAlign: 'center',
+                      flex: 1,
+                    }}
+                  >
+                    Education
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Career Rows */}
+              {careerRecommendations.map((rec, index) => (
+                <CareerRow
+                  key={rec.id}
+                  recommendation={rec}
+                  isFirst={index === 0}
+                />
+              ))}
+            </Box>
+          ) : (
+            renderEmptyState('No career recommendations yet')
+          )}
+        </>
       )}
-    </SectionCard>
+
+      {/* Schools Tab */}
+      {activeTab === 1 && (
+        <>
+          {schoolRecommendations.length > 0 ? (
+            <Box>
+              {schoolRecommendations.map((rec, index) => (
+                <SchoolRow
+                  key={rec.id}
+                  recommendation={rec}
+                  isFirst={index === 0}
+                />
+              ))}
+            </Box>
+          ) : (
+            renderEmptyState('No school recommendations yet')
+          )}
+        </>
+      )}
+
+      {/* Programs Tab */}
+      {activeTab === 2 && (
+        <>
+          {programRecommendations.length > 0 ? (
+            <Box>
+              {/* Column Header */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  px: 2,
+                  py: 1,
+                }}
+              >
+                <Box sx={{ flex: 1 }} />
+                <Box sx={{ minWidth: '120px', textAlign: 'center' }}>
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      color: '#6B7280',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    Duration
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Program Rows */}
+              {programRecommendations.map((rec, index) => (
+                <ProgramRow
+                  key={rec.id}
+                  recommendation={rec}
+                  isFirst={index === 0}
+                />
+              ))}
+            </Box>
+          ) : (
+            renderEmptyState('No program recommendations yet')
+          )}
+        </>
+      )}
+    </Box>
   );
 }
 

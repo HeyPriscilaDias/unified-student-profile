@@ -118,8 +118,16 @@ export interface Experience {
   skills: string[];
 }
 
+export interface DurableSkill {
+  name: string;
+  level: number; // 1-4
+  status: 'Emerging' | 'Developing' | 'Applying' | 'Exceeding';
+  icon?: 'metacognition' | 'collaboration' | 'character' | 'creativity' | 'communication' | 'critical-thinking';
+}
+
 export interface DurableSkillsResult {
   summary: string;
+  topSkills: DurableSkill[];
 }
 
 export interface StudentProfile {
@@ -179,15 +187,94 @@ export interface Attachment {
   size?: string;
 }
 
-// Activity & Meetings types
+// Activity types (non-meeting items)
 export interface ActivityItem {
   id: string;
-  type: 'note' | 'alma_snapshot' | 'meeting_transcript' | 'milestone_completion';
+  type: 'note' | 'alma_snapshot' | 'milestone_completion';
   content: string;
   title?: string;
-  duration?: string;
   createdAt: string;
   milestoneName?: string; // For milestone_completion type
+}
+
+// Meeting types
+export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface AgendaItem {
+  id: string;
+  topic: string;
+  description?: string;
+  source: 'ai_recommended' | 'counselor_added';
+  sourceReason?: string;
+  sourceReference?: {
+    type: 'milestone' | 'task' | 'reflection' | 'bookmark' | 'grade_level' | 'goal';
+    id?: string;
+  };
+  duration?: number; // estimated minutes
+  covered: boolean;
+  notes?: string;
+}
+
+export interface MeetingRecommendedAction {
+  id: string;
+  title: string;
+  description?: string;
+  priority: 'high' | 'medium' | 'low';
+  dueDate?: string;
+  status: 'pending' | 'converted_to_task' | 'dismissed';
+  convertedTaskId?: string;
+}
+
+export interface MeetingSummary {
+  overview: string;
+  keyPoints: string[];
+  studentSentiment?: 'positive' | 'neutral' | 'concerned';
+  recommendedActions: MeetingRecommendedAction[];
+  generatedAt: string;
+}
+
+export interface Meeting {
+  id: string;
+  studentId: string;
+  counselorId: string;
+  counselorName: string;
+  title: string;
+
+  // Scheduling
+  scheduledDate: string;
+  duration: number; // minutes
+  status: MeetingStatus;
+
+  // Agenda
+  agenda: AgendaItem[];
+
+  // Recording & Transcript (post-meeting)
+  recordingUrl?: string;
+  transcript?: string;
+
+  // AI-generated content
+  summary?: MeetingSummary;
+
+  // Metadata
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Topic Recommendation types (for scheduling flow)
+export type TopicCategory = 'deadline' | 'milestone' | 'goal' | 'reflection' | 'bookmark' | 'grade_level' | 'follow_up';
+
+export interface TopicRecommendation {
+  id: string;
+  topic: string;
+  description?: string;
+  category: TopicCategory;
+  priority: 'high' | 'medium' | 'low';
+  reason: string;
+  sourceReference?: {
+    type: 'milestone' | 'task' | 'reflection' | 'bookmark' | 'grade_level' | 'goal' | 'meeting';
+    id?: string;
+    title?: string;
+  };
 }
 
 // AI Reflection types
@@ -246,4 +333,5 @@ export interface StudentData {
   activityHistory: ActivityItem[];
   aiReflections: AIReflection[];
   qualityFlags: QualityFlag[];
+  meetings: Meeting[];
 }

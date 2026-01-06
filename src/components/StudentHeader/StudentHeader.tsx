@@ -7,7 +7,7 @@ import type { Student } from '@/types/student';
 
 interface StudentHeaderProps {
   student: Student;
-  onScheduleMeeting: () => void;
+  studentId: string;
 }
 
 function OnTrackPill({ status }: { status: 'on_track' | 'off_track' }) {
@@ -41,8 +41,12 @@ function OnTrackPill({ status }: { status: 'on_track' | 'off_track' }) {
   );
 }
 
-export function StudentHeader({ student, onScheduleMeeting }: StudentHeaderProps) {
+export function StudentHeader({ student, studentId }: StudentHeaderProps) {
   const router = useRouter();
+
+  const handleScheduleMeeting = () => {
+    router.push(`/students/${studentId}/meetings/schedule`);
+  };
 
   return (
     <Box>
@@ -125,7 +129,7 @@ export function StudentHeader({ student, onScheduleMeeting }: StudentHeaderProps
               <Button
                 variant="outlined"
                 startIcon={<Calendar size={16} />}
-                onClick={onScheduleMeeting}
+                onClick={handleScheduleMeeting}
                 sx={{
                   textTransform: 'none',
                   borderColor: '#D5D7DA',

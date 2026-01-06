@@ -1,13 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Typography, IconButton, TextField, InputAdornment, Checkbox, Button } from '@mui/material';
-import { RotateCcw, History, Sparkles, ChevronDown, ChevronUp, Info, Send, Plus, Check, X } from 'lucide-react';
+import { Box, Typography, IconButton, TextField, InputAdornment, Checkbox, Button, FormControlLabel, Tooltip, Avatar } from '@mui/material';
+import { RotateCcw, History, Sparkles, ChevronDown, ChevronUp, Info, Send, Plus, Check, X, Lock, Globe } from 'lucide-react';
 import { SubTabNavigation, AIReviewBadge } from '@/components/shared';
-import { formatDueDate, isPastDue } from '@/lib/dateUtils';
 import type { Task, SuggestedAction } from '@/types/student';
 
-type TabType = 'alma' | 'tasks';
+type TabType = 'alma' | 'tasks' | 'notes';
+
+interface Note {
+  id: string;
+  content: string;
+  visibility: 'public' | 'private';
+  authorName: string;
+  authorAvatar?: string;
+  createdAt: string;
+}
 
 interface AlmaChatPanelProps {
   studentFirstName: string;
@@ -37,8 +45,6 @@ function TaskItem({
   task: Task;
   onToggle?: () => void;
 }) {
-  const isOverdue = task.dueDate && isPastDue(task.dueDate) && task.status === 'open';
-
   return (
     <Box
       sx={{
@@ -74,17 +80,6 @@ function TaskItem({
         >
           {task.title}
         </Typography>
-        {task.dueDate && (
-          <Typography
-            sx={{
-              fontSize: '12px',
-              mt: 0.25,
-              color: isOverdue ? '#EF4444' : '#6B7280',
-            }}
-          >
-            {formatDueDate(task.dueDate)}
-          </Typography>
-        )}
       </Box>
     </Box>
   );
@@ -198,11 +193,68 @@ function TabButton({
   );
 }
 
+function NoteItem({ note }: { note: Note }) {
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  return (
+    <Box
+      sx={{
+        py: 2,
+        borderBottom: '1px solid #E5E7EB',
+        '&:last-child': {
+          borderBottom: 'none',
+        },
+      }}
+    >
+      {/* Author info and date */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+        <Avatar
+          src={note.authorAvatar}
+          sx={{ width: 28, height: 28, fontSize: '12px', bgcolor: '#062F29' }}
+        >
+          {note.authorName.split(' ').map(n => n[0]).join('')}
+        </Avatar>
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={{ fontSize: '13px', fontWeight: 500, color: '#111827' }}>
+            {note.authorName}
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
+              {formatDate(note.createdAt)}
+            </Typography>
+            {note.visibility === 'private' ? (
+              <Lock size={12} style={{ color: '#6B7280' }} />
+            ) : (
+              <Globe size={12} style={{ color: '#6B7280' }} />
+            )}
+          </Box>
+        </Box>
+      </Box>
+      {/* Note content */}
+      <Typography sx={{ fontSize: '14px', color: '#374151', lineHeight: 1.5, pl: 5.5 }}>
+        {note.content}
+      </Typography>
+    </Box>
+  );
+}
+
 export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTaskToggle, onNewTask, onActionAccept, onActionDismiss }: AlmaChatPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>('alma');
   const [message, setMessage] = useState('');
   const [showMoreSuggestions, setShowMoreSuggestions] = useState(false);
   const [taskFilter, setTaskFilter] = useState<'open' | 'completed'>('open');
+
+  // Notes state
+  const [noteText, setNoteText] = useState('');
+  const [noteVisibility, setNoteVisibility] = useState<'private' | 'public'>('private');
+  const [notes, setNotes] = useState<Note[]>([]);
 
   const filteredTasks = tasks.filter((t) => t.status === taskFilter);
   const openCount = tasks.filter((t) => t.status === 'open').length;
@@ -235,10 +287,24 @@ export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTas
     }
   };
 
+  const handleSubmitNote = () => {
+    if (noteText.trim()) {
+      const newNote: Note = {
+        id: `note-${Date.now()}`,
+        content: noteText.trim(),
+        visibility: noteVisibility,
+        authorName: 'Ms. Rodriguez',
+        createdAt: new Date().toISOString(),
+      };
+      setNotes((prev) => [newNote, ...prev]);
+      setNoteText('');
+    }
+  };
+
   return (
     <Box
       sx={{
-        width: '320px',
+        width: '420px',
         height: '100vh',
         position: 'fixed',
         right: 0,
@@ -265,6 +331,11 @@ export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTas
           label="Tasks"
           isActive={activeTab === 'tasks'}
           onClick={() => setActiveTab('tasks')}
+        />
+        <TabButton
+          label="Notes"
+          isActive={activeTab === 'notes'}
+          onClick={() => setActiveTab('notes')}
         />
       </Box>
 
@@ -654,6 +725,153 @@ export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTas
               </Button>
             </Box>
           )}
+        </Box>
+      )}
+
+      {/* Notes Tab Content */}
+      {activeTab === 'notes' && (
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            overflowY: 'auto',
+          }}
+        >
+          {/* Notes Header */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 2,
+              py: 1.5,
+              borderBottom: '1px solid #E5E7EB',
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#111827',
+              }}
+            >
+              Personal Notes
+            </Typography>
+          </Box>
+
+          {/* Note Input Form */}
+          <Box
+            sx={{
+              px: 2,
+              py: 2,
+              borderBottom: '1px solid #E5E7EB',
+            }}
+          >
+            {/* Multi-line text input */}
+            <TextField
+              fullWidth
+              multiline
+              rows={4}
+              placeholder="Add a note..."
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              sx={{
+                mb: 2,
+                '& .MuiOutlinedInput-root': {
+                  fontSize: '14px',
+                  '& fieldset': {
+                    borderColor: '#E5E7EB',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#D1D5DB',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#062F29',
+                  },
+                },
+              }}
+            />
+
+            {/* Visibility controls */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={noteVisibility === 'private'}
+                    onChange={() => setNoteVisibility('private')}
+                    size="small"
+                  />
+                }
+                label={
+                  <Typography sx={{ fontSize: '13px', color: '#374151' }}>
+                    Private
+                  </Typography>
+                }
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={noteVisibility === 'public'}
+                    onChange={() => setNoteVisibility('public')}
+                    size="small"
+                  />
+                }
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Typography sx={{ fontSize: '13px', color: '#374151' }}>
+                      Public
+                    </Typography>
+                    <Tooltip title="Visible to other staff only, not students or mentors" arrow>
+                      <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'help' }}>
+                        <Info size={14} style={{ color: '#6B7280' }} />
+                      </Box>
+                    </Tooltip>
+                  </Box>
+                }
+              />
+            </Box>
+
+            {/* Submit button */}
+            <Button
+              variant="contained"
+              onClick={handleSubmitNote}
+              disabled={!noteText.trim()}
+              sx={{
+                textTransform: 'none',
+                backgroundColor: '#062F29',
+                fontSize: '14px',
+                fontWeight: 500,
+                '&:hover': {
+                  backgroundColor: '#2B4C46',
+                },
+                '&.Mui-disabled': {
+                  backgroundColor: '#E5E7EB',
+                  color: '#9CA3AF',
+                },
+              }}
+            >
+              Submit Note
+            </Button>
+          </Box>
+
+          {/* Notes list */}
+          <Box sx={{ flex: 1, px: 2, py: 2, overflowY: 'auto' }}>
+            {notes.length === 0 ? (
+              <Typography
+                sx={{
+                  fontSize: '13px',
+                  color: '#6B7280',
+                  textAlign: 'center',
+                  py: 4,
+                }}
+              >
+                No notes yet. Add your first note about {studentFirstName}.
+              </Typography>
+            ) : (
+              notes.map((note) => <NoteItem key={note.id} note={note} />)
+            )}
+          </Box>
         </Box>
       )}
     </Box>

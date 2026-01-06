@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Box } from '@mui/material';
 import { AppLayout } from '@/components/AppLayout';
 import { StudentHeader } from '@/components/StudentHeader';
@@ -13,17 +14,37 @@ import { MeetingsTab } from '@/components/Meetings';
 import { LoadingSection } from '@/components/shared';
 import { AlmaChatPanel } from '@/components/AlmaChatPanel';
 import { useStudentData } from '@/hooks/useStudentData';
-import type { TabType } from '@/types/student';
+import { useMeetings } from '@/contexts/MeetingsContext';
+import type { TabType, Task, SuggestedAction } from '@/types/student';
 
 interface UnifiedStudentViewProps {
   studentId: string;
 }
 
 export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isGeneratingSnapshot, setIsGeneratingSnapshot] = useState(false);
+  const [localTasks, setLocalTasks] = useState<Task[]>([]);
+  const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
 
   const studentData = useStudentData(studentId);
+
+  // Handle tab query parameter
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['overview', 'profile', 'postsecondary', 'student-work', 'meetings'].includes(tabParam)) {
+      setActiveTab(tabParam as TabType);
+    }
+  }, [searchParams]);
+
+  // Initialize local state from student data
+  useEffect(() => {
+    if (studentData) {
+      setLocalTasks(studentData.tasks);
+      setLocalSuggestedActions(studentData.suggestedActions);
+    }
+  }, [studentData]);
 
   // Handle loading state
   if (!studentData) {
@@ -54,11 +75,11 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     studentWork,
     activityHistory,
     aiReflections,
+    meetings: initialMeetings,
   } = studentData;
 
-  const handleScheduleMeeting = () => {
-    console.log('Schedule meeting clicked');
-  };
+  // Use meetings from context (allows adding new meetings)
+  const meetings = useMeetings(studentId, initialMeetings);
 
   const handleGenerateSnapshot = () => {
     setIsGeneratingSnapshot(true);
@@ -100,6 +121,8 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
         return (
           <MeetingsTab
             activities={activityHistory}
+            meetings={meetings}
+            studentId={studentId}
           />
         );
       default:
@@ -107,20 +130,50 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     }
   };
 
-  const handleTaskToggle = (task: typeof tasks[0]) => {
-    console.log('Task toggled:', task.title);
+  // Toggle task between open and completed
+  const handleTaskToggle = (task: Task) => {
+    setLocalTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id
+          ? { ...t, status: t.status === 'open' ? 'completed' : 'open' }
+          : t
+      )
+    );
   };
 
   const handleNewTask = () => {
     console.log('New task clicked');
   };
 
-  const handleActionAccept = (action: typeof suggestedActions[0]) => {
-    console.log('Action accepted:', action.title);
+  // Accept suggested action: convert to task and mark action as accepted
+  const handleActionAccept = (action: SuggestedAction) => {
+    // Create new task from the suggested action
+    const newTask: Task = {
+      id: `task-from-action-${action.id}`,
+      title: action.title,
+      dueDate: null,
+      status: 'open',
+      source: 'suggested_action',
+    };
+
+    // Add to tasks
+    setLocalTasks((prev) => [newTask, ...prev]);
+
+    // Mark action as accepted (removes from pending list)
+    setLocalSuggestedActions((prev) =>
+      prev.map((a) =>
+        a.id === action.id ? { ...a, status: 'accepted' } : a
+      )
+    );
   };
 
-  const handleActionDismiss = (action: typeof suggestedActions[0]) => {
-    console.log('Action dismissed:', action.title);
+  // Dismiss suggested action: mark as dismissed (removes from list)
+  const handleActionDismiss = (action: SuggestedAction) => {
+    setLocalSuggestedActions((prev) =>
+      prev.map((a) =>
+        a.id === action.id ? { ...a, status: 'dismissed' } : a
+      )
+    );
   };
 
   return (
@@ -128,8 +181,8 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
       rightPanel={
         <AlmaChatPanel
           studentFirstName={student.firstName}
-          tasks={tasks}
-          suggestedActions={suggestedActions}
+          tasks={localTasks}
+          suggestedActions={localSuggestedActions}
           onTaskToggle={handleTaskToggle}
           onNewTask={handleNewTask}
           onActionAccept={handleActionAccept}
@@ -147,7 +200,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
         {/* Student Header */}
         <StudentHeader
           student={student}
-          onScheduleMeeting={handleScheduleMeeting}
+          studentId={studentId}
         />
 
         {/* Tab Navigation */}

@@ -26,7 +26,7 @@ export function AppLayout({ children, rightPanel, currentStudentId }: AppLayoutP
       <Box
         sx={{
           marginLeft: '220px', // Sidebar width
-          marginRight: rightPanel ? '320px' : 0, // Right panel width
+          marginRight: rightPanel ? '420px' : 0, // Right panel width
           flex: 1,
           display: 'flex',
           justifyContent: 'center',

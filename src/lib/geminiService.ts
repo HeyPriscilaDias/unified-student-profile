@@ -1,0 +1,346 @@
+import type { StudentData, TopicRecommendation, TopicCategory } from '@/types/student';
+
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
+/**
+ * Grade-level breakdown for counselor-student meeting topics
+ */
+const GRADE_LEVEL_GUIDANCE = `
+## 9th Grade
+**Focus:** Discovery | **Exposure:** Awareness
+
+**Milestones to Check:**
+- Personality Quiz, Life Map, Who Am I? Statement
+- Portfolio: Strengths, Interests, Values
+- Mission Statement + Action Plan
+
+**Conversation Topics:**
+- Relationship building & counselor role
+- Personality quiz results → connection to interests
+- Values → connection to Mission Statement
+- Course selection alignment with emerging interests
+- Extracurricular engagement (depth over breadth)
+
+**Key Decision Point:** Interest-course misalignment
+
+---
+
+## 10th Grade
+**Focus:** Exploration | **Exposure:** Engagement
+
+**Milestones to Check:**
+- Durable Skills Quiz
+- Career Vision, Career Evaluation Matrix
+- 3 Careers bookmarked + added to Matrix
+- Impact Project (Proposal, Presentation, Careers)
+- Career Pathways Analysis + Presentation
+- 1 Career Interview or Job Shadow
+
+**Conversation Topics:**
+- Career exploration progress → which Global Pressing Challenges resonate?
+- Career Matrix review → are choices grounded in interests/values?
+- Impact Project reflection → what did you learn about yourself?
+- Alignment with emerging career pathways
+- Job shadow/interview debrief (if complete)
+
+**Key Decision Point:** Career interests misaligned with current course trajectory
+
+---
+
+## 11th Grade
+**Focus:** Launch | **Exposure:** Experience
+
+**Milestones to Check:**
+- Updated Portfolio (Strengths, Interests, Work Experience)
+- Polished Resume
+- Balanced List (8 schools/programs)
+- Program Comparison Matrix with rationale
+- Application-Ready Personal Statement
+
+**Conversation Topics:**
+- Balanced list review → reach/match/safety calibration using Willow ROI data
+- Program Comparison Matrix → is rationale grounded in career goals + financial reality?
+- Personal statement progress → authentic story emerging?
+- Resume review → gaps to address before senior year?
+- Financial reality check → net price calculator results, family expectations
+
+**Key Decision Points:**
+- Financial reality conflicts with college preferences
+- Options overwhelm (can't narrow list)
+- Family-student disagreement on pathway
+
+---
+
+## 12th Grade
+**Focus:** Launch | **Exposure:** Experience
+
+**Milestones to Check:**
+- On-Track Review (transcript, graduation requirements)
+- FAFSA submitted
+- Scholarship applications submitted
+- CSS Profile / State Financial Aid (if applicable)
+- Applications submitted (college or trade/apprenticeship)
+- Finalized Balanced List + Personal Statement
+- Postsecondary Decision Defense
+- Durable Skills Quiz, Workplace Ready Resume, LinkedIn Profile
+
+**Conversation Topics:**
+- Application status check → what's submitted, what's pending?
+- Financial aid progress → FAFSA complete? Scholarships submitted?
+- Decision support → comparing offers using Willow ROI data
+- Postsecondary Decision Defense prep → can student articulate rationale?
+- Transition readiness → next steps after commitment
+
+**Key Decision Points:**
+- Financial aid package comparison
+- Student goes silent on deadlines
+- Family-student disagreement on final decision
+`;
+
+/**
+ * Build the prompt for Gemini to generate topic recommendations
+ */
+function buildTopicRecommendationPrompt(studentData: StudentData): string {
+  const { student, milestones, smartGoals, bookmarks, aiReflections, meetings, profile } = studentData;
+
+  // Get incomplete milestones
+  const incompleteMilestones = milestones
+    .filter(m => m.status !== 'done')
+    .map(m => `- ${m.title} (${m.status}, ${m.progress}% complete${m.dueDate ? `, due: ${m.dueDate}` : ''})`)
+    .join('\n');
+
+  // Get active goals
+  const activeGoals = smartGoals
+    .filter(g => g.status === 'active')
+    .map(g => {
+      const completedSubtasks = g.subtasks.filter(s => s.completed).length;
+      return `- ${g.title}: ${completedSubtasks}/${g.subtasks.length} subtasks complete`;
+    })
+    .join('\n');
+
+  // Get bookmarked careers/programs
+  const bookmarkedItems = bookmarks
+    .slice(0, 5)
+    .map(b => `- ${b.title} (${b.type}${b.isTopPick ? ', TOP PICK' : ''})`)
+    .join('\n');
+
+  // Get recent AI reflections
+  const recentReflections = aiReflections
+    .slice(0, 3)
+    .map(r => `- "${r.title}" from lesson "${r.lessonTitle}"`)
+    .join('\n');
+
+  // Get last meeting summary if available
+  const completedMeetings = meetings.filter(m => m.status === 'completed');
+  const lastMeeting = completedMeetings.length > 0
+    ? completedMeetings.sort((a, b) =>
+        new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()
+      )[0]
+    : null;
+
+  const lastMeetingSummary = lastMeeting?.summary
+    ? `Last meeting "${lastMeeting.title}" on ${new Date(lastMeeting.scheduledDate).toLocaleDateString()}:
+- Summary: ${lastMeeting.summary.overview}
+- Key points: ${lastMeeting.summary.keyPoints?.join(', ') || 'None'}
+- Pending actions: ${lastMeeting.summary.recommendedActions?.filter(a => a.status === 'pending').map(a => a.title).join(', ') || 'None'}`
+    : 'No previous meeting data available.';
+
+  // Build profile context
+  const profileContext = profile ? `
+**Durable Skills:** ${profile.durableSkills?.topSkills?.map(s => `${s.name} (${s.level})`).join(', ') || 'Not assessed'}
+**Personality Type:** ${profile.personalityType?.name || 'Not assessed'}
+**Career Vision:** ${profile.careerVision || 'Not specified'}
+**Work Experience:** ${profile.experiences?.length || 0} experiences logged
+**Strengths:** ${profile.strengths?.join(', ') || 'Not specified'}
+` : '';
+
+  return `You are a high school counselor assistant helping prepare for a student meeting. Generate personalized topic recommendations based on the student's grade level, progress, and data.
+
+${GRADE_LEVEL_GUIDANCE}
+
+---
+
+## Student Context
+
+**Student:** ${student.firstName} ${student.lastName}
+**Grade:** ${student.grade}
+**GPA:** ${student.gpa}
+**On-Track Status:** ${student.onTrackStatus}
+**SAT Score:** ${student.satScore || 'Not taken'}
+**ACT Score:** ${student.actScore || 'Not taken'}
+${profileContext}
+
+**Incomplete Milestones:**
+${incompleteMilestones || 'All milestones complete'}
+
+**Active Goals:**
+${activeGoals || 'No active goals'}
+
+**Bookmarked Careers/Programs:**
+${bookmarkedItems || 'No bookmarks'}
+
+**Recent AI Reflections:**
+${recentReflections || 'No recent reflections'}
+
+**Previous Meeting Context:**
+${lastMeetingSummary}
+
+---
+
+## Instructions
+
+Based on the grade-level guidance above and this student's specific data, recommend 4-6 topics for the upcoming counselor meeting. For each topic:
+
+1. Consider the student's grade level and what milestones/conversations are most relevant
+2. Identify any red flags or key decision points that need attention
+3. Connect recommendations to specific student data (milestones, goals, bookmarks, etc.)
+4. Prioritize topics that address immediate needs or upcoming deadlines
+
+Return a JSON array of topic recommendations with this exact structure:
+\`\`\`json
+[
+  {
+    "id": "unique-id",
+    "topic": "Brief topic title",
+    "description": "1-2 sentence description of what to discuss",
+    "category": "deadline|milestone|goal|reflection|bookmark|grade_level|follow_up",
+    "priority": "high|medium|low",
+    "reason": "Why this topic is recommended based on student data",
+    "sourceReference": {
+      "type": "milestone|task|reflection|bookmark|grade_level|goal|meeting",
+      "id": "optional-id-if-applicable",
+      "title": "optional-title"
+    }
+  }
+]
+\`\`\`
+
+Categories explained:
+- deadline: Time-sensitive items with upcoming due dates
+- milestone: Progress on required milestones for the grade level
+- goal: Active SMART goals the student is working on
+- reflection: Follow-up on recent AI reflections or self-discovery
+- bookmark: Career/program exploration based on bookmarked items
+- grade_level: Standard topics for this grade level from the guidance
+- follow_up: Items from previous meetings that need follow-up
+
+Return ONLY the JSON array, no other text.`;
+}
+
+/**
+ * Parse Gemini response into TopicRecommendation array
+ */
+function parseGeminiResponse(responseText: string): TopicRecommendation[] {
+  try {
+    // Extract JSON from response (handle markdown code blocks)
+    let jsonStr = responseText;
+    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1].trim();
+    }
+
+    const parsed = JSON.parse(jsonStr);
+
+    if (!Array.isArray(parsed)) {
+      console.error('Gemini response is not an array');
+      return [];
+    }
+
+    // Validate and transform each recommendation
+    return parsed.map((item, index) => {
+      const srcRef = item.sourceReference;
+      return {
+        id: item.id || `gemini-${index}-${Date.now()}`,
+        topic: item.topic || 'Untitled Topic',
+        description: item.description,
+        category: validateCategory(item.category),
+        priority: validatePriority(item.priority),
+        reason: item.reason || '',
+        sourceReference: srcRef ? {
+          type: srcRef.type as 'milestone' | 'task' | 'reflection' | 'bookmark' | 'grade_level' | 'goal' | 'meeting',
+          id: srcRef.id,
+          title: srcRef.title,
+        } : undefined,
+      };
+    });
+  } catch (error) {
+    console.error('Failed to parse Gemini response:', error);
+    return [];
+  }
+}
+
+function validateCategory(category: string): TopicCategory {
+  const validCategories: TopicCategory[] = ['deadline', 'milestone', 'goal', 'reflection', 'bookmark', 'grade_level', 'follow_up'];
+  return validCategories.includes(category as TopicCategory)
+    ? (category as TopicCategory)
+    : 'grade_level';
+}
+
+function validatePriority(priority: string): 'high' | 'medium' | 'low' {
+  const validPriorities = ['high', 'medium', 'low'];
+  return validPriorities.includes(priority)
+    ? (priority as 'high' | 'medium' | 'low')
+    : 'medium';
+}
+
+/**
+ * Generate topic recommendations using Gemini API
+ */
+export async function generateAITopicRecommendations(
+  studentData: StudentData
+): Promise<TopicRecommendation[]> {
+  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
+  if (!apiKey) {
+    console.warn('Gemini API key not configured, falling back to static recommendations');
+    return [];
+  }
+
+  const prompt = buildTopicRecommendationPrompt(studentData);
+
+  try {
+    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 2048,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API error:', response.status, errorText);
+      return [];
+    }
+
+    const data = await response.json();
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!responseText) {
+      console.error('No response text from Gemini');
+      return [];
+    }
+
+    return parseGeminiResponse(responseText);
+  } catch (error) {
+    console.error('Failed to call Gemini API:', error);
+    return [];
+  }
+}
+
+/**
+ * Export the grade level guidance for use in other components
+ */
+export { GRADE_LEVEL_GUIDANCE };

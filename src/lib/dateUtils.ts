@@ -100,32 +100,13 @@ export function getDaysUntil(dateString: string): number {
 }
 
 /**
- * Formats a due date with urgency context.
- * Returns "Due today", "Due tomorrow", "Overdue by X days", etc.
+ * Formats a due date for display.
+ * Returns the date in short format (e.g., "Jan 15").
  */
 export function formatDueDate(dateString: string | null): string {
   if (!dateString) {
-    return 'No due date';
+    return '';
   }
 
-  const daysUntil = getDaysUntil(dateString);
-
-  if (daysUntil < 0) {
-    const daysOverdue = Math.abs(daysUntil);
-    return `Overdue by ${daysOverdue} day${daysOverdue === 1 ? '' : 's'}`;
-  }
-
-  if (daysUntil === 0) {
-    return 'Due today';
-  }
-
-  if (daysUntil === 1) {
-    return 'Due tomorrow';
-  }
-
-  if (daysUntil <= 7) {
-    return `Due in ${daysUntil} days`;
-  }
-
-  return `Due ${formatShortDate(dateString)}`;
+  return formatShortDate(dateString);
 }

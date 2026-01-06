@@ -13,6 +13,7 @@ import type {
   AIReflection,
   QualityFlag,
   StudentData,
+  Meeting,
 } from '@/types/student';
 
 // =============================================================================
@@ -91,7 +92,13 @@ export const jessicaProfile: StudentProfile = {
     },
   ],
   durableSkills: {
-    summary: 'Jessica demonstrates strong proficiency in empathy, critical thinking, and collaboration. Her volunteer work and leadership roles show a natural ability to connect with others and lead effectively.',
+    summary: 'Great job on your Durable Skills Assessment! Your strengths in Collaboration and Metacognition truly stand out, showcasing your ability to work well with others and reflect on your own learning processes. It\'s wonderful to see you exceeding expectations in these areas. As you continue to develop your skills in Critical Thinking and Fortitude, remember that every step you take contributes to your growth. Keep up the hard work, and I\'m excited to see how you\'ll build on these skills in the future!',
+    topSkills: [
+      { name: 'Metacognition', level: 4, status: 'Exceeding', icon: 'metacognition' },
+      { name: 'Collaboration', level: 4, status: 'Exceeding', icon: 'collaboration' },
+      { name: 'Character', level: 3, status: 'Applying', icon: 'character' },
+      { name: 'Creativity', level: 3, status: 'Applying', icon: 'creativity' },
+    ],
   },
   personalityType: {
     name: 'Thoughtful Guide',
@@ -414,14 +421,6 @@ export const jessicaActivityHistory: ActivityItem[] = [
     createdAt: '2025-01-03T10:30:00Z',
   },
   {
-    id: 'activity-3',
-    type: 'meeting_transcript',
-    title: 'College Planning Check-in',
-    content: 'Reviewed application progress, discussed financial aid options, and set goals for January.',
-    duration: '32 min',
-    createdAt: '2024-12-28T10:00:00Z',
-  },
-  {
     id: 'activity-4',
     type: 'milestone_completion',
     content: 'Completed milestone: Complete Common App Essay',
@@ -433,14 +432,6 @@ export const jessicaActivityHistory: ActivityItem[] = [
     type: 'note',
     content: 'Jessica mentioned interest in job shadowing a nurse practitioner. Will help connect her with contacts at the hospital.',
     createdAt: '2024-11-01T11:00:00Z',
-  },
-  {
-    id: 'activity-6',
-    type: 'meeting_transcript',
-    title: 'Senior Year Kickoff Meeting',
-    content: 'Reviewed senior year goals, college list, and application timeline.',
-    duration: '45 min',
-    createdAt: '2024-09-05T09:30:00Z',
   },
 ];
 
@@ -481,6 +472,238 @@ export const jessicaAIReflections: AIReflection[] = [
 
 export const jessicaQualityFlags: QualityFlag[] = [];
 
+export const jessicaMeetings: Meeting[] = [
+  // Upcoming meeting
+  {
+    id: 'meeting-1',
+    studentId: 'jessica-santiago',
+    counselorId: 'counselor-rodriguez',
+    counselorName: 'Mr. Rodriguez',
+    title: 'FAFSA Review',
+    scheduledDate: '2025-01-15T10:00:00Z',
+    duration: 30,
+    status: 'scheduled',
+    agenda: [
+      {
+        id: 'agenda-1-1',
+        topic: 'FAFSA Completion Status',
+        description: 'Review remaining steps and discuss any blockers',
+        source: 'ai_recommended',
+        sourceReason: 'Deadline in 9 days, milestone at 33% progress',
+        sourceReference: { type: 'milestone', id: 'milestone-5' },
+        duration: 15,
+        covered: false,
+      },
+      {
+        id: 'agenda-1-2',
+        topic: 'Tax Document Collection',
+        description: 'Ensure all required financial documents are gathered',
+        source: 'ai_recommended',
+        sourceReason: 'Required for FAFSA completion',
+        duration: 10,
+        covered: false,
+      },
+      {
+        id: 'agenda-1-3',
+        topic: 'Next Steps & Follow-up',
+        description: 'Set action items and schedule follow-up if needed',
+        source: 'counselor_added',
+        duration: 5,
+        covered: false,
+      },
+    ],
+    createdAt: '2025-01-03T14:00:00Z',
+    updatedAt: '2025-01-03T14:00:00Z',
+  },
+  // Past meeting with full summary
+  {
+    id: 'meeting-2',
+    studentId: 'jessica-santiago',
+    counselorId: 'counselor-rodriguez',
+    counselorName: 'Mr. Rodriguez',
+    title: 'College Planning Check-in',
+    scheduledDate: '2024-12-28T10:00:00Z',
+    duration: 32,
+    status: 'completed',
+    agenda: [
+      {
+        id: 'agenda-2-1',
+        topic: 'Application Progress Review',
+        description: 'Check status of all college applications',
+        source: 'ai_recommended',
+        sourceReason: 'Based on active goal: Complete all applications by Jan 15',
+        sourceReference: { type: 'goal', id: 'goal-1' },
+        duration: 15,
+        covered: true,
+        notes: 'Texas A&M submitted, Baylor and UH in progress',
+      },
+      {
+        id: 'agenda-2-2',
+        topic: 'Financial Aid Discussion',
+        description: 'Review FAFSA timeline and scholarship opportunities',
+        source: 'ai_recommended',
+        sourceReason: 'Senior year checklist item',
+        sourceReference: { type: 'grade_level' },
+        duration: 12,
+        covered: true,
+        notes: 'Jessica confident about process, parents helping with taxes',
+      },
+      {
+        id: 'agenda-2-3',
+        topic: 'January Goals',
+        description: 'Set specific goals for the month',
+        source: 'counselor_added',
+        duration: 5,
+        covered: true,
+      },
+    ],
+    transcript: `[00:00] Mr. Rodriguez: Hi Jessica, thanks for coming in today. How are you feeling about everything?
+[00:15] Jessica: Pretty good actually! I submitted my Texas A&M application last week and I'm feeling confident about my essays.
+[00:32] Mr. Rodriguez: That's great to hear! Let's go through your application status. You mentioned Texas A&M is done - what about the others?
+[01:05] Jessica: Baylor is almost ready, I just need to finish the supplemental essay. And Houston I haven't started yet but it uses the Common App so it should be quick.
+[01:28] Mr. Rodriguez: Good plan. What's your timeline for getting those submitted?
+[01:45] Jessica: I want to have Baylor done by New Year's and Houston by the first week of January.
+[02:10] Mr. Rodriguez: Perfect. Now let's talk about financial aid. Have you started the FAFSA?
+[02:25] Jessica: Yes! My parents and I got through most of it over the break. We just need to get the tax documents sorted out.
+[02:48] Mr. Rodriguez: That's the most common holdup. Do you know when your parents will have their taxes ready?
+[03:05] Jessica: They said they're going to try to do them early this year, hopefully by mid-January.
+[03:22] Mr. Rodriguez: Great. The FAFSA deadline for priority consideration is January 15th, so try to submit as soon as you can after that.
+[03:45] Jessica: Got it, I'll remind them.
+[04:00] Mr. Rodriguez: Any questions or concerns about the process?
+[04:15] Jessica: Not really, I feel like I have a good handle on things. I'm just a little stressed about waiting to hear back.
+[04:35] Mr. Rodriguez: That's completely normal. Remember, you've done great work and put together strong applications. Let's set some goals for January.`,
+    summary: {
+      overview: 'Jessica is making excellent progress on her college applications. Texas A&M has been submitted, and she has clear plans to complete Baylor and University of Houston applications in early January. FAFSA is mostly complete, pending tax documents from parents.',
+      keyPoints: [
+        'Texas A&M application submitted successfully',
+        'Baylor supplemental essay in progress, target completion by New Year\'s',
+        'University of Houston application to be completed first week of January',
+        'FAFSA nearly complete, waiting on parent tax documents',
+        'Priority FAFSA deadline is January 15th',
+      ],
+      studentSentiment: 'positive',
+      recommendedActions: [
+        {
+          id: 'action-m2-1',
+          title: 'Complete Baylor supplemental essay',
+          description: 'Finish the supplemental essay for Baylor application',
+          priority: 'high',
+          dueDate: '2025-01-01',
+          status: 'converted_to_task',
+          convertedTaskId: 'task-from-meeting-1',
+        },
+        {
+          id: 'action-m2-2',
+          title: 'Submit University of Houston application',
+          priority: 'medium',
+          dueDate: '2025-01-07',
+          status: 'pending',
+        },
+        {
+          id: 'action-m2-3',
+          title: 'Follow up with parents on tax documents',
+          description: 'Ensure tax documents are ready for FAFSA completion',
+          priority: 'high',
+          dueDate: '2025-01-10',
+          status: 'pending',
+        },
+      ],
+      generatedAt: '2024-12-28T10:35:00Z',
+    },
+    createdAt: '2024-12-20T09:00:00Z',
+    updatedAt: '2024-12-28T10:35:00Z',
+  },
+  // Older past meeting
+  {
+    id: 'meeting-3',
+    studentId: 'jessica-santiago',
+    counselorId: 'counselor-rodriguez',
+    counselorName: 'Mr. Rodriguez',
+    title: 'Senior Year Kickoff Meeting',
+    scheduledDate: '2024-09-05T09:30:00Z',
+    duration: 45,
+    status: 'completed',
+    agenda: [
+      {
+        id: 'agenda-3-1',
+        topic: 'Senior Year Overview',
+        description: 'Review key milestones and deadlines for senior year',
+        source: 'ai_recommended',
+        sourceReference: { type: 'grade_level' },
+        duration: 10,
+        covered: true,
+      },
+      {
+        id: 'agenda-3-2',
+        topic: 'College List Review',
+        description: 'Finalize target, reach, and safety schools',
+        source: 'ai_recommended',
+        sourceReason: 'College list milestone incomplete',
+        sourceReference: { type: 'milestone', id: 'milestone-2' },
+        duration: 15,
+        covered: true,
+        notes: 'Finalized list: UT Austin, Texas State, Texas A&M, Baylor, UH',
+      },
+      {
+        id: 'agenda-3-3',
+        topic: 'Application Timeline',
+        description: 'Create detailed timeline for applications',
+        source: 'counselor_added',
+        duration: 15,
+        covered: true,
+      },
+      {
+        id: 'agenda-3-4',
+        topic: 'Recommendation Letters',
+        description: 'Discuss who to ask for recommendations',
+        source: 'ai_recommended',
+        sourceReference: { type: 'milestone', id: 'milestone-3' },
+        duration: 5,
+        covered: true,
+        notes: 'Will ask Mrs. Johnson (AP Bio) and Mr. Chen (AP Calc)',
+      },
+    ],
+    summary: {
+      overview: 'Productive kickoff meeting to align on senior year goals. Jessica has a strong college list focused on Texas schools with nursing programs. She is enthusiastic and well-prepared for the application process.',
+      keyPoints: [
+        'College list finalized: UT Austin (reach), Texas A&M, Baylor, Texas State, University of Houston',
+        'All schools have strong nursing or pre-nursing programs',
+        'Early action deadline for Texas State is November 1st',
+        'Will request recommendations from Mrs. Johnson and Mr. Chen',
+        'Common App essay brainstorming to begin this month',
+      ],
+      studentSentiment: 'positive',
+      recommendedActions: [
+        {
+          id: 'action-m3-1',
+          title: 'Request recommendation letters',
+          description: 'Ask Mrs. Johnson and Mr. Chen for letters of recommendation',
+          priority: 'high',
+          dueDate: '2024-09-15',
+          status: 'converted_to_task',
+        },
+        {
+          id: 'action-m3-2',
+          title: 'Start Common App essay brainstorming',
+          priority: 'medium',
+          dueDate: '2024-09-20',
+          status: 'converted_to_task',
+        },
+        {
+          id: 'action-m3-3',
+          title: 'Research Texas State early action requirements',
+          priority: 'medium',
+          dueDate: '2024-09-10',
+          status: 'converted_to_task',
+        },
+      ],
+      generatedAt: '2024-09-05T10:20:00Z',
+    },
+    createdAt: '2024-08-28T14:00:00Z',
+    updatedAt: '2024-09-05T10:20:00Z',
+  },
+];
+
 // Complete Jessica data bundle
 export const jessicaData: StudentData = {
   student: jessicaSantiago,
@@ -496,6 +719,7 @@ export const jessicaData: StudentData = {
   activityHistory: jessicaActivityHistory,
   aiReflections: jessicaAIReflections,
   qualityFlags: jessicaQualityFlags,
+  meetings: jessicaMeetings,
 };
 
 // =============================================================================
@@ -530,7 +754,7 @@ export const studentAData: StudentData = {
     strengths: [],
     languages: ['English (Native)'],
     experiences: [],
-    durableSkills: { summary: '' },
+    durableSkills: { summary: '', topSkills: [] },
     personalityType: { name: '', traits: [] },
     values: '',
     mission: '',
@@ -547,6 +771,7 @@ export const studentAData: StudentData = {
   activityHistory: [],
   aiReflections: [],
   qualityFlags: [],
+  meetings: [],
 };
 
 // Student B - Off-track (GPA < 2.0)
@@ -577,7 +802,7 @@ export const studentBData: StudentData = {
     strengths: ['Creativity', 'Persistence'],
     languages: ['English (Native)'],
     experiences: [],
-    durableSkills: { summary: 'Blake shows potential in creative problem-solving but needs support in academic areas.' },
+    durableSkills: { summary: 'Blake shows potential in creative problem-solving but needs support in academic areas.', topSkills: [] },
     personalityType: { name: 'Creative Explorer', traits: [{ name: 'Creativity', description: 'Thinks in unique ways.' }] },
     values: '',
     mission: 'Still figuring things out.',
@@ -603,6 +828,7 @@ export const studentBData: StudentData = {
   activityHistory: [],
   aiReflections: [],
   qualityFlags: [],
+  meetings: [],
 };
 
 // Student C - Off-track (missed deadline)
@@ -633,7 +859,7 @@ export const studentCData: StudentData = {
     strengths: ['Organization', 'Detail-oriented'],
     languages: ['English (Native)'],
     experiences: [],
-    durableSkills: { summary: 'Casey has good organizational skills but has fallen behind on key milestones.' },
+    durableSkills: { summary: 'Casey has good organizational skills but has fallen behind on key milestones.', topSkills: [] },
     personalityType: { name: 'Careful Planner', traits: [] },
     values: '',
     mission: 'Working to get back on track.',
@@ -656,6 +882,7 @@ export const studentCData: StudentData = {
   activityHistory: [],
   aiReflections: [],
   qualityFlags: [],
+  meetings: [],
 };
 
 // Student D - Many reflections (20+) - tests pagination
@@ -696,7 +923,7 @@ export const studentDData: StudentData = {
     strengths: ['Curiosity', 'Dedication'],
     languages: ['English (Native)'],
     experiences: [],
-    durableSkills: { summary: 'Dana is highly engaged with learning activities and shows consistent growth.' },
+    durableSkills: { summary: 'Dana is highly engaged with learning activities and shows consistent growth.', topSkills: [] },
     personalityType: { name: 'Eager Learner', traits: [] },
     values: '',
     mission: 'Always learning and growing.',
@@ -715,6 +942,7 @@ export const studentDData: StudentData = {
   activityHistory: [],
   aiReflections: danaReflections,
   qualityFlags: [],
+  meetings: [],
 };
 
 // Student E - GPA exactly 2.0 - boundary condition
@@ -745,7 +973,7 @@ export const studentEData: StudentData = {
     strengths: ['Resilience'],
     languages: ['English (Native)'],
     experiences: [],
-    durableSkills: { summary: 'Elliott is working to maintain academic standing.' },
+    durableSkills: { summary: 'Elliott is working to maintain academic standing.', topSkills: [] },
     personalityType: { name: 'Determined', traits: [] },
     values: '',
     mission: 'Taking it one day at a time.',
@@ -762,6 +990,7 @@ export const studentEData: StudentData = {
   activityHistory: [],
   aiReflections: [],
   qualityFlags: [],
+  meetings: [],
 };
 
 // =============================================================================

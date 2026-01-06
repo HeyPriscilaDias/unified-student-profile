@@ -1,15 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Typography, Button } from '@mui/material';
-import { Plus, Briefcase, Users, Heart, Pencil } from 'lucide-react';
+import { Box, Typography } from '@mui/material';
+import { Briefcase, Users, Heart } from 'lucide-react';
 import { SectionCard, SubTabNavigation } from '@/components/shared';
 import type { Experience } from '@/types/student';
 
 interface ExperienceSectionProps {
   experiences: Experience[];
-  onAddExperience?: () => void;
-  onEditExperience?: (experience: Experience) => void;
 }
 
 const typeIcons = {
@@ -20,41 +18,27 @@ const typeIcons = {
 
 function ExperienceCard({
   experience,
-  onEdit,
 }: {
   experience: Experience;
-  onEdit?: () => void;
 }) {
   const Icon = typeIcons[experience.type];
 
   return (
     <Box className="border border-neutral-200 rounded-lg p-4">
-      <Box className="flex items-start justify-between mb-2">
-        <Box className="flex items-center gap-3">
-          <Box className="p-2 bg-neutral-100 rounded-lg">
-            <Icon size={20} className="text-neutral-600" />
-          </Box>
-          <Box>
-            <Typography className="font-medium text-neutral-900">
-              {experience.title}
-            </Typography>
-            {experience.organization && (
-              <Typography className="text-sm text-neutral-500">
-                {experience.organization}
-              </Typography>
-            )}
-          </Box>
+      <Box className="flex items-start gap-3 mb-2">
+        <Box className="p-2 bg-neutral-100 rounded-lg">
+          <Icon size={20} className="text-neutral-600" />
         </Box>
-        <Button
-          variant="text"
-          size="small"
-          startIcon={<Pencil size={14} />}
-          onClick={onEdit}
-          className="text-neutral-500 hover:text-neutral-700"
-          sx={{ textTransform: 'none', minWidth: 'auto' }}
-        >
-          Edit
-        </Button>
+        <Box>
+          <Typography className="font-medium text-neutral-900">
+            {experience.title}
+          </Typography>
+          {experience.organization && (
+            <Typography className="text-sm text-neutral-500">
+              {experience.organization}
+            </Typography>
+          )}
+        </Box>
       </Box>
 
       <Typography className="text-xs text-neutral-500 mb-2">
@@ -83,8 +67,6 @@ function ExperienceCard({
 
 export function ExperienceSection({
   experiences,
-  onAddExperience,
-  onEditExperience,
 }: ExperienceSectionProps) {
   const [filter, setFilter] = useState<'all' | 'work' | 'leadership' | 'volunteer'>('all');
 
@@ -100,21 +82,7 @@ export function ExperienceSection({
   };
 
   return (
-    <SectionCard
-      title="Work, leadership & volunteer experience"
-      action={
-        <Button
-          variant="text"
-          size="small"
-          startIcon={<Plus size={16} />}
-          onClick={onAddExperience}
-          className="text-slate-600 hover:text-slate-800"
-          sx={{ textTransform: 'none' }}
-        >
-          Add
-        </Button>
-      }
-    >
+    <SectionCard title="Work, leadership & volunteer experience">
       <Box className="mb-4">
         <SubTabNavigation
           options={[
@@ -138,7 +106,6 @@ export function ExperienceSection({
             <ExperienceCard
               key={experience.id}
               experience={experience}
-              onEdit={() => onEditExperience?.(experience)}
             />
           ))}
         </Box>

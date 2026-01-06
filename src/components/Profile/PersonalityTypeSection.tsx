@@ -1,7 +1,6 @@
 'use client';
 
-import { Box, Typography, Button } from '@mui/material';
-import { SectionCard } from '@/components/shared';
+import { Box, Typography } from '@mui/material';
 import type { PersonalityType } from '@/types/student';
 
 interface PersonalityTypeSectionProps {
@@ -11,11 +10,32 @@ interface PersonalityTypeSectionProps {
 
 function TraitCard({ name, description }: { name: string; description: string }) {
   return (
-    <Box className="bg-neutral-50 rounded-lg p-4">
-      <Typography className="font-medium text-neutral-900 mb-1">
+    <Box
+      sx={{
+        backgroundColor: '#F9FAFB',
+        borderRadius: '8px',
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+      }}
+    >
+      <Typography
+        sx={{
+          fontWeight: 700,
+          fontSize: '16px',
+          color: '#111827',
+        }}
+      >
         {name}
       </Typography>
-      <Typography className="text-sm text-neutral-600 leading-relaxed">
+      <Typography
+        sx={{
+          fontSize: '14px',
+          color: '#4B5563',
+          lineHeight: 1.5,
+        }}
+      >
         {description}
       </Typography>
     </Box>
@@ -28,38 +48,90 @@ export function PersonalityTypeSection({
 }: PersonalityTypeSectionProps) {
   if (!personalityType.name) {
     return (
-      <SectionCard title="Personality type">
-        <Typography className="text-neutral-500 text-sm">
+      <Box
+        sx={{
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          border: '1px solid #E5E7EB',
+          padding: '24px',
+        }}
+      >
+        <Typography sx={{ fontSize: '14px', color: '#6B7280' }}>
+          Personality type
+        </Typography>
+        <Typography sx={{ fontSize: '14px', color: '#9CA3AF', mt: 1 }}>
           No personality assessment completed yet.
         </Typography>
-      </SectionCard>
+      </Box>
     );
   }
 
   return (
-    <SectionCard
-      title={`Personality type - ${personalityType.name}`}
-      action={
-        onViewDetails && (
-          <Button
-            variant="text"
-            size="small"
+    <Box
+      sx={{
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        border: '1px solid #E5E7EB',
+        padding: '24px',
+      }}
+    >
+      {/* Header */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          mb: 3,
+        }}
+      >
+        <Box>
+          <Typography
+            sx={{
+              fontSize: '14px',
+              color: '#6B7280',
+              mb: 0.5,
+            }}
+          >
+            Personality type
+          </Typography>
+          <Typography
+            sx={{
+              fontFamily: '"Poppins", sans-serif',
+              fontWeight: 600,
+              fontSize: '28px',
+              color: '#111827',
+            }}
+          >
+            {personalityType.name}
+          </Typography>
+        </Box>
+        {onViewDetails && (
+          <Typography
             onClick={onViewDetails}
-            className="text-slate-600 hover:text-slate-800"
-            sx={{ textTransform: 'none' }}
+            sx={{
+              fontSize: '14px',
+              color: '#111827',
+              cursor: 'pointer',
+              '&:hover': {
+                textDecoration: 'underline',
+              },
+            }}
           >
             View details
-          </Button>
-        )
-      }
-    >
-      {personalityType.traits.length === 0 ? (
-        <Typography className="text-neutral-500 text-sm">
-          No traits identified yet.
-        </Typography>
-      ) : (
-        <Box className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {personalityType.traits.map((trait, index) => (
+          </Typography>
+        )}
+      </Box>
+
+      {/* Traits Grid - 2x2 */}
+      {personalityType.traits.length > 0 && (
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+            gap: 2,
+          }}
+        >
+          {personalityType.traits.slice(0, 4).map((trait, index) => (
             <TraitCard
               key={index}
               name={trait.name}
@@ -68,7 +140,7 @@ export function PersonalityTypeSection({
           ))}
         </Box>
       )}
-    </SectionCard>
+    </Box>
   );
 }
 

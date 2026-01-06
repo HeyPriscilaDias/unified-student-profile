@@ -14,14 +14,6 @@ export function StudentWorkTab({
   reflections,
   works,
 }: StudentWorkTabProps) {
-  const handleAddWork = () => {
-    console.log('Add work clicked');
-  };
-
-  const handleEditWork = (work: StudentWork) => {
-    console.log('Edit work:', work.title);
-  };
-
   const handleAttachmentAction = (attachment: Attachment) => {
     console.log('Attachment action:', attachment.name);
     // In real app, would open link or download file
@@ -39,8 +31,6 @@ export function StudentWorkTab({
         {/* Student Work */}
         <StudentWorkList
           works={works}
-          onAddWork={handleAddWork}
-          onEditWork={handleEditWork}
           onAttachmentAction={handleAttachmentAction}
         />
       </Box>

@@ -38,11 +38,7 @@ export function ProfileTab({ student, profile }: ProfileTabProps) {
       />
 
       {/* Experience */}
-      <ExperienceSection
-        experiences={profile.experiences}
-        onAddExperience={() => console.log('Add experience clicked')}
-        onEditExperience={(exp) => console.log('Edit experience:', exp.title)}
-      />
+      <ExperienceSection experiences={profile.experiences} />
 
       {/* Durable Skills */}
       <DurableSkillsSection durableSkills={profile.durableSkills} />

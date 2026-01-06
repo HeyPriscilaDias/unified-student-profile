@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
+import { MeetingsProvider } from "../contexts/MeetingsContext";
 
 export const metadata: Metadata = {
   title: "Unified Student Profile",
@@ -16,7 +17,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ThemeProvider>
-          {children}
+          <MeetingsProvider>
+            {children}
+          </MeetingsProvider>
         </ThemeProvider>
       </body>
     </html>

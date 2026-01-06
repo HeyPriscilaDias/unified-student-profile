@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { UnifiedStudentView } from '@/components/UnifiedStudentView';
 
 interface StudentPageProps {
@@ -6,7 +7,11 @@ interface StudentPageProps {
 
 export default async function StudentPage({ params }: StudentPageProps) {
   const { studentId } = await params;
-  return <UnifiedStudentView studentId={studentId} />;
+  return (
+    <Suspense fallback={null}>
+      <UnifiedStudentView studentId={studentId} />
+    </Suspense>
+  );
 }
 
 export function generateStaticParams() {

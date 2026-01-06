@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Box, Typography, Checkbox, Button } from '@mui/material';
 import { Plus } from 'lucide-react';
 import { SubTabNavigation, EmptyState } from '@/components/shared';
-import { formatDueDate, isPastDue } from '@/lib/dateUtils';
 import type { Task } from '@/types/student';
 
 interface TasksSectionProps {
@@ -20,8 +19,6 @@ function TaskItem({
   task: Task;
   onToggle?: () => void;
 }) {
-  const isOverdue = task.dueDate && isPastDue(task.dueDate) && task.status === 'open';
-
   return (
     <Box
       sx={{
@@ -57,17 +54,6 @@ function TaskItem({
         >
           {task.title}
         </Typography>
-        {task.dueDate && (
-          <Typography
-            sx={{
-              fontSize: '12px',
-              mt: 0.25,
-              color: isOverdue ? '#EF4444' : '#6B7280',
-            }}
-          >
-            {formatDueDate(task.dueDate)}
-          </Typography>
-        )}
       </Box>
     </Box>
   );
