@@ -109,7 +109,7 @@ export function MeetingsTab({ meetings, studentId, studentName }: MeetingsTabPro
   return (
     <Box>
       <Box sx={{ py: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {/* Meeting Intelligence Toggle Button */}
+        {/* Meeting Notes Toggle Button */}
         <Button
           fullWidth
           variant="outlined"
@@ -136,10 +136,10 @@ export function MeetingsTab({ meetings, studentId, studentName }: MeetingsTabPro
             },
           }}
         >
-          Meeting Intelligence
+          Meeting Notes
         </Button>
 
-        {/* Meeting Intelligence Panel */}
+        {/* Meeting Notes Panel */}
         <Collapse in={showIntelligence}>
           <Box
             sx={{

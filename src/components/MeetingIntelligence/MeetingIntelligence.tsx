@@ -6,12 +6,10 @@ import {
   Typography,
   Button,
   IconButton,
-  Checkbox,
   Modal,
   Snackbar,
   Alert,
-  Collapse,
-  Divider,
+  TextField,
 } from '@mui/material';
 import {
   Mic,
@@ -19,10 +17,6 @@ import {
   Maximize2,
   Minimize2,
   X,
-  Calendar,
-  ChevronDown,
-  ChevronUp,
-  CheckCircle,
 } from 'lucide-react';
 
 // Types
@@ -53,44 +47,6 @@ const MOCK_KEY_DECISIONS = [
   'Targeting state priority deadline of March 2nd for maximum aid consideration',
   'Will focus on federal work-study as preferred employment option',
 ];
-
-const MOCK_TRANSCRIPT = `Counselor: Good morning! Thanks for coming in today. I wanted to go over the FAFSA process with you since the application window is now open.
-
-Student: Hi! Yes, I've been meaning to ask about this. My parents keep asking me when we need to fill it out.
-
-Counselor: Great question. The FAFSA opened on December 31st, and I always recommend completing it as early as possible. Many states have priority deadlines, and some aid is distributed on a first-come, first-served basis.
-
-Student: Oh, I didn't know that. What's our state's deadline?
-
-Counselor: For us, the priority deadline is March 2nd. If you submit before then, you'll have the best chance at state grants and institutional aid. Have you or your parents created an FSA ID yet?
-
-Student: No, what's that?
-
-Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and one parent will need one. You create it at studentaid.gov. I'd suggest doing that this week since it can take a few days to process.
-
-Student: Okay, I'll do that tonight. What documents do we need?
-
-Counselor: Good thinking ahead! You'll need your Social Security number, your parents' 2024 tax returns, W-2 forms, and records of any untaxed income. The IRS Data Retrieval Tool can help import the tax info directly.
-
-Student: My parents file jointly, so we just need their one return?
-
-Counselor: Exactly. Since they file jointly, you'll just need that single return. Now, let me ask—will you be living at home next year or on campus?
-
-Student: I'm hoping to live in the dorms.
-
-Counselor: Perfect. That affects your cost of attendance calculation. Also, based on our earlier conversation about your family situation, you'll be filing as a dependent student, which means your parents' income will be considered.
-
-Student: Right, that makes sense. Is there anything else we should know about?
-
-Counselor: One thing I always mention—consider federal work-study if it's offered. It's a great way to earn money for expenses without it affecting your future financial aid. Also, I'll send you a list of local scholarships you might qualify for.
-
-Student: That would be really helpful. When should we have everything done by?
-
-Counselor: Let's aim to have your FSA IDs created by this weekend, gather documents next week, and submit the FAFSA by February 15th. That gives us buffer time before the March 2nd deadline. How about we schedule a follow-up meeting for March 15th to review your Student Aid Report?
-
-Student: That sounds great. Thank you so much for explaining all of this!
-
-Counselor: Of course! I'll send a meeting recap to your email with all the action items. Don't hesitate to reach out if you have questions while filling out the application.`;
 
 // Audio Visualization Component
 const AudioVisualizer: React.FC<{ analyser: AnalyserNode | null; isRecording: boolean }> = ({
@@ -192,14 +148,34 @@ const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
   studentName = 'Student',
   onClose,
 }) => {
+  // Generate combined meeting notes
+  const generateMeetingNotes = () => {
+    const actionItemsText = MOCK_ACTION_ITEMS.map(item =>
+      `• ${item.text} (${item.assignee === 'student' ? 'Student' : 'Counselor'})`
+    ).join('\n');
+
+    const keyDecisionsText = MOCK_KEY_DECISIONS.map(d => `• ${d}`).join('\n');
+
+    return `SUMMARY
+${MOCK_SUMMARY}
+
+ACTION ITEMS
+${actionItemsText}
+
+KEY DECISIONS
+${keyDecisionsText}
+
+NEXT STEPS
+Schedule follow-up for March 15th to review Student Aid Report and discuss award letters.`;
+  };
+
   // State
   const [phase, setPhase] = useState<'idle' | 'recording' | 'processing' | 'results'>('idle');
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [actionItems, setActionItems] = useState<ActionItem[]>(MOCK_ACTION_ITEMS);
-  const [showTranscript, setShowTranscript] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [meetingNotes, setMeetingNotes] = useState('');
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -293,25 +269,15 @@ const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
     // Simulate AI processing (3-4 seconds)
     setTimeout(() => {
       setPhase('results');
-      setActionItems(MOCK_ACTION_ITEMS.map(item => ({ ...item, completed: false })));
+      setMeetingNotes(generateMeetingNotes());
     }, 3500);
   }, []);
-
-  // Toggle action item
-  const toggleActionItem = (id: string) => {
-    setActionItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, completed: !item.completed } : item
-      )
-    );
-  };
 
   // Reset to initial state
   const resetIntelligence = () => {
     setPhase('idle');
     setRecordingTime(0);
-    setShowTranscript(false);
-    setActionItems(MOCK_ACTION_ITEMS);
+    setMeetingNotes('');
   };
 
   // Cleanup on unmount
@@ -342,7 +308,7 @@ const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
             <Typography
               sx={{ fontSize: '18px', fontWeight: 600, color: '#111827', mb: 1 }}
             >
-              Meeting Intelligence
+              Meeting Notes
             </Typography>
             <Typography
               sx={{ fontSize: '14px', color: '#6B7280', mb: 4, maxWidth: '280px' }}
@@ -489,204 +455,52 @@ const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
 
       case 'results':
         return (
-          <Box className="flex flex-col h-full">
-            {/* Results Header */}
-            <Box
-              className="sticky top-0 z-10 px-4 py-3 border-b"
-              sx={{ backgroundColor: 'white', borderColor: '#E5E7EB' }}
-            >
-              <Box className="flex items-center justify-between">
-                <Box className="flex items-center gap-2">
-                  <CheckCircle size={20} color="#22C55E" />
-                  <Typography sx={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
-                    Notes Generated
-                  </Typography>
-                </Box>
-                <Button
-                  size="small"
-                  onClick={resetIntelligence}
-                  sx={{
-                    textTransform: 'none',
-                    fontSize: '12px',
-                    color: '#6B7280',
-                  }}
-                >
-                  New Recording
-                </Button>
-              </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {/* Header with meeting info */}
+            <Box sx={{ px: 2, pt: 2, pb: 1.5 }}>
+              <Typography
+                sx={{ fontSize: '16px', fontWeight: 600, color: '#111827', mb: 0.25 }}
+              >
+                FAFSA Review - {getCurrentDate()}
+              </Typography>
+              <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
+                Meeting with {studentName}
+              </Typography>
             </Box>
 
-            {/* Scrollable Results Content */}
-            <Box className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
-              {/* Meeting Title */}
-              <Box>
-                <Typography
-                  sx={{ fontSize: '18px', fontWeight: 600, color: '#111827', mb: 0.5 }}
-                >
-                  FAFSA Review - {getCurrentDate()}
-                </Typography>
-                <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
-                  Meeting with {studentName}
-                </Typography>
-              </Box>
-
-              <Divider sx={{ borderColor: '#E5E7EB' }} />
-
-              {/* Summary Section */}
-              <Box>
-                <Typography
-                  sx={{ fontSize: '13px', fontWeight: 600, color: '#374151', mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                >
-                  Summary
-                </Typography>
-                <Typography
-                  sx={{ fontSize: '14px', color: '#4B5563', lineHeight: 1.6 }}
-                >
-                  {MOCK_SUMMARY}
-                </Typography>
-              </Box>
-
-              <Divider sx={{ borderColor: '#E5E7EB' }} />
-
-              {/* Action Items Section */}
-              <Box>
-                <Typography
-                  sx={{ fontSize: '13px', fontWeight: 600, color: '#374151', mb: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                >
-                  Action Items ({actionItems.filter(i => i.completed).length}/{actionItems.length})
-                </Typography>
-                <Box className="space-y-2">
-                  {actionItems.map((item) => (
-                    <Box
-                      key={item.id}
-                      className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                      onClick={() => toggleActionItem(item.id)}
-                    >
-                      <Checkbox
-                        checked={item.completed}
-                        size="small"
-                        sx={{
-                          padding: 0,
-                          color: '#D1D5DB',
-                          '&.Mui-checked': {
-                            color: '#22C55E',
-                          },
-                        }}
-                      />
-                      <Box className="flex-1">
-                        <Typography
-                          sx={{
-                            fontSize: '13px',
-                            color: item.completed ? '#9CA3AF' : '#374151',
-                            textDecoration: item.completed ? 'line-through' : 'none',
-                            lineHeight: 1.5,
-                          }}
-                        >
-                          {item.text}
-                        </Typography>
-                        <Typography
-                          sx={{
-                            fontSize: '11px',
-                            color: item.assignee === 'student' ? '#3B82F6' : '#8B5CF6',
-                            fontWeight: 500,
-                            mt: 0.25,
-                          }}
-                        >
-                          {item.assignee === 'student' ? 'Student' : 'Counselor'}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-
-              <Divider sx={{ borderColor: '#E5E7EB' }} />
-
-              {/* Key Decisions Section */}
-              <Box>
-                <Typography
-                  sx={{ fontSize: '13px', fontWeight: 600, color: '#374151', mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                >
-                  Key Decisions
-                </Typography>
-                <Box className="space-y-2">
-                  {MOCK_KEY_DECISIONS.map((decision, index) => (
-                    <Box key={index} className="flex items-start gap-2">
-                      <Box
-                        className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0"
-                        sx={{ backgroundColor: '#062F29' }}
-                      />
-                      <Typography sx={{ fontSize: '13px', color: '#4B5563', lineHeight: 1.5 }}>
-                        {decision}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-
-              <Divider sx={{ borderColor: '#E5E7EB' }} />
-
-              {/* Next Meeting Suggestion */}
-              <Box
-                className="p-3 rounded-lg border"
-                sx={{ backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }}
-              >
-                <Box className="flex items-center gap-2 mb-1">
-                  <Calendar size={16} color="#22C55E" />
-                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#166534' }}>
-                    Next Meeting Suggestion
-                  </Typography>
-                </Box>
-                <Typography sx={{ fontSize: '13px', color: '#166534' }}>
-                  Schedule follow-up for March 15th to review Student Aid Report and discuss award letters.
-                </Typography>
-              </Box>
-
-              <Divider sx={{ borderColor: '#E5E7EB' }} />
-
-              {/* Transcript Toggle */}
-              <Box>
-                <Button
-                  fullWidth
-                  onClick={() => setShowTranscript(!showTranscript)}
-                  endIcon={showTranscript ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                  sx={{
-                    justifyContent: 'space-between',
-                    textTransform: 'none',
+            {/* Single large editable text area */}
+            <Box sx={{ flex: 1, px: 2, pb: 2, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              <TextField
+                fullWidth
+                multiline
+                value={meetingNotes}
+                onChange={(e) => setMeetingNotes(e.target.value)}
+                sx={{
+                  flex: 1,
+                  '& .MuiOutlinedInput-root': {
+                    height: '100%',
+                    alignItems: 'flex-start',
+                    fontSize: '14px',
                     color: '#374151',
-                    fontWeight: 500,
-                    fontSize: '13px',
-                    py: 1,
-                    px: 0,
-                    '&:hover': {
-                      backgroundColor: 'transparent',
+                    lineHeight: 1.7,
+                    backgroundColor: '#FAFAFA',
+                    fontFamily: 'inherit',
+                    '& fieldset': {
+                      borderColor: '#E5E7EB',
                     },
-                  }}
-                >
-                  View Full Transcript
-                </Button>
-
-                <Collapse in={showTranscript}>
-                  <Box
-                    className="mt-2 p-4 rounded-lg border max-h-96 overflow-y-auto"
-                    sx={{ backgroundColor: '#FAFAFA', borderColor: '#E5E7EB' }}
-                  >
-                    <Typography
-                      component="pre"
-                      sx={{
-                        fontSize: '12px',
-                        color: '#4B5563',
-                        lineHeight: 1.8,
-                        fontFamily: 'inherit',
-                        whiteSpace: 'pre-wrap',
-                        wordWrap: 'break-word',
-                      }}
-                    >
-                      {MOCK_TRANSCRIPT}
-                    </Typography>
-                  </Box>
-                </Collapse>
-              </Box>
+                    '&:hover fieldset': {
+                      borderColor: '#D1D5DB',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#062F29',
+                    },
+                  },
+                  '& .MuiOutlinedInput-input': {
+                    height: '100% !important',
+                    overflow: 'auto !important',
+                  },
+                }}
+              />
             </Box>
           </Box>
         );
@@ -699,11 +513,11 @@ const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
   // Main container - either in drawer or full-screen modal
   const mainContent = (
     <Box
-      className="flex flex-col h-full"
+      className="flex flex-col"
       sx={{
         backgroundColor: 'white',
-        height: isFullScreen ? '100%' : 'auto',
-        minHeight: isFullScreen ? '100vh' : 'auto',
+        height: isFullScreen ? '80vh' : '70vh',
+        maxHeight: isFullScreen ? '80vh' : '70vh',
       }}
     >
       {/* Header */}
@@ -735,7 +549,7 @@ const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
       </Box>
 
       {/* Content */}
-      <Box className="flex-1 overflow-hidden">{renderContent()}</Box>
+      <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>{renderContent()}</Box>
 
       {/* Toast Notification */}
       <Snackbar
@@ -766,19 +580,29 @@ const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
       <Modal
         open={true}
         onClose={() => setIsFullScreen(false)}
+        slotProps={{
+          backdrop: {
+            sx: {
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            },
+          },
+        }}
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          zIndex: 1400,
         }}
       >
         <Box
-          className="w-full max-w-3xl mx-4 rounded-xl overflow-hidden shadow-2xl"
+          className="w-full max-w-3xl mx-4 rounded-xl overflow-hidden"
           sx={{
-            backgroundColor: 'white',
+            backgroundColor: '#FFFFFF',
             maxHeight: '90vh',
             display: 'flex',
             flexDirection: 'column',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            outline: 'none',
           }}
         >
           {mainContent}
