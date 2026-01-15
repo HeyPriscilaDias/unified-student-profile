@@ -141,8 +141,25 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     );
   };
 
-  const handleNewTask = () => {
-    console.log('New task clicked');
+  const handleNewTask = (title: string) => {
+    const newTask: Task = {
+      id: `task-${Date.now()}`,
+      title,
+      dueDate: null,
+      status: 'open',
+      source: 'manual',
+    };
+    setLocalTasks((prev) => [newTask, ...prev]);
+  };
+
+  const handleTaskEdit = (taskId: string, newTitle: string) => {
+    setLocalTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, title: newTitle } : t))
+    );
+  };
+
+  const handleTaskDelete = (taskId: string) => {
+    setLocalTasks((prev) => prev.filter((t) => t.id !== taskId));
   };
 
   // Accept suggested action: convert to task and mark action as accepted
@@ -185,6 +202,8 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
           suggestedActions={localSuggestedActions}
           onTaskToggle={handleTaskToggle}
           onNewTask={handleNewTask}
+          onTaskEdit={handleTaskEdit}
+          onTaskDelete={handleTaskDelete}
           onActionAccept={handleActionAccept}
           onActionDismiss={handleActionDismiss}
         />

@@ -22,7 +22,9 @@ interface AlmaChatPanelProps {
   tasks: Task[];
   suggestedActions: SuggestedAction[];
   onTaskToggle?: (task: Task) => void;
-  onNewTask?: () => void;
+  onNewTask?: (title: string) => void;
+  onTaskEdit?: (taskId: string, newTitle: string) => void;
+  onTaskDelete?: (taskId: string) => void;
   onActionAccept?: (action: SuggestedAction) => void;
   onActionDismiss?: (action: SuggestedAction) => void;
 }
@@ -41,10 +43,33 @@ const MORE_SUGGESTIONS = [
 function TaskItem({
   task,
   onToggle,
+  onEdit,
+  onDelete,
 }: {
   task: Task;
   onToggle?: () => void;
+  onEdit?: (newTitle: string) => void;
+  onDelete?: () => void;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(task.title);
+
+  const handleSaveEdit = () => {
+    if (editValue.trim() && editValue !== task.title) {
+      onEdit?.(editValue.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      setEditValue(task.title);
+      setIsEditing(false);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -55,6 +80,9 @@ function TaskItem({
         borderBottom: '1px solid #E5E7EB',
         '&:last-child': {
           borderBottom: 'none',
+        },
+        '&:hover .task-actions': {
+          opacity: 1,
         },
       }}
     >
@@ -71,16 +99,74 @@ function TaskItem({
         }}
       />
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography
+        {isEditing ? (
+          <TextField
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={handleSaveEdit}
+            onKeyDown={handleKeyDown}
+            autoFocus
+            size="small"
+            fullWidth
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                fontSize: '14px',
+                '& fieldset': {
+                  borderColor: '#E5E7EB',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#062F29',
+                },
+              },
+            }}
+          />
+        ) : (
+          <Typography
+            onClick={() => setIsEditing(true)}
+            sx={{
+              fontSize: '14px',
+              color: task.status === 'completed' ? '#9CA3AF' : '#062F29',
+              textDecoration: task.status === 'completed' ? 'line-through' : 'none',
+              cursor: 'pointer',
+              '&:hover': {
+                backgroundColor: '#F9FAFB',
+                borderRadius: '4px',
+                mx: -0.5,
+                px: 0.5,
+              },
+            }}
+          >
+            {task.title}
+          </Typography>
+        )}
+      </Box>
+      {!isEditing && (
+        <Box
+          className="task-actions"
           sx={{
-            fontSize: '14px',
-            color: task.status === 'completed' ? '#9CA3AF' : '#062F29',
-            textDecoration: task.status === 'completed' ? 'line-through' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            opacity: 0,
+            transition: 'opacity 0.15s',
           }}
         >
-          {task.title}
-        </Typography>
-      </Box>
+          <IconButton
+            size="small"
+            onClick={onDelete}
+            sx={{
+              color: '#9CA3AF',
+              padding: '2px',
+              '&:hover': {
+                color: '#EF4444',
+                backgroundColor: '#FEE2E2',
+              },
+            }}
+          >
+            <X size={14} />
+          </IconButton>
+        </Box>
+      )}
     </Box>
   );
 }
@@ -245,11 +331,15 @@ function NoteItem({ note }: { note: Note }) {
   );
 }
 
-export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTaskToggle, onNewTask, onActionAccept, onActionDismiss }: AlmaChatPanelProps) {
+export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTaskToggle, onNewTask, onTaskEdit, onTaskDelete, onActionAccept, onActionDismiss }: AlmaChatPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>('alma');
   const [message, setMessage] = useState('');
   const [showMoreSuggestions, setShowMoreSuggestions] = useState(false);
   const [taskFilter, setTaskFilter] = useState<'open' | 'completed'>('open');
+
+  // New task input state
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
 
   // Notes state
   const [noteText, setNoteText] = useState('');
@@ -298,6 +388,23 @@ export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTas
       };
       setNotes((prev) => [newNote, ...prev]);
       setNoteText('');
+    }
+  };
+
+  const handleSubmitNewTask = () => {
+    if (newTaskTitle.trim()) {
+      onNewTask?.(newTaskTitle.trim());
+      setNewTaskTitle('');
+      setIsAddingTask(false);
+    }
+  };
+
+  const handleNewTaskKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSubmitNewTask();
+    } else if (e.key === 'Escape') {
+      setNewTaskTitle('');
+      setIsAddingTask(false);
     }
   };
 
@@ -656,7 +763,77 @@ export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTas
 
           {/* Tasks list */}
           <Box sx={{ flex: 1, px: 2, py: 1, overflowY: 'auto' }}>
-            {filteredTasks.length === 0 ? (
+            {/* New task input - shown at top when adding */}
+            {isAddingTask && taskFilter === 'open' && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  py: 1.5,
+                  borderBottom: '1px solid #E5E7EB',
+                }}
+              >
+                <Checkbox disabled size="small" sx={{ padding: 0, marginTop: '2px' }} />
+                <TextField
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  onKeyDown={handleNewTaskKeyDown}
+                  onBlur={() => {
+                    if (!newTaskTitle.trim()) {
+                      setIsAddingTask(false);
+                    }
+                  }}
+                  placeholder="Enter task title..."
+                  autoFocus
+                  size="small"
+                  fullWidth
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      fontSize: '14px',
+                      '& fieldset': {
+                        borderColor: '#E5E7EB',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#062F29',
+                      },
+                    },
+                  }}
+                />
+                <IconButton
+                  size="small"
+                  onClick={handleSubmitNewTask}
+                  disabled={!newTaskTitle.trim()}
+                  sx={{
+                    color: newTaskTitle.trim() ? '#16A34A' : '#9CA3AF',
+                    padding: '4px',
+                    '&:hover': {
+                      backgroundColor: '#DCFCE7',
+                    },
+                  }}
+                >
+                  <Check size={16} />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setNewTaskTitle('');
+                    setIsAddingTask(false);
+                  }}
+                  sx={{
+                    color: '#9CA3AF',
+                    padding: '4px',
+                    '&:hover': {
+                      backgroundColor: '#F3F4F6',
+                    },
+                  }}
+                >
+                  <X size={16} />
+                </IconButton>
+              </Box>
+            )}
+
+            {filteredTasks.length === 0 && !isAddingTask ? (
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <Typography
                   sx={{
@@ -671,7 +848,7 @@ export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTas
                   <Button
                     variant="text"
                     startIcon={<Plus size={16} />}
-                    onClick={onNewTask}
+                    onClick={() => setIsAddingTask(true)}
                     sx={{
                       textTransform: 'none',
                       color: '#4B5563',
@@ -692,13 +869,15 @@ export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTas
                   key={task.id}
                   task={task}
                   onToggle={() => onTaskToggle?.(task)}
+                  onEdit={(newTitle) => onTaskEdit?.(task.id, newTitle)}
+                  onDelete={() => onTaskDelete?.(task.id)}
                 />
               ))
             )}
           </Box>
 
           {/* New task button */}
-          {taskFilter === 'open' && filteredTasks.length > 0 && (
+          {taskFilter === 'open' && filteredTasks.length > 0 && !isAddingTask && (
             <Box
               sx={{
                 px: 2,
@@ -709,7 +888,7 @@ export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTas
               <Button
                 variant="text"
                 startIcon={<Plus size={16} />}
-                onClick={onNewTask}
+                onClick={() => setIsAddingTask(true)}
                 sx={{
                   textTransform: 'none',
                   padding: 0,
