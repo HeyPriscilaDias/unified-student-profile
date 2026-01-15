@@ -1,24 +1,44 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box } from '@mui/material';
+import { Box, Snackbar, Alert } from '@mui/material';
 import { UpcomingMeetingsSection } from './UpcomingMeetingsSection';
 import { PastMeetingsSection } from './PastMeetingsSection';
 import { ActivityHistorySection } from './ActivityHistorySection';
-import type { ActivityItem, Meeting } from '@/types/student';
+import { ScheduleMeetingModal } from '@/components/ScheduleMeetingFlow';
+import type { ScheduledMeetingData as ModalScheduledMeetingData } from '@/components/ScheduleMeetingFlow/ScheduleMeetingModal';
+import type { ActivityItem, Meeting, StudentData } from '@/types/student';
 
 interface MeetingsTabProps {
   activities: ActivityItem[];
   meetings: Meeting[];
   studentId: string;
+  studentData: StudentData;
 }
 
-export function MeetingsTab({ activities, meetings, studentId }: MeetingsTabProps) {
+export function MeetingsTab({ activities, meetings, studentId, studentData }: MeetingsTabProps) {
   const router = useRouter();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   const handleScheduleMeeting = () => {
-    router.push(`/students/${studentId}/meetings/schedule`);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleMeetingScheduled = (data: ModalScheduledMeetingData) => {
+    // In a real app, this would save to the backend
+    console.log('Meeting scheduled:', data);
+    setIsModalOpen(false);
+    setShowToast(true);
+  };
+
+  const handleCloseToast = () => {
+    setShowToast(false);
   };
 
   // Separate meetings by status
@@ -70,6 +90,26 @@ export function MeetingsTab({ activities, meetings, studentId }: MeetingsTabProp
         {/* Activity History (non-meeting items) */}
         <ActivityHistorySection activities={activities} />
       </Box>
+
+      {/* Schedule Meeting Modal */}
+      <ScheduleMeetingModal
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        onSchedule={handleMeetingScheduled}
+        studentData={studentData}
+      />
+
+      {/* Success Toast */}
+      <Snackbar
+        open={showToast}
+        autoHideDuration={4000}
+        onClose={handleCloseToast}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseToast} severity="success" sx={{ width: '100%' }}>
+          Meeting scheduled successfully
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

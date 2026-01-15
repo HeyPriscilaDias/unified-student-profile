@@ -1,5 +1,9 @@
 export { ScheduleMeetingPage } from './ScheduleMeetingPage';
 export type { ScheduledMeetingData } from './ScheduleMeetingPage';
+export { ScheduleMeetingModal } from './ScheduleMeetingModal';
+export type { ScheduledMeetingData as ModalScheduledMeetingData } from './ScheduleMeetingModal';
+export { InlineAgendaBuilder } from './InlineAgendaBuilder';
+export { generateAgendaFromTopics } from './agendaUtils';
 export { StepDuration } from './StepDuration';
 export { StepTopics } from './StepTopics';
 export { StepAgenda } from './StepAgenda';

@@ -123,6 +123,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
             activities={activityHistory}
             meetings={meetings}
             studentId={studentId}
+            studentData={studentData}
           />
         );
       default:
