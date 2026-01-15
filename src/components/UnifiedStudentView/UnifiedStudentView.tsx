@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Box } from '@mui/material';
 import { AppLayout } from '@/components/AppLayout';
 import { StudentHeader } from '@/components/StudentHeader';
@@ -10,14 +10,15 @@ import { OverviewTab } from '@/components/Overview';
 import { ProfileTab } from '@/components/Profile';
 import { PostsecondaryTab } from '@/components/Postsecondary';
 import { StudentWorkTab } from '@/components/StudentWork';
-import { MeetingsTab } from '@/components/Meetings';
+import { ActivityTab } from '@/components/Activity';
 import { LoadingSection } from '@/components/shared';
 import { AlmaChatPanel } from '@/components/AlmaChatPanel';
 import { ScheduleMeetingModal } from '@/components/ScheduleMeetingFlow';
 import type { ScheduledMeetingData } from '@/components/ScheduleMeetingFlow/ScheduleMeetingModal';
 import { useStudentData } from '@/hooks/useStudentData';
 import { useMeetings, useMeetingsContext } from '@/contexts/MeetingsContext';
-import type { TabType, Task, SuggestedAction } from '@/types/student';
+import { textToAgendaItems } from '@/components/ScheduleMeetingFlow';
+import type { TabType, Task, SuggestedAction, Meeting } from '@/types/student';
 
 interface UnifiedStudentViewProps {
   studentId: string;
@@ -25,19 +26,21 @@ interface UnifiedStudentViewProps {
 
 export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isGeneratingSnapshot, setIsGeneratingSnapshot] = useState(false);
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
 
   const studentData = useStudentData(studentId);
-  const { addMeeting } = useMeetingsContext();
+  const { addMeeting, updateMeeting } = useMeetingsContext();
 
   // Handle tab query parameter
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['overview', 'profile', 'postsecondary', 'student-work', 'meetings'].includes(tabParam)) {
+    if (tabParam && ['overview', 'profile', 'postsecondary', 'student-work', 'activity'].includes(tabParam)) {
       setActiveTab(tabParam as TabType);
     }
   }, [searchParams]);
@@ -94,11 +97,13 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   };
 
   const handleOpenScheduleModal = () => {
+    setSelectedMeeting(null);
     setIsScheduleModalOpen(true);
   };
 
   const handleCloseScheduleModal = () => {
     setIsScheduleModalOpen(false);
+    setSelectedMeeting(null);
   };
 
   const handleMeetingScheduled = (data: ScheduledMeetingData) => {
@@ -119,6 +124,37 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
       agenda: agendaItems,
     });
     setIsScheduleModalOpen(false);
+    setSelectedMeeting(null);
+  };
+
+  const handleMeetingSaved = (data: ScheduledMeetingData) => {
+    if (!selectedMeeting) return;
+
+    // Convert text agenda to AgendaItem[]
+    const agendaItems = textToAgendaItems(data.agenda, data.duration);
+
+    updateMeeting({
+      id: selectedMeeting.id,
+      studentId: selectedMeeting.studentId,
+      title: data.title,
+      scheduledDate: data.scheduledDate,
+      duration: data.duration,
+      agenda: agendaItems,
+    });
+
+    setIsScheduleModalOpen(false);
+    setSelectedMeeting(null);
+  };
+
+  const handleMeetingClick = (meeting: Meeting) => {
+    // For upcoming/scheduled meetings, open the edit modal
+    if (meeting.status === 'scheduled' || meeting.status === 'in_progress') {
+      setSelectedMeeting(meeting);
+      setIsScheduleModalOpen(true);
+    } else {
+      // For past/completed meetings, navigate to detail page
+      router.push(`/students/${meeting.studentId}/meetings/${meeting.id}`);
+    }
   };
 
   const renderTabContent = () => {
@@ -149,15 +185,8 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
             works={studentWork}
           />
         );
-      case 'meetings':
-        return (
-          <MeetingsTab
-            activities={activityHistory}
-            meetings={meetings}
-            studentId={studentId}
-            studentName={studentData.student.firstName}
-          />
-        );
+      case 'activity':
+        return <ActivityTab activities={activityHistory} />;
       default:
         return null;
     }
@@ -246,12 +275,16 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
           studentContext={studentContext}
           tasks={localTasks}
           suggestedActions={localSuggestedActions}
+          meetings={meetings}
+          studentId={studentId}
           onTaskToggle={handleTaskToggle}
           onNewTask={handleNewTask}
           onTaskEdit={handleTaskEdit}
           onTaskDelete={handleTaskDelete}
           onActionAccept={handleActionAccept}
           onActionDismiss={handleActionDismiss}
+          onMeetingClick={handleMeetingClick}
+          onScheduleMeeting={handleOpenScheduleModal}
         />
       }
       currentStudentId={studentId}
@@ -286,8 +319,10 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
         open={isScheduleModalOpen}
         onClose={handleCloseScheduleModal}
         onSchedule={handleMeetingScheduled}
+        onSave={handleMeetingSaved}
         studentId={studentId}
         studentName={student.firstName}
+        existingMeeting={selectedMeeting}
       />
     </AppLayout>
   );

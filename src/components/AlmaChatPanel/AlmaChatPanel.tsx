@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { Box, Typography, IconButton, TextField, InputAdornment, Checkbox, Button, FormControlLabel, Tooltip, Avatar } from '@mui/material';
-import { RotateCcw, History, Sparkles, ChevronDown, ChevronUp, Info, Send, Plus, Check, X, Lock, Globe } from 'lucide-react';
+import { RotateCcw, History, Sparkles, ChevronDown, ChevronUp, Info, Send, Plus, Check, X, Lock, Globe, Calendar, Clock, ChevronRight } from 'lucide-react';
 import { SubTabNavigation, AIReviewBadge } from '@/components/shared';
-import type { Task, SuggestedAction, Milestone, SmartGoal, Bookmark, StudentProfile } from '@/types/student';
+import type { Task, SuggestedAction, Milestone, SmartGoal, Bookmark, StudentProfile, Meeting } from '@/types/student';
 
-type TabType = 'alma' | 'tasks' | 'notes';
+type TabType = 'alma' | 'tasks' | 'notes' | 'meetings';
 
 interface Note {
   id: string;
@@ -33,12 +33,16 @@ interface AlmaChatPanelProps {
   studentContext?: StudentContext;
   tasks: Task[];
   suggestedActions: SuggestedAction[];
+  meetings?: Meeting[];
+  studentId?: string;
   onTaskToggle?: (task: Task) => void;
   onNewTask?: (title: string) => void;
   onTaskEdit?: (taskId: string, newTitle: string) => void;
   onTaskDelete?: (taskId: string) => void;
   onActionAccept?: (action: SuggestedAction) => void;
   onActionDismiss?: (action: SuggestedAction) => void;
+  onMeetingClick?: (meeting: Meeting) => void;
+  onScheduleMeeting?: () => void;
 }
 
 function generateContextAwareSuggestions(context?: StudentContext): { initial: string[]; more: string[] } {
@@ -372,6 +376,114 @@ function TabButton({
   );
 }
 
+function formatMeetingDate(dateStr: string) {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const meetingDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (meetingDate.getTime() === today.getTime()) {
+    return `Today, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+  } else if (meetingDate.getTime() === tomorrow.getTime()) {
+    return `Tomorrow, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+  }
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function formatPastMeetingDate(dateStr: string) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function MeetingItem({
+  meeting,
+  onClick,
+  variant = 'upcoming',
+}: {
+  meeting: Meeting;
+  onClick?: () => void;
+  variant?: 'upcoming' | 'past';
+}) {
+  const isUpcoming = variant === 'upcoming';
+
+  return (
+    <Box
+      onClick={onClick}
+      sx={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 1.5,
+        py: 1.5,
+        px: 1.5,
+        borderRadius: '8px',
+        cursor: onClick ? 'pointer' : 'default',
+        backgroundColor: isUpcoming ? '#F0FDF4' : '#F9FAFB',
+        border: isUpcoming ? '1px solid #BBF7D0' : '1px solid #E5E7EB',
+        '&:hover': onClick ? {
+          backgroundColor: isUpcoming ? '#DCFCE7' : '#F3F4F6',
+        } : {},
+      }}
+    >
+      <Box
+        sx={{
+          width: 32,
+          height: 32,
+          borderRadius: '6px',
+          backgroundColor: isUpcoming ? '#22C55E' : '#9CA3AF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <Calendar size={16} color="#fff" />
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography
+          sx={{
+            fontSize: '14px',
+            fontWeight: 500,
+            color: '#111827',
+            mb: 0.25,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {meeting.title}
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
+            {isUpcoming ? formatMeetingDate(meeting.scheduledDate) : formatPastMeetingDate(meeting.scheduledDate)}
+          </Typography>
+          <Typography sx={{ fontSize: '12px', color: '#9CA3AF' }}>•</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Clock size={12} color="#9CA3AF" />
+            <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
+              {meeting.duration} min
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+      {onClick && (
+        <ChevronRight size={16} color="#9CA3AF" style={{ marginTop: 8 }} />
+      )}
+    </Box>
+  );
+}
+
 function NoteItem({ note }: { note: Note }) {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -424,7 +536,7 @@ function NoteItem({ note }: { note: Note }) {
   );
 }
 
-export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggestedActions, onTaskToggle, onNewTask, onTaskEdit, onTaskDelete, onActionAccept, onActionDismiss }: AlmaChatPanelProps) {
+export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggestedActions, meetings = [], studentId, onTaskToggle, onNewTask, onTaskEdit, onTaskDelete, onActionAccept, onActionDismiss, onMeetingClick, onScheduleMeeting }: AlmaChatPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>('alma');
   const [message, setMessage] = useState('');
   const [showMoreSuggestions, setShowMoreSuggestions] = useState(false);
@@ -538,6 +650,11 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
           label="Tasks"
           isActive={activeTab === 'tasks'}
           onClick={() => setActiveTab('tasks')}
+        />
+        <TabButton
+          label="Meetings"
+          isActive={activeTab === 'meetings'}
+          onClick={() => setActiveTab('meetings')}
         />
         <TabButton
           label="Notes"
@@ -1006,6 +1123,156 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
               </Button>
             </Box>
           )}
+        </Box>
+      )}
+
+      {/* Meetings Tab Content */}
+      {activeTab === 'meetings' && (
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            overflowY: 'auto',
+          }}
+        >
+          {/* Meetings Header */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 2,
+              py: 1.5,
+              borderBottom: '1px solid #E5E7EB',
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#111827',
+              }}
+            >
+              Meetings
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<Calendar size={14} />}
+              onClick={onScheduleMeeting}
+              sx={{
+                textTransform: 'none',
+                fontSize: '13px',
+                borderColor: '#E5E7EB',
+                color: '#374151',
+                '&:hover': {
+                  borderColor: '#D1D5DB',
+                  backgroundColor: '#F9FAFB',
+                },
+              }}
+            >
+              Schedule
+            </Button>
+          </Box>
+
+          {/* Meetings list */}
+          <Box sx={{ flex: 1, px: 2, py: 2, overflowY: 'auto' }}>
+            {(() => {
+              const upcomingMeetings = meetings.filter(
+                (m) => m.status === 'scheduled' || m.status === 'in_progress'
+              ).sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
+              const pastMeetings = meetings.filter(
+                (m) => m.status === 'completed'
+              ).sort((a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime());
+
+              if (meetings.length === 0) {
+                return (
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <Calendar size={32} color="#D1D5DB" style={{ margin: '0 auto 12px' }} />
+                    <Typography sx={{ fontSize: '14px', color: '#6B7280', mb: 1 }}>
+                      No meetings scheduled
+                    </Typography>
+                    <Typography sx={{ fontSize: '13px', color: '#9CA3AF' }}>
+                      Schedule a meeting to discuss {studentFirstName}&apos;s progress
+                    </Typography>
+                  </Box>
+                );
+              }
+
+              return (
+                <>
+                  {/* Upcoming Meetings */}
+                  {upcomingMeetings.length > 0 && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        sx={{
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: '#6B7280',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          mb: 1.5,
+                        }}
+                      >
+                        Upcoming
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        {upcomingMeetings.map((meeting) => (
+                          <MeetingItem
+                            key={meeting.id}
+                            meeting={meeting}
+                            variant="upcoming"
+                            onClick={() => onMeetingClick?.(meeting)}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+
+                  {/* Past Meetings */}
+                  {pastMeetings.length > 0 && (
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: '#6B7280',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          mb: 1.5,
+                        }}
+                      >
+                        Past
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        {pastMeetings.slice(0, 5).map((meeting) => (
+                          <MeetingItem
+                            key={meeting.id}
+                            meeting={meeting}
+                            variant="past"
+                            onClick={() => onMeetingClick?.(meeting)}
+                          />
+                        ))}
+                        {pastMeetings.length > 5 && (
+                          <Typography
+                            sx={{
+                              fontSize: '13px',
+                              color: '#6B7280',
+                              textAlign: 'center',
+                              py: 1,
+                            }}
+                          >
+                            + {pastMeetings.length - 5} more past meetings
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  )}
+                </>
+              );
+            })()}
+          </Box>
         </Box>
       )}
 
