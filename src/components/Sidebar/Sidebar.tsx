@@ -1,11 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Box, Typography, FormControl, Select, MenuItem, Button, Modal } from '@mui/material';
-import { Mic } from 'lucide-react';
+import { Box, Typography, FormControl, Select, MenuItem } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { getAllStudents } from '@/lib/mockData';
-import { MeetingIntelligence } from '@/components/MeetingIntelligence';
 
 interface SidebarProps {
   currentStudentId?: string;
@@ -91,15 +88,10 @@ function WillowLogo() {
 export function Sidebar({ currentStudentId }: SidebarProps) {
   const router = useRouter();
   const students = getAllStudents();
-  const [showMeetingIntelligence, setShowMeetingIntelligence] = useState(false);
 
   const handleStudentChange = (studentId: string) => {
     router.push(`/students/${studentId}`);
   };
-
-  // Get current student name for the meeting intelligence
-  const currentStudent = students.find(s => s.id === currentStudentId);
-  const studentName = currentStudent ? `${currentStudent.firstName} ${currentStudent.lastName}` : 'Student';
 
   return (
     <Box
@@ -188,84 +180,6 @@ export function Sidebar({ currentStudentId }: SidebarProps) {
         </Box>
       )}
 
-      {/* Test Button for Meeting Notes */}
-      <Box
-        sx={{
-          mt: 'auto',
-          px: 1.5,
-          py: 1.5,
-          borderTop: '1px solid #E5E7EB',
-        }}
-      >
-        <Typography
-          sx={{
-            fontSize: '10px',
-            color: '#9CA3AF',
-            mb: 1,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            px: 0.5,
-          }}
-        >
-          Testing
-        </Typography>
-        <Button
-          fullWidth
-          variant="contained"
-          startIcon={<Mic size={16} />}
-          onClick={() => setShowMeetingIntelligence(true)}
-          sx={{
-            textTransform: 'none',
-            fontSize: '12px',
-            fontWeight: 500,
-            py: 1,
-            backgroundColor: '#EF4444',
-            '&:hover': {
-              backgroundColor: '#DC2626',
-            },
-          }}
-        >
-          Start Live Meeting
-        </Button>
-      </Box>
-
-      {/* Meeting Notes Modal */}
-      <Modal
-        open={showMeetingIntelligence}
-        onClose={() => setShowMeetingIntelligence(false)}
-        slotProps={{
-          backdrop: {
-            sx: {
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            },
-          },
-        }}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1300,
-        }}
-      >
-        <Box
-          sx={{
-            width: '100%',
-            maxWidth: 500,
-            maxHeight: '90vh',
-            mx: 2,
-            borderRadius: '12px',
-            overflow: 'hidden',
-            backgroundColor: '#FFFFFF',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            outline: 'none',
-          }}
-        >
-          <MeetingIntelligence
-            studentName={studentName}
-            onClose={() => setShowMeetingIntelligence(false)}
-          />
-        </Box>
-      </Modal>
     </Box>
   );
 }

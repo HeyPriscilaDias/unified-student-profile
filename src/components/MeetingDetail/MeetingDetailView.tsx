@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, Typography, Button, IconButton } from '@mui/material';
-import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { Box, Typography, Button, IconButton, Modal } from '@mui/material';
+import { ArrowLeft, Edit, Trash2, Mic } from 'lucide-react';
+import { MeetingIntelligence } from '@/components/MeetingIntelligence';
 import { AppLayout } from '@/components/AppLayout';
 import { LoadingSection } from '@/components/shared';
 import { useStudentData } from '@/hooks/useStudentData';
@@ -21,6 +22,7 @@ interface MeetingDetailViewProps {
 export function MeetingDetailView({ studentId, meetingId }: MeetingDetailViewProps) {
   const router = useRouter();
   const studentData = useStudentData(studentId);
+  const [showMeetingIntelligence, setShowMeetingIntelligence] = useState(false);
 
   const meeting = useMemo(() => {
     if (!studentData) return null;
@@ -107,6 +109,22 @@ export function MeetingDetailView({ studentId, meetingId }: MeetingDetailViewPro
             </Button>
 
             <Box className="flex items-center gap-2">
+              {isUpcoming && (
+                <Button
+                  variant="contained"
+                  startIcon={<Mic size={16} />}
+                  onClick={() => setShowMeetingIntelligence(true)}
+                  sx={{
+                    textTransform: 'none',
+                    backgroundColor: '#062F29',
+                    '&:hover': {
+                      backgroundColor: '#2B4C46',
+                    },
+                  }}
+                >
+                  Start Meeting
+                </Button>
+              )}
               <Button
                 variant="outlined"
                 startIcon={<Edit size={16} />}
@@ -165,6 +183,44 @@ export function MeetingDetailView({ studentId, meetingId }: MeetingDetailViewPro
           )}
         </Box>
       </Box>
+
+      {/* Meeting Intelligence Modal */}
+      <Modal
+        open={showMeetingIntelligence}
+        onClose={() => setShowMeetingIntelligence(false)}
+        slotProps={{
+          backdrop: {
+            sx: {
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            },
+          },
+        }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1300,
+        }}
+      >
+        <Box
+          sx={{
+            width: '100%',
+            maxWidth: 500,
+            maxHeight: '90vh',
+            mx: 2,
+            borderRadius: '12px',
+            overflow: 'hidden',
+            backgroundColor: '#FFFFFF',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            outline: 'none',
+          }}
+        >
+          <MeetingIntelligence
+            studentName={`${studentData.student.firstName} ${studentData.student.lastName}`}
+            onClose={() => setShowMeetingIntelligence(false)}
+          />
+        </Box>
+      </Modal>
     </AppLayout>
   );
 }

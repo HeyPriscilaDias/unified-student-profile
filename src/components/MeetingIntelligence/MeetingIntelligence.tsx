@@ -10,6 +10,7 @@ import {
   Snackbar,
   Alert,
   TextField,
+  Collapse,
 } from '@mui/material';
 import {
   Mic,
@@ -17,6 +18,8 @@ import {
   Maximize2,
   Minimize2,
   X,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 // Types
@@ -47,6 +50,106 @@ const MOCK_KEY_DECISIONS = [
   'Targeting state priority deadline of March 2nd for maximum aid consideration',
   'Will focus on federal work-study as preferred employment option',
 ];
+
+const MOCK_TRANSCRIPT = `Counselor: Good morning! Thanks for coming in today. I wanted to go over the FAFSA process with you since the application window is now open.
+
+Student: Hi! Yes, I've been meaning to ask about this. My parents keep asking me when we need to fill it out.
+
+Counselor: Great question. The FAFSA opened on December 31st, and I always recommend completing it as early as possible. Many states have priority deadlines, and some aid is distributed on a first-come, first-served basis.
+
+Student: Oh, I didn't know that. What's our state's deadline?
+
+Counselor: For us, the priority deadline is March 2nd. If you submit before then, you'll have the best chance at state grants and institutional aid. Have you or your parents created an FSA ID yet?
+
+Student: No, what's that?
+
+Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and one parent will need one. You create it at studentaid.gov. I'd suggest doing that this week since it can take a few days to process.
+
+Student: Okay, I'll do that tonight. What documents do we need?
+
+Counselor: Good thinking ahead! You'll need your Social Security number, your parents' 2024 tax returns, W-2 forms, and records of any untaxed income. The IRS Data Retrieval Tool can help import the tax info directly.
+
+Student: My parents file jointly, so we just need their one return?
+
+Counselor: Exactly. Since they file jointly, you'll just need that single return. Now, let me ask—will you be living at home next year or on campus?
+
+Student: I'm hoping to live in the dorms.
+
+Counselor: Perfect. That affects your cost of attendance calculation. Also, based on our earlier conversation about your family situation, you'll be filing as a dependent student, which means your parents' income will be considered.
+
+Student: Right, that makes sense. Is there anything else we should know about?
+
+Counselor: One thing I always mention—consider federal work-study if it's offered. It's a great way to earn money for expenses without it affecting your future financial aid. Also, I'll send you a list of local scholarships you might qualify for.
+
+Student: That would be really helpful. When should we have everything done by?
+
+Counselor: Let's aim to have your FSA IDs created by this weekend, gather documents next week, and submit the FAFSA by February 15th. That gives us buffer time before the March 2nd deadline. How about we schedule a follow-up meeting for March 15th to review your Student Aid Report?
+
+Student: That sounds great. Thank you so much for explaining all of this!
+
+Counselor: Of course! I'll send a meeting recap to your email with all the action items. Don't hesitate to reach out if you have questions while filling out the application.`;
+
+// Transcript types and parser
+interface TranscriptMessage {
+  speaker: 'counselor' | 'student';
+  text: string;
+}
+
+const parseTranscript = (transcript: string): TranscriptMessage[] => {
+  const lines = transcript.split('\n\n');
+  return lines
+    .map((line) => {
+      if (line.startsWith('Counselor:')) {
+        return { speaker: 'counselor' as const, text: line.replace('Counselor: ', '') };
+      } else if (line.startsWith('Student:')) {
+        return { speaker: 'student' as const, text: line.replace('Student: ', '') };
+      }
+      return null;
+    })
+    .filter((msg): msg is TranscriptMessage => msg !== null);
+};
+
+// Chat Bubble Component with accessible contrast
+const ChatBubble: React.FC<{ message: TranscriptMessage }> = ({ message }) => {
+  const isCounselor = message.speaker === 'counselor';
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: isCounselor ? 'flex-start' : 'flex-end',
+        mb: 1.5,
+      }}
+    >
+      <Box
+        sx={{
+          maxWidth: '85%',
+          px: 2,
+          py: 1.5,
+          borderRadius: isCounselor ? '16px 16px 16px 4px' : '16px 16px 4px 16px',
+          backgroundColor: isCounselor ? '#E5E7EB' : '#062F29',
+          color: isCounselor ? '#1F2937' : '#FFFFFF',
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: '10px',
+            fontWeight: 700,
+            mb: 0.5,
+            color: isCounselor ? '#374151' : 'rgba(255,255,255,0.9)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}
+        >
+          {isCounselor ? 'Counselor' : 'Student'}
+        </Typography>
+        <Typography sx={{ fontSize: '13px', lineHeight: 1.5 }}>
+          {message.text}
+        </Typography>
+      </Box>
+    </Box>
+  );
+};
 
 // Audio Visualization Component
 const AudioVisualizer: React.FC<{ analyser: AnalyserNode | null; isRecording: boolean }> = ({
@@ -176,6 +279,7 @@ Schedule follow-up for March 15th to review Student Aid Report and discuss award
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [meetingNotes, setMeetingNotes] = useState('');
+  const [showTranscript, setShowTranscript] = useState(false);
 
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -455,9 +559,9 @@ Schedule follow-up for March 15th to review Student Aid Report and discuss award
 
       case 'results':
         return (
-          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
             {/* Header with meeting info */}
-            <Box sx={{ px: 2, pt: 2, pb: 1.5 }}>
+            <Box sx={{ px: 2, pt: 2, pb: 1.5, flexShrink: 0 }}>
               <Typography
                 sx={{ fontSize: '16px', fontWeight: 600, color: '#111827', mb: 0.25 }}
               >
@@ -468,17 +572,17 @@ Schedule follow-up for March 15th to review Student Aid Report and discuss award
               </Typography>
             </Box>
 
-            {/* Single large editable text area */}
-            <Box sx={{ flex: 1, px: 2, pb: 2, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            {/* Scrollable content area */}
+            <Box sx={{ flex: 1, overflow: 'auto', px: 2, pb: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Editable text area */}
               <TextField
                 fullWidth
                 multiline
+                minRows={8}
                 value={meetingNotes}
                 onChange={(e) => setMeetingNotes(e.target.value)}
                 sx={{
-                  flex: 1,
                   '& .MuiOutlinedInput-root': {
-                    height: '100%',
                     alignItems: 'flex-start',
                     fontSize: '14px',
                     color: '#374151',
@@ -495,12 +599,52 @@ Schedule follow-up for March 15th to review Student Aid Report and discuss award
                       borderColor: '#062F29',
                     },
                   },
-                  '& .MuiOutlinedInput-input': {
-                    height: '100% !important',
-                    overflow: 'auto !important',
-                  },
                 }}
               />
+
+              {/* Transcript Toggle */}
+              <Box>
+                <Button
+                  fullWidth
+                  onClick={() => setShowTranscript(!showTranscript)}
+                  endIcon={showTranscript ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                  sx={{
+                    justifyContent: 'space-between',
+                    textTransform: 'none',
+                    color: '#374151',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    py: 1.5,
+                    px: 2,
+                    backgroundColor: '#F9FAFB',
+                    borderRadius: '8px',
+                    border: '1px solid #E5E7EB',
+                    '&:hover': {
+                      backgroundColor: '#F3F4F6',
+                    },
+                  }}
+                >
+                  View Full Transcript
+                </Button>
+
+                <Collapse in={showTranscript}>
+                  <Box
+                    sx={{
+                      mt: 2,
+                      p: 2,
+                      borderRadius: '8px',
+                      border: '1px solid #E5E7EB',
+                      backgroundColor: '#FAFAFA',
+                      maxHeight: '400px',
+                      overflow: 'auto',
+                    }}
+                  >
+                    {parseTranscript(MOCK_TRANSCRIPT).map((message, index) => (
+                      <ChatBubble key={index} message={message} />
+                    ))}
+                  </Box>
+                </Collapse>
+              </Box>
             </Box>
           </Box>
         );
@@ -526,7 +670,7 @@ Schedule follow-up for March 15th to review Student Aid Report and discuss award
         sx={{ borderColor: '#E5E7EB' }}
       >
         <Typography sx={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
-          Meeting Intelligence
+          Meeting Notes
         </Typography>
         <Box className="flex items-center gap-1">
           <IconButton

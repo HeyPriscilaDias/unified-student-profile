@@ -11,12 +11,14 @@ import {
   Chip,
   IconButton,
   CircularProgress,
+  Modal,
 } from '@mui/material';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, Mic } from 'lucide-react';
+import { MeetingIntelligence } from '@/components/MeetingIntelligence';
 import { Slate } from '@/theme/primitives';
 import { useStudentData } from '@/hooks/useStudentData';
 import { generateTextAgenda } from '@/lib/geminiService';
@@ -125,6 +127,7 @@ export function ScheduleMeetingModal({
   const [agendaText, setAgendaText] = useState<string>('');
   const [isGeneratingAgenda, setIsGeneratingAgenda] = useState<boolean>(false);
   const [hasInitialized, setHasInitialized] = useState<boolean>(false);
+  const [showMeetingIntelligence, setShowMeetingIntelligence] = useState(false);
 
   const studentData = useStudentData(studentId);
 
@@ -396,27 +399,84 @@ export function ScheduleMeetingModal({
             )}
 
             {/* Actions */}
-            <Box className="flex gap-3 mt-4 pt-4 border-t border-neutral-100">
-              <Button
-                variant="text"
-                onClick={handleBack}
-                disabled={isGeneratingAgenda}
-                sx={{ textTransform: 'none', flex: 1 }}
-              >
-                Back
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleSchedule}
-                disabled={isGeneratingAgenda}
-                sx={{ textTransform: 'none', flex: 2 }}
-              >
-                {isEditMode ? 'Save Changes' : 'Schedule Meeting'}
-              </Button>
+            <Box className="flex flex-col gap-3 mt-4 pt-4 border-t border-neutral-100">
+              {isEditMode && (
+                <Button
+                  variant="contained"
+                  startIcon={<Mic size={18} />}
+                  onClick={() => setShowMeetingIntelligence(true)}
+                  sx={{
+                    textTransform: 'none',
+                    py: 1.25,
+                    backgroundColor: '#062F29',
+                    '&:hover': {
+                      backgroundColor: '#2B4C46',
+                    },
+                  }}
+                >
+                  Start Meeting
+                </Button>
+              )}
+              <Box className="flex gap-3">
+                <Button
+                  variant="text"
+                  onClick={handleBack}
+                  disabled={isGeneratingAgenda}
+                  sx={{ textTransform: 'none', flex: 1 }}
+                >
+                  Back
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleSchedule}
+                  disabled={isGeneratingAgenda}
+                  sx={{ textTransform: 'none', flex: 2 }}
+                >
+                  {isEditMode ? 'Save Changes' : 'Schedule Meeting'}
+                </Button>
+              </Box>
             </Box>
           </Box>
         )}
       </DialogContent>
+
+      {/* Meeting Intelligence Modal */}
+      <Modal
+        open={showMeetingIntelligence}
+        onClose={() => setShowMeetingIntelligence(false)}
+        slotProps={{
+          backdrop: {
+            sx: {
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            },
+          },
+        }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1400,
+        }}
+      >
+        <Box
+          sx={{
+            width: '100%',
+            maxWidth: 500,
+            maxHeight: '90vh',
+            mx: 2,
+            borderRadius: '12px',
+            overflow: 'hidden',
+            backgroundColor: '#FFFFFF',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            outline: 'none',
+          }}
+        >
+          <MeetingIntelligence
+            studentName={studentName}
+            onClose={() => setShowMeetingIntelligence(false)}
+          />
+        </Box>
+      </Modal>
     </Dialog>
   );
 }
