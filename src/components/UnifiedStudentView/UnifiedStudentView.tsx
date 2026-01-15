@@ -226,11 +226,24 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     );
   };
 
+  // Build student context for Alma panel
+  const studentContext = {
+    firstName: student.firstName,
+    lastName: student.lastName,
+    grade: student.grade,
+    careerVision: profile.careerVision,
+    milestones,
+    smartGoals,
+    bookmarks,
+    profile,
+  };
+
   return (
     <AppLayout
       rightPanel={
         <AlmaChatPanel
           studentFirstName={student.firstName}
+          studentContext={studentContext}
           tasks={localTasks}
           suggestedActions={localSuggestedActions}
           onTaskToggle={handleTaskToggle}

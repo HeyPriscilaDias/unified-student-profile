@@ -11,10 +11,20 @@ interface NewMeetingData {
   agenda: AgendaItem[];
 }
 
+interface UpdateMeetingData {
+  id: string;
+  studentId: string;
+  title?: string;
+  scheduledDate?: string;
+  duration?: number;
+  agenda?: AgendaItem[];
+}
+
 interface MeetingsContextType {
   meetings: Map<string, Meeting[]>; // studentId -> meetings
   getMeetingsForStudent: (studentId: string) => Meeting[];
   addMeeting: (data: NewMeetingData) => Meeting;
+  updateMeeting: (data: UpdateMeetingData) => Meeting | null;
   initializeMeetings: (studentId: string, meetings: Meeting[]) => void;
 }
 
@@ -64,8 +74,38 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
     return newMeeting;
   }, []);
 
+  const updateMeeting = useCallback((data: UpdateMeetingData): Meeting | null => {
+    let updatedMeeting: Meeting | null = null;
+
+    setMeetings(prev => {
+      const newMap = new Map(prev);
+      const studentMeetings = newMap.get(data.studentId) || [];
+      const meetingIndex = studentMeetings.findIndex(m => m.id === data.id);
+
+      if (meetingIndex === -1) return prev;
+
+      const existingMeeting = studentMeetings[meetingIndex];
+      updatedMeeting = {
+        ...existingMeeting,
+        ...(data.title !== undefined && { title: data.title }),
+        ...(data.scheduledDate !== undefined && { scheduledDate: data.scheduledDate }),
+        ...(data.duration !== undefined && { duration: data.duration }),
+        ...(data.agenda !== undefined && { agenda: data.agenda }),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const newStudentMeetings = [...studentMeetings];
+      newStudentMeetings[meetingIndex] = updatedMeeting;
+      newMap.set(data.studentId, newStudentMeetings);
+
+      return newMap;
+    });
+
+    return updatedMeeting;
+  }, []);
+
   return (
-    <MeetingsContext.Provider value={{ meetings, getMeetingsForStudent, addMeeting, initializeMeetings }}>
+    <MeetingsContext.Provider value={{ meetings, getMeetingsForStudent, addMeeting, updateMeeting, initializeMeetings }}>
       {children}
     </MeetingsContext.Provider>
   );

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Box, Typography, IconButton, TextField, InputAdornment, Checkbox, Button, FormControlLabel, Tooltip, Avatar } from '@mui/material';
 import { RotateCcw, History, Sparkles, ChevronDown, ChevronUp, Info, Send, Plus, Check, X, Lock, Globe } from 'lucide-react';
 import { SubTabNavigation, AIReviewBadge } from '@/components/shared';
-import type { Task, SuggestedAction } from '@/types/student';
+import type { Task, SuggestedAction, Milestone, SmartGoal, Bookmark, StudentProfile } from '@/types/student';
 
 type TabType = 'alma' | 'tasks' | 'notes';
 
@@ -17,8 +17,20 @@ interface Note {
   createdAt: string;
 }
 
+interface StudentContext {
+  firstName: string;
+  lastName: string;
+  grade: number;
+  careerVision?: string;
+  milestones: Milestone[];
+  smartGoals: SmartGoal[];
+  bookmarks: Bookmark[];
+  profile?: StudentProfile;
+}
+
 interface AlmaChatPanelProps {
   studentFirstName: string;
+  studentContext?: StudentContext;
   tasks: Task[];
   suggestedActions: SuggestedAction[];
   onTaskToggle?: (task: Task) => void;
@@ -29,16 +41,97 @@ interface AlmaChatPanelProps {
   onActionDismiss?: (action: SuggestedAction) => void;
 }
 
-const INITIAL_SUGGESTIONS = [
-  'How to choose the best college for me?',
-  'How to choose a major?',
-];
+function generateContextAwareSuggestions(context?: StudentContext): { initial: string[]; more: string[] } {
+  if (!context) {
+    return {
+      initial: [
+        'How to choose the best college for me?',
+        'How to choose a major?',
+      ],
+      more: [
+        'What scholarships am I eligible for?',
+        'How do I write a strong personal statement?',
+        'What extracurriculars should I focus on?',
+      ],
+    };
+  }
 
-const MORE_SUGGESTIONS = [
-  'What scholarships am I eligible for?',
-  'How do I write a strong personal statement?',
-  'What extracurriculars should I focus on?',
-];
+  const suggestions: string[] = [];
+  const { firstName, grade, careerVision, milestones, smartGoals, bookmarks, profile } = context;
+
+  // Get career interests from bookmarks
+  const careerBookmarks = bookmarks.filter(b => b.type === 'career' && b.isBookmarked);
+  const schoolBookmarks = bookmarks.filter(b => b.type === 'school' && b.isBookmarked);
+
+  // Get in-progress milestones
+  const pendingMilestones = milestones.filter(m => m.status === 'not_done');
+
+  // Get active goals
+  const activeGoals = smartGoals.filter(g => g.status === 'active');
+
+  // Career-specific suggestions
+  if (careerBookmarks.length > 0) {
+    const topCareer = careerBookmarks[0];
+    suggestions.push(`What are the best pathways to become a ${topCareer.title}?`);
+    if (topCareer.tags?.includes('Healthcare')) {
+      suggestions.push(`What clinical experiences would help ${firstName}'s healthcare career goals?`);
+    }
+  }
+
+  // School-specific suggestions
+  if (schoolBookmarks.length > 0) {
+    const topSchool = schoolBookmarks[0];
+    suggestions.push(`How can ${firstName} strengthen their ${topSchool.title} application?`);
+  }
+
+  // Milestone-based suggestions
+  if (pendingMilestones.length > 0) {
+    const urgentMilestone = pendingMilestones[0];
+    if (urgentMilestone.title.toLowerCase().includes('fafsa')) {
+      suggestions.push(`What documents does ${firstName} need for FAFSA completion?`);
+    } else if (urgentMilestone.title.toLowerCase().includes('college')) {
+      suggestions.push(`What are the key deadlines ${firstName} should track?`);
+    } else if (urgentMilestone.title.toLowerCase().includes('shadow')) {
+      suggestions.push(`How can ${firstName} find job shadowing opportunities?`);
+    }
+  }
+
+  // Goal-based suggestions
+  if (activeGoals.length > 0) {
+    const topGoal = activeGoals[0];
+    if (topGoal.title.toLowerCase().includes('application')) {
+      suggestions.push(`Tips for completing ${firstName}'s remaining college applications?`);
+    } else if (topGoal.title.toLowerCase().includes('sat') || topGoal.title.toLowerCase().includes('score')) {
+      suggestions.push(`What study strategies could help ${firstName} improve test scores?`);
+    }
+  }
+
+  // Grade-level suggestions
+  if (grade === 12) {
+    suggestions.push(`What should ${firstName} know about senior year financial aid?`);
+    suggestions.push(`How to prepare for college transition?`);
+  } else if (grade === 11) {
+    suggestions.push(`What can ${firstName} do this year to prepare for college applications?`);
+  }
+
+  // Career vision suggestions
+  if (careerVision && careerVision.toLowerCase().includes('nurs')) {
+    suggestions.push(`What nursing programs align with ${firstName}'s goals?`);
+  }
+
+  // Profile-based suggestions
+  if (profile?.experiences?.some(exp => exp.type === 'volunteer')) {
+    suggestions.push(`How can ${firstName}'s volunteer experience strengthen applications?`);
+  }
+
+  // Deduplicate and split into initial and more
+  const uniqueSuggestions = [...new Set(suggestions)];
+
+  return {
+    initial: uniqueSuggestions.slice(0, 2),
+    more: uniqueSuggestions.slice(2, 5),
+  };
+}
 
 function TaskItem({
   task,
@@ -331,11 +424,18 @@ function NoteItem({ note }: { note: Note }) {
   );
 }
 
-export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTaskToggle, onNewTask, onTaskEdit, onTaskDelete, onActionAccept, onActionDismiss }: AlmaChatPanelProps) {
+export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggestedActions, onTaskToggle, onNewTask, onTaskEdit, onTaskDelete, onActionAccept, onActionDismiss }: AlmaChatPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>('alma');
   const [message, setMessage] = useState('');
   const [showMoreSuggestions, setShowMoreSuggestions] = useState(false);
   const [taskFilter, setTaskFilter] = useState<'open' | 'completed'>('open');
+
+  // Generate context-aware suggestions based on student data
+  const contextSuggestions = generateContextAwareSuggestions(studentContext);
+
+  // Debug: log the context and suggestions
+  console.log('AlmaChatPanel studentContext:', studentContext);
+  console.log('Generated suggestions:', contextSuggestions);
 
   // New task input state
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -548,7 +648,7 @@ export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTas
           >
             {/* Suggestions */}
             <Box sx={{ mb: 2 }}>
-              {INITIAL_SUGGESTIONS.map((suggestion) => (
+              {contextSuggestions.initial.map((suggestion) => (
                 <Box
                   key={suggestion}
                   onClick={() => handleSuggestionClick(suggestion)}
@@ -580,7 +680,7 @@ export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTas
               ))}
 
               {showMoreSuggestions &&
-                MORE_SUGGESTIONS.map((suggestion) => (
+                contextSuggestions.more.map((suggestion) => (
                   <Box
                     key={suggestion}
                     onClick={() => handleSuggestionClick(suggestion)}
@@ -611,24 +711,26 @@ export function AlmaChatPanel({ studentFirstName, tasks, suggestedActions, onTas
                   </Box>
                 ))}
 
-              {/* More suggestions toggle */}
-              <Box
-                onClick={() => setShowMoreSuggestions(!showMoreSuggestions)}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  pt: 0.5,
-                  cursor: 'pointer',
-                  color: '#6B7280',
-                  '&:hover': { color: '#374151' },
-                }}
-              >
-                {showMoreSuggestions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                <Typography sx={{ fontSize: '13px' }}>
-                  {showMoreSuggestions ? 'Less suggestions' : 'More suggestions'}
-                </Typography>
-              </Box>
+              {/* More suggestions toggle - only show if there are more suggestions */}
+              {contextSuggestions.more.length > 0 && (
+                <Box
+                  onClick={() => setShowMoreSuggestions(!showMoreSuggestions)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    pt: 0.5,
+                    cursor: 'pointer',
+                    color: '#6B7280',
+                    '&:hover': { color: '#374151' },
+                  }}
+                >
+                  {showMoreSuggestions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  <Typography sx={{ fontSize: '13px' }}>
+                    {showMoreSuggestions ? 'Less suggestions' : 'More suggestions'}
+                  </Typography>
+                </Box>
+              )}
             </Box>
 
             {/* Input */}

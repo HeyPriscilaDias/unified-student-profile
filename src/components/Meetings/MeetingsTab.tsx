@@ -6,9 +6,10 @@ import { Box, Snackbar, Alert } from '@mui/material';
 import { UpcomingMeetingsSection } from './UpcomingMeetingsSection';
 import { PastMeetingsSection } from './PastMeetingsSection';
 import { ActivityHistorySection } from './ActivityHistorySection';
-import { ScheduleMeetingModal } from '@/components/ScheduleMeetingFlow';
+import { ScheduleMeetingModal, textToAgendaItems } from '@/components/ScheduleMeetingFlow';
 import type { ScheduledMeetingData as ModalScheduledMeetingData } from '@/components/ScheduleMeetingFlow/ScheduleMeetingModal';
 import type { ActivityItem, Meeting } from '@/types/student';
+import { useMeetingsContext } from '@/contexts/MeetingsContext';
 
 interface MeetingsTabProps {
   activities: ActivityItem[];
@@ -19,21 +20,49 @@ interface MeetingsTabProps {
 
 export function MeetingsTab({ activities, meetings, studentId, studentName }: MeetingsTabProps) {
   const router = useRouter();
+  const { updateMeeting } = useMeetingsContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('Meeting scheduled successfully');
 
   const handleScheduleMeeting = () => {
+    setSelectedMeeting(null);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setSelectedMeeting(null);
   };
 
   const handleMeetingScheduled = (data: ModalScheduledMeetingData) => {
     // In a real app, this would save to the backend
     console.log('Meeting scheduled:', data);
     setIsModalOpen(false);
+    setSelectedMeeting(null);
+    setToastMessage('Meeting scheduled successfully');
+    setShowToast(true);
+  };
+
+  const handleMeetingSaved = (data: ModalScheduledMeetingData) => {
+    if (!selectedMeeting) return;
+
+    // Convert text agenda to AgendaItem[]
+    const agendaItems = textToAgendaItems(data.agenda, data.duration);
+
+    updateMeeting({
+      id: selectedMeeting.id,
+      studentId: selectedMeeting.studentId,
+      title: data.title,
+      scheduledDate: data.scheduledDate,
+      duration: data.duration,
+      agenda: agendaItems,
+    });
+
+    setIsModalOpen(false);
+    setSelectedMeeting(null);
+    setToastMessage('Meeting updated successfully');
     setShowToast(true);
   };
 
@@ -66,8 +95,14 @@ export function MeetingsTab({ activities, meetings, studentId, studentName }: Me
   }, [pastMeetings]);
 
   const handleMeetingClick = (meeting: Meeting) => {
-    // Navigate to meeting detail page
-    router.push(`/students/${meeting.studentId}/meetings/${meeting.id}`);
+    // For upcoming/scheduled meetings, open the edit modal
+    if (meeting.status === 'scheduled' || meeting.status === 'in_progress') {
+      setSelectedMeeting(meeting);
+      setIsModalOpen(true);
+    } else {
+      // For past/completed meetings, navigate to detail page
+      router.push(`/students/${meeting.studentId}/meetings/${meeting.id}`);
+    }
   };
 
   return (
@@ -91,13 +126,15 @@ export function MeetingsTab({ activities, meetings, studentId, studentName }: Me
         <ActivityHistorySection activities={activities} />
       </Box>
 
-      {/* Schedule Meeting Modal */}
+      {/* Schedule/Edit Meeting Modal */}
       <ScheduleMeetingModal
         open={isModalOpen}
         onClose={handleCloseModal}
         onSchedule={handleMeetingScheduled}
+        onSave={handleMeetingSaved}
         studentId={studentId}
         studentName={studentName}
+        existingMeeting={selectedMeeting}
       />
 
       {/* Success Toast */}
@@ -108,7 +145,7 @@ export function MeetingsTab({ activities, meetings, studentId, studentName }: Me
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert onClose={handleCloseToast} severity="success" sx={{ width: '100%' }}>
-          Meeting scheduled successfully
+          {toastMessage}
         </Alert>
       </Snackbar>
     </Box>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,13 +20,17 @@ import { X, Sparkles } from 'lucide-react';
 import { Slate } from '@/theme/primitives';
 import { useStudentData } from '@/hooks/useStudentData';
 import { generateTextAgenda } from '@/lib/geminiService';
+import { agendaItemsToText } from './agendaUtils';
+import type { Meeting } from '@/types/student';
 
 interface ScheduleMeetingModalProps {
   open: boolean;
   onClose: () => void;
   onSchedule: (data: ScheduledMeetingData) => void;
+  onSave?: (data: ScheduledMeetingData) => void;
   studentId: string;
   studentName: string;
+  existingMeeting?: Meeting | null;
 }
 
 export interface ScheduledMeetingData {
@@ -108,16 +112,49 @@ export function ScheduleMeetingModal({
   open,
   onClose,
   onSchedule,
+  onSave,
   studentId,
   studentName,
+  existingMeeting,
 }: ScheduleMeetingModalProps) {
+  const isEditMode = !!existingMeeting;
+
   const [step, setStep] = useState<Step>('datetime');
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [agendaText, setAgendaText] = useState<string>('');
   const [isGeneratingAgenda, setIsGeneratingAgenda] = useState<boolean>(false);
+  const [hasInitialized, setHasInitialized] = useState<boolean>(false);
 
   const studentData = useStudentData(studentId);
+
+  // Initialize state when opening in edit mode
+  useEffect(() => {
+    if (open && existingMeeting && !hasInitialized) {
+      const meetingDate = dayjs(existingMeeting.scheduledDate);
+      setSelectedDate(meetingDate.format('YYYY-MM-DD'));
+      setSelectedTime(meetingDate.format('HH:mm'));
+
+      // Convert agenda items to text
+      const formattedDate = meetingDate.format('MMMM D, YYYY');
+      const agendaAsText = agendaItemsToText(
+        existingMeeting.agenda,
+        studentName,
+        studentData?.student.grade,
+        formattedDate
+      );
+      setAgendaText(agendaAsText);
+      setStep('details');
+      setHasInitialized(true);
+    }
+  }, [open, existingMeeting, hasInitialized, studentName, studentData?.student.grade]);
+
+  // Reset hasInitialized when modal closes
+  useEffect(() => {
+    if (!open) {
+      setHasInitialized(false);
+    }
+  }, [open]);
 
   const tomorrow = dayjs().add(1, 'day');
   const dateValue = selectedDate ? dayjs(selectedDate) : null;
@@ -157,14 +194,20 @@ export function ScheduleMeetingModal({
 
   const handleSchedule = () => {
     const dateTime = `${selectedDate}T${selectedTime}:00Z`;
-    onSchedule({
+    const meetingData: ScheduledMeetingData = {
       title: `Meeting with ${studentName}`,
       scheduledDate: dateTime,
-      duration: DEFAULT_DURATION,
+      duration: existingMeeting?.duration || DEFAULT_DURATION,
       guests: '',
       agenda: agendaText,
       location: '',
-    });
+    };
+
+    if (isEditMode && onSave) {
+      onSave(meetingData);
+    } else {
+      onSchedule(meetingData);
+    }
     handleReset();
   };
 
@@ -199,7 +242,9 @@ export function ScheduleMeetingModal({
       {/* Header */}
       <Box className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
         <Typography className="text-lg font-semibold text-neutral-900">
-          {step === 'datetime' ? 'Schedule Meeting' : 'Meeting Details'}
+          {isEditMode
+            ? (step === 'datetime' ? 'Reschedule Meeting' : 'Edit Meeting')
+            : (step === 'datetime' ? 'Schedule Meeting' : 'Meeting Details')}
         </Typography>
         <IconButton size="small" onClick={handleClose}>
           <X size={20} />
@@ -366,7 +411,7 @@ export function ScheduleMeetingModal({
                 disabled={isGeneratingAgenda}
                 sx={{ textTransform: 'none', flex: 2 }}
               >
-                Schedule Meeting
+                {isEditMode ? 'Save Changes' : 'Schedule Meeting'}
               </Button>
             </Box>
           </Box>
