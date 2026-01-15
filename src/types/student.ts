@@ -36,6 +36,7 @@ export interface Task {
   dueDate: string | null;
   status: 'open' | 'completed';
   source: 'manual' | 'suggested_action' | 'meeting';
+  taskType: 'staff' | 'student';
 }
 
 // Suggested Action types

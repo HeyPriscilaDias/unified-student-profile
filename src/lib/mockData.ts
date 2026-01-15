@@ -167,12 +167,14 @@ export const jessicaMilestones: Milestone[] = [
 ];
 
 export const jessicaTasks: Task[] = [
+  // Staff tasks
   {
     id: 'task-1',
     title: 'Schedule college visit to UT Austin',
     dueDate: '2025-01-20',
     status: 'open',
     source: 'manual',
+    taskType: 'staff',
   },
   {
     id: 'task-2',
@@ -180,6 +182,7 @@ export const jessicaTasks: Task[] = [
     dueDate: '2025-01-25',
     status: 'open',
     source: 'suggested_action',
+    taskType: 'staff',
   },
   {
     id: 'task-3',
@@ -187,6 +190,7 @@ export const jessicaTasks: Task[] = [
     dueDate: '2025-01-10',
     status: 'open',
     source: 'meeting',
+    taskType: 'staff',
   },
   {
     id: 'task-4',
@@ -194,6 +198,7 @@ export const jessicaTasks: Task[] = [
     dueDate: '2024-12-15',
     status: 'completed',
     source: 'manual',
+    taskType: 'staff',
   },
   {
     id: 'task-5',
@@ -201,6 +206,40 @@ export const jessicaTasks: Task[] = [
     dueDate: '2024-11-01',
     status: 'completed',
     source: 'manual',
+    taskType: 'staff',
+  },
+  // Student tasks
+  {
+    id: 'task-6',
+    title: 'Complete FAFSA application',
+    dueDate: '2025-01-31',
+    status: 'open',
+    source: 'manual',
+    taskType: 'student',
+  },
+  {
+    id: 'task-7',
+    title: 'Write personal statement draft',
+    dueDate: '2025-01-15',
+    status: 'open',
+    source: 'manual',
+    taskType: 'student',
+  },
+  {
+    id: 'task-8',
+    title: 'Request transcript from registrar',
+    dueDate: '2025-01-10',
+    status: 'open',
+    source: 'meeting',
+    taskType: 'student',
+  },
+  {
+    id: 'task-9',
+    title: 'Update resume with volunteer hours',
+    dueDate: '2024-12-20',
+    status: 'completed',
+    source: 'manual',
+    taskType: 'student',
   },
 ];
 
@@ -871,7 +910,7 @@ export const studentCData: StudentData = {
     { id: 'milestone-3', title: 'Request Letters of Recommendation', type: 'willow_generated', status: 'not_done', progress: 0, dueDate: '2024-12-01T23:59:59Z' }, // Past due
   ],
   tasks: [
-    { id: 'task-1', title: 'Finish college list ASAP', dueDate: null, status: 'open', source: 'manual' },
+    { id: 'task-1', title: 'Finish college list ASAP', dueDate: null, status: 'open', source: 'manual', taskType: 'staff' },
   ],
   suggestedActions: [],
   smartGoals: [],

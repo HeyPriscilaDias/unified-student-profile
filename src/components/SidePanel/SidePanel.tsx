@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Typography, IconButton, TextField, Checkbox, Button, FormControlLabel, Tooltip, Avatar } from '@mui/material';
-import { Sparkles, Plus, Check, X, Lock, Globe, Calendar, Clock, ChevronRight, Info } from 'lucide-react';
+import { Box, Typography, IconButton, TextField, Checkbox, Button, FormControlLabel, Avatar } from '@mui/material';
+import { Sparkles, Plus, Check, X, Lock, Globe, Calendar, Clock, ChevronRight } from 'lucide-react';
 import { SubTabNavigation, AIReviewBadge } from '@/components/shared';
 import type { Task, SuggestedAction, Meeting } from '@/types/student';
 
@@ -454,6 +454,8 @@ export function SidePanel({
   const [notes, setNotes] = useState<Note[]>([]);
 
   const filteredTasks = tasks.filter((t) => t.status === taskFilter);
+  const staffTasks = filteredTasks.filter((t) => t.taskType === 'staff');
+  const studentTasks = filteredTasks.filter((t) => t.taskType === 'student');
   const openCount = tasks.filter((t) => t.status === 'open').length;
   const completedCount = tasks.filter((t) => t.status === 'completed').length;
   const pendingActions = suggestedActions.filter((a) => a.status === 'pending');
@@ -511,7 +513,7 @@ export function SidePanel({
         }}
       >
         <TabButton
-          label="Tasks"
+          label="To-dos"
           isActive={activeTab === 'tasks'}
           onClick={() => setActiveTab('tasks')}
         />
@@ -521,7 +523,7 @@ export function SidePanel({
           onClick={() => setActiveTab('meetings')}
         />
         <TabButton
-          label="Notes"
+          label="Notepad"
           isActive={activeTab === 'notes'}
           onClick={() => setActiveTab('notes')}
         />
@@ -537,8 +539,8 @@ export function SidePanel({
             overflowY: 'auto',
           }}
         >
-          {/* Suggested Actions Section */}
-          {pendingActions.length > 0 && (
+          {/* Suggested Actions Section - Hidden for prototype testing */}
+          {false && pendingActions.length > 0 && (
             <>
               <Box
                 sx={{
@@ -704,15 +706,63 @@ export function SidePanel({
                 )}
               </Box>
             ) : (
-              filteredTasks.map((task) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  onToggle={() => onTaskToggle?.(task)}
-                  onEdit={(newTitle) => onTaskEdit?.(task.id, newTitle)}
-                  onDelete={() => onTaskDelete?.(task.id)}
-                />
-              ))
+              <>
+                {/* Staff Tasks */}
+                {staffTasks.length > 0 && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography
+                      sx={{
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: '#6B7280',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        mb: 1,
+                        mt: 1,
+                      }}
+                    >
+                      Staff Tasks
+                    </Typography>
+                    {staffTasks.map((task) => (
+                      <TaskItem
+                        key={task.id}
+                        task={task}
+                        onToggle={() => onTaskToggle?.(task)}
+                        onEdit={(newTitle) => onTaskEdit?.(task.id, newTitle)}
+                        onDelete={() => onTaskDelete?.(task.id)}
+                      />
+                    ))}
+                  </Box>
+                )}
+
+                {/* Student Tasks */}
+                {studentTasks.length > 0 && (
+                  <Box>
+                    <Typography
+                      sx={{
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: '#6B7280',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        mb: 1,
+                        mt: 1,
+                      }}
+                    >
+                      Student Tasks
+                    </Typography>
+                    {studentTasks.map((task) => (
+                      <TaskItem
+                        key={task.id}
+                        task={task}
+                        onToggle={() => onTaskToggle?.(task)}
+                        onEdit={(newTitle) => onTaskEdit?.(task.id, newTitle)}
+                        onDelete={() => onTaskDelete?.(task.id)}
+                      />
+                    ))}
+                  </Box>
+                )}
+              </>
             )}
           </Box>
 
@@ -897,7 +947,7 @@ export function SidePanel({
         </Box>
       )}
 
-      {/* Notes Tab Content */}
+      {/* Notepad Tab Content */}
       {activeTab === 'notes' && (
         <Box
           sx={{
@@ -907,7 +957,7 @@ export function SidePanel({
             overflowY: 'auto',
           }}
         >
-          {/* Notes Header */}
+          {/* Notepad Header */}
           <Box
             sx={{
               display: 'flex',
@@ -925,7 +975,7 @@ export function SidePanel({
                 color: '#111827',
               }}
             >
-              Personal Notes
+              Notes on this student
             </Typography>
           </Box>
 
@@ -973,7 +1023,7 @@ export function SidePanel({
                 }
                 label={
                   <Typography sx={{ fontSize: '13px', color: '#374151' }}>
-                    Private
+                    Only visible to me
                   </Typography>
                 }
               />
@@ -986,16 +1036,9 @@ export function SidePanel({
                   />
                 }
                 label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Typography sx={{ fontSize: '13px', color: '#374151' }}>
-                      Public
-                    </Typography>
-                    <Tooltip title="Visible to other staff only, not students or mentors" arrow>
-                      <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'help' }}>
-                        <Info size={14} style={{ color: '#6B7280' }} />
-                      </Box>
-                    </Tooltip>
-                  </Box>
+                  <Typography sx={{ fontSize: '13px', color: '#374151' }}>
+                    Visible to all staff
+                  </Typography>
                 }
               />
             </Box>
@@ -1019,11 +1062,11 @@ export function SidePanel({
                 },
               }}
             >
-              Submit Note
+              Save
             </Button>
           </Box>
 
-          {/* Notes list */}
+          {/* Notepad list */}
           <Box sx={{ flex: 1, px: 2, py: 2, overflowY: 'auto' }}>
             {notes.length === 0 ? (
               <Typography
@@ -1034,7 +1077,7 @@ export function SidePanel({
                   py: 4,
                 }}
               >
-                No notes yet. Add your first note about {studentFirstName}.
+                No notes on this student yet.
               </Typography>
             ) : (
               notes.map((note) => <NoteItem key={note.id} note={note} />)
