@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Typography, Button, TextField, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Box, Typography, Button, ToggleButton, ToggleButtonGroup, Chip } from '@mui/material';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -23,6 +23,57 @@ interface StepDurationProps {
 
 const DURATION_OPTIONS = [15, 30, 45, 60];
 
+interface TimeSlot {
+  time: string;
+  label: string;
+  available: boolean;
+}
+
+// Dummy data simulating Google Calendar / Microsoft Teams integration
+// In production, this would come from an API call to check calendar availability
+function getAvailableTimeSlots(dateString: string): TimeSlot[] {
+  const dayOfWeek = dayjs(dateString).day();
+
+  // Base time slots for a typical work day
+  const baseSlots: TimeSlot[] = [
+    { time: '08:00', label: '8:00 AM', available: true },
+    { time: '08:30', label: '8:30 AM', available: true },
+    { time: '09:00', label: '9:00 AM', available: true },
+    { time: '09:30', label: '9:30 AM', available: true },
+    { time: '10:00', label: '10:00 AM', available: true },
+    { time: '10:30', label: '10:30 AM', available: true },
+    { time: '11:00', label: '11:00 AM', available: true },
+    { time: '11:30', label: '11:30 AM', available: true },
+    { time: '13:00', label: '1:00 PM', available: true },
+    { time: '13:30', label: '1:30 PM', available: true },
+    { time: '14:00', label: '2:00 PM', available: true },
+    { time: '14:30', label: '2:30 PM', available: true },
+    { time: '15:00', label: '3:00 PM', available: true },
+    { time: '15:30', label: '3:30 PM', available: true },
+    { time: '16:00', label: '4:00 PM', available: true },
+    { time: '16:30', label: '4:30 PM', available: true },
+  ];
+
+  // Simulate different availability patterns based on day of week
+  // This mimics what a real calendar integration would return
+  const busyPatterns: Record<number, string[]> = {
+    1: ['09:00', '09:30', '14:00', '14:30'], // Monday: morning meeting, afternoon meeting
+    2: ['10:00', '10:30', '11:00', '15:00', '15:30'], // Tuesday: mid-morning block, afternoon
+    3: ['08:00', '08:30', '13:00', '13:30', '14:00'], // Wednesday: early morning, post-lunch
+    4: ['09:30', '10:00', '10:30', '16:00', '16:30'], // Thursday: mid-morning, end of day
+    5: ['11:00', '11:30', '14:00', '14:30', '15:00'], // Friday: late morning, early afternoon
+    0: [], // Sunday (shouldn't appear)
+    6: [], // Saturday (shouldn't appear)
+  };
+
+  const busyTimes = busyPatterns[dayOfWeek] || [];
+
+  return baseSlots.map(slot => ({
+    ...slot,
+    available: !busyTimes.includes(slot.time),
+  }));
+}
+
 export function StepDuration({
   duration,
   scheduledDate,
@@ -44,6 +95,8 @@ export function StepDuration({
   const handleDateChange = (date: Dayjs | null) => {
     if (date) {
       onDateChange(date.format('YYYY-MM-DD'));
+      // Clear time selection when date changes since availability differs by day
+      onTimeChange('');
     }
   };
 
@@ -117,18 +170,61 @@ export function StepDuration({
               }}
             />
           </LocalizationProvider>
-
-          <TextField
-            type="time"
-            label="Time"
-            value={scheduledTime}
-            onChange={(e) => onTimeChange(e.target.value)}
-            fullWidth
-            size="small"
-            InputLabelProps={{ shrink: true }}
-            sx={{ mt: 2 }}
-          />
         </Box>
+
+        {/* Time slot selection - appears after date is selected */}
+        {scheduledDate && (
+          <Box>
+            <Box className="flex items-center gap-2 mb-3">
+              <Clock size={16} className="text-neutral-500" />
+              <Typography className="text-sm font-medium text-neutral-700">
+                Available times
+              </Typography>
+              <Typography className="text-xs text-neutral-400 ml-auto">
+                Synced with your calendar
+              </Typography>
+            </Box>
+
+            <Box className="flex flex-wrap gap-2">
+              {getAvailableTimeSlots(scheduledDate).map((slot) => (
+                <Chip
+                  key={slot.time}
+                  label={slot.label}
+                  onClick={() => slot.available && onTimeChange(slot.time)}
+                  disabled={!slot.available}
+                  variant={scheduledTime === slot.time ? 'filled' : 'outlined'}
+                  sx={{
+                    minWidth: 80,
+                    cursor: slot.available ? 'pointer' : 'not-allowed',
+                    ...(scheduledTime === slot.time && {
+                      backgroundColor: Slate[700],
+                      color: 'white',
+                      '&:hover': {
+                        backgroundColor: Slate[800],
+                      },
+                    }),
+                    ...(!slot.available && {
+                      backgroundColor: Slate[50],
+                      borderColor: Slate[200],
+                      color: Slate[400],
+                      textDecoration: 'line-through',
+                      opacity: 0.7,
+                    }),
+                    ...(slot.available && scheduledTime !== slot.time && {
+                      borderColor: Slate[300],
+                      color: Slate[700],
+                      '&:hover': {
+                        backgroundColor: Slate[50],
+                        borderColor: Slate[400],
+                      },
+                    }),
+                  }}
+                />
+              ))}
+            </Box>
+
+          </Box>
+        )}
 
       </Box>
 
