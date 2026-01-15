@@ -175,6 +175,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
       dueDate: null,
       status: 'open',
       source: 'manual',
+      taskType: 'staff',
     };
     setLocalTasks((prev) => [newTask, ...prev]);
   };
