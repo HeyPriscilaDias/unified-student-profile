@@ -730,7 +730,7 @@ export const jessicaData: StudentData = {
 export const studentANew: Student = {
   id: 'student-a-new',
   firstName: 'Alex',
-  lastName: 'New',
+  lastName: '(new student)',
   grade: 9,
   email: 'alex.new@student.edu',
   location: 'Dallas, TX',
@@ -778,7 +778,7 @@ export const studentAData: StudentData = {
 export const studentBLowGPA: Student = {
   id: 'student-b-low-gpa',
   firstName: 'Blake',
-  lastName: 'Struggling',
+  lastName: '(struggling)',
   grade: 11,
   email: 'blake.struggling@student.edu',
   location: 'Houston, TX',
@@ -835,7 +835,7 @@ export const studentBData: StudentData = {
 export const studentCMissedDeadline: Student = {
   id: 'student-c-missed',
   firstName: 'Casey',
-  lastName: 'Behind',
+  lastName: '(behind)',
   grade: 12,
   email: 'casey.behind@student.edu',
   location: 'San Antonio, TX',
@@ -889,7 +889,7 @@ export const studentCData: StudentData = {
 export const studentDActive: Student = {
   id: 'student-d-active',
   firstName: 'Dana',
-  lastName: 'Active',
+  lastName: '(active)',
   grade: 11,
   email: 'dana.active@student.edu',
   location: 'Austin, TX',
@@ -949,7 +949,7 @@ export const studentDData: StudentData = {
 export const studentEBorderline: Student = {
   id: 'student-e-borderline',
   firstName: 'Elliott',
-  lastName: 'Borderline',
+  lastName: '(borderline)',
   grade: 10,
   email: 'elliott.borderline@student.edu',
   location: 'Fort Worth, TX',

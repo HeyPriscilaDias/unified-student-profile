@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Box, Typography, Button, LinearProgress, Paper, CircularProgress } from '@mui/material';
 import { ArrowLeft, Calendar, Sparkles } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
-import { AlmaChatPanel } from '@/components/AlmaChatPanel';
+import { SidePanel } from '@/components/SidePanel';
 import { StepDuration } from './StepDuration';
 import { StepTopicsAgenda } from './StepTopicsAgenda';
 import { generateTopicRecommendationsAsync, generateTopicRecommendations } from './topicRecommendations';
@@ -229,14 +229,12 @@ export function ScheduleMeetingPage({ studentId }: ScheduleMeetingPageProps) {
   return (
     <AppLayout
       rightPanel={
-        <AlmaChatPanel
+        <SidePanel
           studentFirstName={student.firstName}
           tasks={studentData.tasks}
           suggestedActions={studentData.suggestedActions}
-          onTaskToggle={() => {}}
-          onNewTask={() => {}}
-          onActionAccept={() => {}}
-          onActionDismiss={() => {}}
+          meetings={[]}
+          studentId={studentId}
         />
       }
       currentStudentId={studentId}

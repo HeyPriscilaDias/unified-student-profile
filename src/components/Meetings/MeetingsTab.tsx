@@ -2,29 +2,30 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, Snackbar, Alert } from '@mui/material';
+import { Box, Snackbar, Alert, Button, Collapse } from '@mui/material';
+import { Mic, ChevronDown, ChevronUp } from 'lucide-react';
 import { UpcomingMeetingsSection } from './UpcomingMeetingsSection';
 import { PastMeetingsSection } from './PastMeetingsSection';
-import { ActivityHistorySection } from './ActivityHistorySection';
 import { ScheduleMeetingModal, textToAgendaItems } from '@/components/ScheduleMeetingFlow';
+import { MeetingIntelligence } from '@/components/MeetingIntelligence';
 import type { ScheduledMeetingData as ModalScheduledMeetingData } from '@/components/ScheduleMeetingFlow/ScheduleMeetingModal';
-import type { ActivityItem, Meeting } from '@/types/student';
+import type { Meeting } from '@/types/student';
 import { useMeetingsContext } from '@/contexts/MeetingsContext';
 
 interface MeetingsTabProps {
-  activities: ActivityItem[];
   meetings: Meeting[];
   studentId: string;
   studentName: string;
 }
 
-export function MeetingsTab({ activities, meetings, studentId, studentName }: MeetingsTabProps) {
+export function MeetingsTab({ meetings, studentId, studentName }: MeetingsTabProps) {
   const router = useRouter();
   const { updateMeeting } = useMeetingsContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('Meeting scheduled successfully');
+  const [showIntelligence, setShowIntelligence] = useState(false);
 
   const handleScheduleMeeting = () => {
     setSelectedMeeting(null);
@@ -108,6 +109,54 @@ export function MeetingsTab({ activities, meetings, studentId, studentName }: Me
   return (
     <Box>
       <Box sx={{ py: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {/* Meeting Intelligence Toggle Button */}
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<Mic size={18} />}
+          endIcon={showIntelligence ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          onClick={() => setShowIntelligence(!showIntelligence)}
+          sx={{
+            justifyContent: 'space-between',
+            textTransform: 'none',
+            py: 1.5,
+            px: 2,
+            borderRadius: '8px',
+            borderColor: showIntelligence ? '#062F29' : '#D5D7DA',
+            backgroundColor: showIntelligence ? '#E9EFEE' : 'white',
+            color: '#111827',
+            fontWeight: 500,
+            fontSize: '14px',
+            '&:hover': {
+              borderColor: '#062F29',
+              backgroundColor: '#E9EFEE',
+            },
+            '& .MuiButton-startIcon': {
+              color: showIntelligence ? '#062F29' : '#6B7280',
+            },
+          }}
+        >
+          Meeting Intelligence
+        </Button>
+
+        {/* Meeting Intelligence Panel */}
+        <Collapse in={showIntelligence}>
+          <Box
+            sx={{
+              border: '1px solid #D5D7DA',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              backgroundColor: 'white',
+              minHeight: '400px',
+            }}
+          >
+            <MeetingIntelligence
+              studentName={studentName}
+              onClose={() => setShowIntelligence(false)}
+            />
+          </Box>
+        </Collapse>
+
         {/* Upcoming Meetings */}
         <UpcomingMeetingsSection
           meetings={upcomingMeetings}
@@ -121,9 +170,6 @@ export function MeetingsTab({ activities, meetings, studentId, studentName }: Me
           meetings={pastMeetings}
           onMeetingClick={handleMeetingClick}
         />
-
-        {/* Activity History (non-meeting items) */}
-        <ActivityHistorySection activities={activities} />
       </Box>
 
       {/* Schedule/Edit Meeting Modal */}

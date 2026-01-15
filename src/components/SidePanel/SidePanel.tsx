@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Typography, IconButton, TextField, InputAdornment, Checkbox, Button, FormControlLabel, Tooltip, Avatar } from '@mui/material';
-import { RotateCcw, History, Sparkles, ChevronDown, ChevronUp, Info, Send, Plus, Check, X, Lock, Globe, Calendar, Clock, ChevronRight } from 'lucide-react';
+import { Box, Typography, IconButton, TextField, Checkbox, Button, FormControlLabel, Tooltip, Avatar } from '@mui/material';
+import { Sparkles, Plus, Check, X, Lock, Globe, Calendar, Clock, ChevronRight, Info } from 'lucide-react';
 import { SubTabNavigation, AIReviewBadge } from '@/components/shared';
-import type { Task, SuggestedAction, Milestone, SmartGoal, Bookmark, StudentProfile, Meeting } from '@/types/student';
+import type { Task, SuggestedAction, Meeting } from '@/types/student';
 
-type TabType = 'alma' | 'tasks' | 'notes' | 'meetings';
+type TabType = 'tasks' | 'notes' | 'meetings';
 
 interface Note {
   id: string;
@@ -17,20 +17,8 @@ interface Note {
   createdAt: string;
 }
 
-interface StudentContext {
-  firstName: string;
-  lastName: string;
-  grade: number;
-  careerVision?: string;
-  milestones: Milestone[];
-  smartGoals: SmartGoal[];
-  bookmarks: Bookmark[];
-  profile?: StudentProfile;
-}
-
-interface AlmaChatPanelProps {
+interface SidePanelProps {
   studentFirstName: string;
-  studentContext?: StudentContext;
   tasks: Task[];
   suggestedActions: SuggestedAction[];
   meetings?: Meeting[];
@@ -43,99 +31,6 @@ interface AlmaChatPanelProps {
   onActionDismiss?: (action: SuggestedAction) => void;
   onMeetingClick?: (meeting: Meeting) => void;
   onScheduleMeeting?: () => void;
-  isFloating?: boolean;
-}
-
-function generateContextAwareSuggestions(context?: StudentContext): { initial: string[]; more: string[] } {
-  if (!context) {
-    return {
-      initial: [
-        'How to choose the best college for me?',
-        'How to choose a major?',
-      ],
-      more: [
-        'What scholarships am I eligible for?',
-        'How do I write a strong personal statement?',
-        'What extracurriculars should I focus on?',
-      ],
-    };
-  }
-
-  const suggestions: string[] = [];
-  const { firstName, grade, careerVision, milestones, smartGoals, bookmarks, profile } = context;
-
-  // Get career interests from bookmarks
-  const careerBookmarks = bookmarks.filter(b => b.type === 'career' && b.isBookmarked);
-  const schoolBookmarks = bookmarks.filter(b => b.type === 'school' && b.isBookmarked);
-
-  // Get in-progress milestones
-  const pendingMilestones = milestones.filter(m => m.status === 'not_done');
-
-  // Get active goals
-  const activeGoals = smartGoals.filter(g => g.status === 'active');
-
-  // Career-specific suggestions
-  if (careerBookmarks.length > 0) {
-    const topCareer = careerBookmarks[0];
-    suggestions.push(`What are the best pathways to become a ${topCareer.title}?`);
-    if (topCareer.tags?.includes('Healthcare')) {
-      suggestions.push(`What clinical experiences would help ${firstName}'s healthcare career goals?`);
-    }
-  }
-
-  // School-specific suggestions
-  if (schoolBookmarks.length > 0) {
-    const topSchool = schoolBookmarks[0];
-    suggestions.push(`How can ${firstName} strengthen their ${topSchool.title} application?`);
-  }
-
-  // Milestone-based suggestions
-  if (pendingMilestones.length > 0) {
-    const urgentMilestone = pendingMilestones[0];
-    if (urgentMilestone.title.toLowerCase().includes('fafsa')) {
-      suggestions.push(`What documents does ${firstName} need for FAFSA completion?`);
-    } else if (urgentMilestone.title.toLowerCase().includes('college')) {
-      suggestions.push(`What are the key deadlines ${firstName} should track?`);
-    } else if (urgentMilestone.title.toLowerCase().includes('shadow')) {
-      suggestions.push(`How can ${firstName} find job shadowing opportunities?`);
-    }
-  }
-
-  // Goal-based suggestions
-  if (activeGoals.length > 0) {
-    const topGoal = activeGoals[0];
-    if (topGoal.title.toLowerCase().includes('application')) {
-      suggestions.push(`Tips for completing ${firstName}'s remaining college applications?`);
-    } else if (topGoal.title.toLowerCase().includes('sat') || topGoal.title.toLowerCase().includes('score')) {
-      suggestions.push(`What study strategies could help ${firstName} improve test scores?`);
-    }
-  }
-
-  // Grade-level suggestions
-  if (grade === 12) {
-    suggestions.push(`What should ${firstName} know about senior year financial aid?`);
-    suggestions.push(`How to prepare for college transition?`);
-  } else if (grade === 11) {
-    suggestions.push(`What can ${firstName} do this year to prepare for college applications?`);
-  }
-
-  // Career vision suggestions
-  if (careerVision && careerVision.toLowerCase().includes('nurs')) {
-    suggestions.push(`What nursing programs align with ${firstName}'s goals?`);
-  }
-
-  // Profile-based suggestions
-  if (profile?.experiences?.some(exp => exp.type === 'volunteer')) {
-    suggestions.push(`How can ${firstName}'s volunteer experience strengthen applications?`);
-  }
-
-  // Deduplicate and split into initial and more
-  const uniqueSuggestions = [...new Set(suggestions)];
-
-  return {
-    initial: uniqueSuggestions.slice(0, 2),
-    more: uniqueSuggestions.slice(2, 5),
-  };
 }
 
 function TaskItem({
@@ -505,7 +400,6 @@ function NoteItem({ note }: { note: Note }) {
         },
       }}
     >
-      {/* Author info and date */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
         <Avatar
           src={note.authorAvatar}
@@ -529,7 +423,6 @@ function NoteItem({ note }: { note: Note }) {
           </Box>
         </Box>
       </Box>
-      {/* Note content */}
       <Typography sx={{ fontSize: '14px', color: '#374151', lineHeight: 1.5, pl: 5.5 }}>
         {note.content}
       </Typography>
@@ -537,24 +430,25 @@ function NoteItem({ note }: { note: Note }) {
   );
 }
 
-export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggestedActions, meetings = [], studentId, onTaskToggle, onNewTask, onTaskEdit, onTaskDelete, onActionAccept, onActionDismiss, onMeetingClick, onScheduleMeeting, isFloating = false }: AlmaChatPanelProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('alma');
-  const [message, setMessage] = useState('');
-  const [showMoreSuggestions, setShowMoreSuggestions] = useState(false);
+export function SidePanel({
+  studentFirstName,
+  tasks,
+  suggestedActions,
+  meetings = [],
+  studentId,
+  onTaskToggle,
+  onNewTask,
+  onTaskEdit,
+  onTaskDelete,
+  onActionAccept,
+  onActionDismiss,
+  onMeetingClick,
+  onScheduleMeeting,
+}: SidePanelProps) {
+  const [activeTab, setActiveTab] = useState<TabType>('tasks');
   const [taskFilter, setTaskFilter] = useState<'open' | 'completed'>('open');
-
-  // Generate context-aware suggestions based on student data
-  const contextSuggestions = generateContextAwareSuggestions(studentContext);
-
-  // Debug: log the context and suggestions
-  console.log('AlmaChatPanel studentContext:', studentContext);
-  console.log('Generated suggestions:', contextSuggestions);
-
-  // New task input state
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
-
-  // Notes state
   const [noteText, setNoteText] = useState('');
   const [noteVisibility, setNoteVisibility] = useState<'private' | 'public'>('private');
   const [notes, setNotes] = useState<Note[]>([]);
@@ -563,32 +457,6 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
   const openCount = tasks.filter((t) => t.status === 'open').length;
   const completedCount = tasks.filter((t) => t.status === 'completed').length;
   const pendingActions = suggestedActions.filter((a) => a.status === 'pending');
-
-  const handleSend = () => {
-    if (message.trim()) {
-      console.log('Send message:', message);
-      setMessage('');
-    }
-  };
-
-  const handleSuggestionClick = (suggestion: string) => {
-    console.log('Suggestion clicked:', suggestion);
-  };
-
-  const handleReset = () => {
-    console.log('Reset chat');
-  };
-
-  const handleHistory = () => {
-    console.log('View history');
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
 
   const handleSubmitNote = () => {
     if (noteText.trim()) {
@@ -624,13 +492,13 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
   return (
     <Box
       sx={{
-        width: isFloating ? '100%' : '350px',
-        height: isFloating ? '100%' : '100vh',
-        position: isFloating ? 'relative' : 'fixed',
-        right: isFloating ? 'auto' : 0,
-        top: isFloating ? 'auto' : 0,
+        width: '350px',
+        height: '100vh',
+        position: 'fixed',
+        right: 0,
+        top: 0,
         backgroundColor: '#fff',
-        borderLeft: isFloating ? 'none' : '1px solid #E5E7EB',
+        borderLeft: '1px solid #E5E7EB',
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -642,11 +510,6 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
           borderBottom: '1px solid #E5E7EB',
         }}
       >
-        <TabButton
-          label="Alma"
-          isActive={activeTab === 'alma'}
-          onClick={() => setActiveTab('alma')}
-        />
         <TabButton
           label="Tasks"
           isActive={activeTab === 'tasks'}
@@ -663,250 +526,6 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
           onClick={() => setActiveTab('notes')}
         />
       </Box>
-
-      {/* Alma Tab Content */}
-      {activeTab === 'alma' && (
-        <>
-          {/* Alma Header */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              px: 2,
-              py: 1.5,
-              borderBottom: '1px solid #E5E7EB',
-            }}
-          >
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                backgroundColor: '#12B76A',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Sparkles size={18} color="#fff" />
-            </Box>
-            <Typography
-              sx={{
-                fontSize: '14px',
-                fontWeight: 600,
-                color: '#111827',
-                flex: 1,
-              }}
-            >
-              Alma AI Coach
-            </Typography>
-            <IconButton
-              size="small"
-              onClick={handleReset}
-              sx={{
-                color: '#6B7280',
-                fontSize: '13px',
-                gap: 0.5,
-                borderRadius: '6px',
-                '&:hover': { backgroundColor: '#F3F4F6' },
-              }}
-            >
-              <RotateCcw size={14} />
-              <Typography component="span" sx={{ fontSize: '13px' }}>
-                Reset
-              </Typography>
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={handleHistory}
-              sx={{
-                color: '#6B7280',
-                fontSize: '13px',
-                gap: 0.5,
-                borderRadius: '6px',
-                '&:hover': { backgroundColor: '#F3F4F6' },
-              }}
-            >
-              <History size={14} />
-              <Typography component="span" sx={{ fontSize: '13px' }}>
-                History
-              </Typography>
-            </IconButton>
-          </Box>
-
-          {/* Chat Area */}
-          <Box
-            sx={{
-              flex: 1,
-              overflowY: 'auto',
-              px: 2,
-              py: 2,
-            }}
-          >
-            {/* Welcome Message */}
-            <Typography
-              sx={{
-                fontSize: '14px',
-                color: '#374151',
-                lineHeight: 1.5,
-              }}
-            >
-              {studentFirstName
-                ? `Hey Sarah, how can I help you support ${studentFirstName} today?`
-                : 'Hey Sarah, how can I help you today?'}
-            </Typography>
-          </Box>
-
-          {/* Suggestions & Input */}
-          <Box
-            sx={{
-              borderTop: '1px solid #E5E7EB',
-              px: 2,
-              py: 2,
-            }}
-          >
-            {/* Suggestions */}
-            <Box sx={{ mb: 2 }}>
-              {contextSuggestions.initial.map((suggestion) => (
-                <Box
-                  key={suggestion}
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 1,
-                    py: 0.75,
-                    cursor: 'pointer',
-                    '&:hover': {
-                      '& .suggestion-text': {
-                        color: '#062F29',
-                      },
-                    },
-                  }}
-                >
-                  <Sparkles size={16} color="#12B76A" style={{ marginTop: 2, flexShrink: 0 }} />
-                  <Typography
-                    className="suggestion-text"
-                    sx={{
-                      fontSize: '13px',
-                      color: '#374151',
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    {suggestion}
-                  </Typography>
-                </Box>
-              ))}
-
-              {showMoreSuggestions &&
-                contextSuggestions.more.map((suggestion) => (
-                  <Box
-                    key={suggestion}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 1,
-                      py: 0.75,
-                      cursor: 'pointer',
-                      '&:hover': {
-                        '& .suggestion-text': {
-                          color: '#062F29',
-                        },
-                      },
-                    }}
-                  >
-                    <Sparkles size={16} color="#12B76A" style={{ marginTop: 2, flexShrink: 0 }} />
-                    <Typography
-                      className="suggestion-text"
-                      sx={{
-                        fontSize: '13px',
-                        color: '#374151',
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {suggestion}
-                    </Typography>
-                  </Box>
-                ))}
-
-              {/* More suggestions toggle - only show if there are more suggestions */}
-              {contextSuggestions.more.length > 0 && (
-                <Box
-                  onClick={() => setShowMoreSuggestions(!showMoreSuggestions)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.5,
-                    pt: 0.5,
-                    cursor: 'pointer',
-                    color: '#6B7280',
-                    '&:hover': { color: '#374151' },
-                  }}
-                >
-                  {showMoreSuggestions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  <Typography sx={{ fontSize: '13px' }}>
-                    {showMoreSuggestions ? 'Less suggestions' : 'More suggestions'}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-
-            {/* Input */}
-            <TextField
-              fullWidth
-              placeholder="Message Alma..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              size="small"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '24px',
-                  backgroundColor: '#F9FAFB',
-                  fontSize: '14px',
-                  '& fieldset': {
-                    borderColor: '#E5E7EB',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#D1D5DB',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#062F29',
-                  },
-                },
-              }}
-              slotProps={{
-                input: {
-                  endAdornment: (
-                    <InputAdornment position="end" sx={{ gap: 0.5 }}>
-                      <IconButton size="small" sx={{ color: '#9CA3AF' }}>
-                        <Info size={18} />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={handleSend}
-                        sx={{
-                          backgroundColor: '#062F29',
-                          color: '#fff',
-                          width: 28,
-                          height: 28,
-                          '&:hover': {
-                            backgroundColor: '#2B4C46',
-                          },
-                        }}
-                      >
-                        <Send size={14} />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-          </Box>
-        </>
-      )}
 
       {/* Tasks Tab Content */}
       {activeTab === 'tasks' && (
@@ -985,7 +604,6 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
 
           {/* Tasks list */}
           <Box sx={{ flex: 1, px: 2, py: 1, overflowY: 'auto' }}>
-            {/* New task input - shown at top when adding */}
             {isAddingTask && taskFilter === 'open' && (
               <Box
                 sx={{
@@ -1319,7 +937,6 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
               borderBottom: '1px solid #E5E7EB',
             }}
           >
-            {/* Multi-line text input */}
             <TextField
               fullWidth
               multiline
@@ -1429,4 +1046,4 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
   );
 }
 
-export default AlmaChatPanel;
+export default SidePanel;

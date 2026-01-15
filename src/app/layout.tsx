@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { MeetingsProvider } from "../contexts/MeetingsContext";
+import { AlmaChatProvider } from "../contexts/AlmaChatContext";
+import { FloatingAlmaChat } from "../components/FloatingAlmaChat";
 
 export const metadata: Metadata = {
   title: "Unified Student Profile",
@@ -18,7 +20,10 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <MeetingsProvider>
-            {children}
+            <AlmaChatProvider>
+              {children}
+              <FloatingAlmaChat />
+            </AlmaChatProvider>
           </MeetingsProvider>
         </ThemeProvider>
       </body>

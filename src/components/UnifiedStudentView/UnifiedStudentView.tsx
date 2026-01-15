@@ -12,7 +12,7 @@ import { PostsecondaryTab } from '@/components/Postsecondary';
 import { StudentWorkTab } from '@/components/StudentWork';
 import { ActivityTab } from '@/components/Activity';
 import { LoadingSection } from '@/components/shared';
-import { AlmaChatPanel } from '@/components/AlmaChatPanel';
+import { SidePanel } from '@/components/SidePanel';
 import { ScheduleMeetingModal } from '@/components/ScheduleMeetingFlow';
 import type { ScheduledMeetingData } from '@/components/ScheduleMeetingFlow/ScheduleMeetingModal';
 import { useStudentData } from '@/hooks/useStudentData';
@@ -157,6 +157,64 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     }
   };
 
+  // Toggle task between open and completed
+  const handleTaskToggle = (task: Task) => {
+    setLocalTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id
+          ? { ...t, status: t.status === 'open' ? 'completed' : 'open' }
+          : t
+      )
+    );
+  };
+
+  const handleNewTask = (title: string) => {
+    const newTask: Task = {
+      id: `task-${Date.now()}`,
+      title,
+      dueDate: null,
+      status: 'open',
+      source: 'manual',
+    };
+    setLocalTasks((prev) => [newTask, ...prev]);
+  };
+
+  const handleTaskEdit = (taskId: string, newTitle: string) => {
+    setLocalTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, title: newTitle } : t))
+    );
+  };
+
+  const handleTaskDelete = (taskId: string) => {
+    setLocalTasks((prev) => prev.filter((t) => t.id !== taskId));
+  };
+
+  // Accept suggested action: convert to task and mark action as accepted
+  const handleActionAccept = (action: SuggestedAction) => {
+    const newTask: Task = {
+      id: `task-from-action-${action.id}`,
+      title: action.title,
+      dueDate: null,
+      status: 'open',
+      source: 'suggested_action',
+    };
+    setLocalTasks((prev) => [newTask, ...prev]);
+    setLocalSuggestedActions((prev) =>
+      prev.map((a) =>
+        a.id === action.id ? { ...a, status: 'accepted' } : a
+      )
+    );
+  };
+
+  // Dismiss suggested action
+  const handleActionDismiss = (action: SuggestedAction) => {
+    setLocalSuggestedActions((prev) =>
+      prev.map((a) =>
+        a.id === action.id ? { ...a, status: 'dismissed' } : a
+      )
+    );
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
@@ -192,87 +250,11 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     }
   };
 
-  // Toggle task between open and completed
-  const handleTaskToggle = (task: Task) => {
-    setLocalTasks((prev) =>
-      prev.map((t) =>
-        t.id === task.id
-          ? { ...t, status: t.status === 'open' ? 'completed' : 'open' }
-          : t
-      )
-    );
-  };
-
-  const handleNewTask = (title: string) => {
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
-      title,
-      dueDate: null,
-      status: 'open',
-      source: 'manual',
-    };
-    setLocalTasks((prev) => [newTask, ...prev]);
-  };
-
-  const handleTaskEdit = (taskId: string, newTitle: string) => {
-    setLocalTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, title: newTitle } : t))
-    );
-  };
-
-  const handleTaskDelete = (taskId: string) => {
-    setLocalTasks((prev) => prev.filter((t) => t.id !== taskId));
-  };
-
-  // Accept suggested action: convert to task and mark action as accepted
-  const handleActionAccept = (action: SuggestedAction) => {
-    // Create new task from the suggested action
-    const newTask: Task = {
-      id: `task-from-action-${action.id}`,
-      title: action.title,
-      dueDate: null,
-      status: 'open',
-      source: 'suggested_action',
-    };
-
-    // Add to tasks
-    setLocalTasks((prev) => [newTask, ...prev]);
-
-    // Mark action as accepted (removes from pending list)
-    setLocalSuggestedActions((prev) =>
-      prev.map((a) =>
-        a.id === action.id ? { ...a, status: 'accepted' } : a
-      )
-    );
-  };
-
-  // Dismiss suggested action: mark as dismissed (removes from list)
-  const handleActionDismiss = (action: SuggestedAction) => {
-    setLocalSuggestedActions((prev) =>
-      prev.map((a) =>
-        a.id === action.id ? { ...a, status: 'dismissed' } : a
-      )
-    );
-  };
-
-  // Build student context for Alma panel
-  const studentContext = {
-    firstName: student.firstName,
-    lastName: student.lastName,
-    grade: student.grade,
-    careerVision: profile.careerVision,
-    milestones,
-    smartGoals,
-    bookmarks,
-    profile,
-  };
-
   return (
     <AppLayout
       rightPanel={
-        <AlmaChatPanel
+        <SidePanel
           studentFirstName={student.firstName}
-          studentContext={studentContext}
           tasks={localTasks}
           suggestedActions={localSuggestedActions}
           meetings={meetings}
