@@ -13,11 +13,10 @@ import { StudentWorkTab } from '@/components/StudentWork';
 import { ActivityTab } from '@/components/Activity';
 import { LoadingSection } from '@/components/shared';
 import { SidePanel, SidePanelTabType } from '@/components/SidePanel';
-import { ScheduleMeetingModal } from '@/components/ScheduleMeetingFlow';
-import type { ScheduledMeetingData } from '@/components/ScheduleMeetingFlow/ScheduleMeetingModal';
+import { AddInteractionModal } from '@/components/ScheduleInteractionFlow';
 import { useStudentData } from '@/hooks/useStudentData';
-import { useMeetings, useMeetingsContext } from '@/contexts/MeetingsContext';
-import type { TabType, Task, SuggestedAction, Meeting } from '@/types/student';
+import { useInteractions, useInteractionsContext } from '@/contexts/InteractionsContext';
+import type { TabType, Task, SuggestedAction, Interaction } from '@/types/student';
 
 interface UnifiedStudentViewProps {
   studentId: string;
@@ -30,13 +29,16 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   const [isGeneratingSnapshot, setIsGeneratingSnapshot] = useState(false);
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
+  const [isAddInteractionModalOpen, setIsAddInteractionModalOpen] = useState(false);
   const [sidePanelTab, setSidePanelTab] = useState<SidePanelTabType>('tasks');
-  const [showScheduledToast, setShowScheduledToast] = useState(false);
+  const [showInteractionToast, setShowInteractionToast] = useState(false);
 
   const studentData = useStudentData(studentId);
-  const { addMeeting, updateMeeting, completeMeeting } = useMeetingsContext();
+  const { addInteraction } = useInteractionsContext();
+
+  // Use interactions from context (allows adding new interactions)
+  // Must be called before any conditional returns to follow rules of hooks
+  const interactions = useInteractions(studentId, studentData?.interactions ?? []);
 
   // Handle tab query parameter
   useEffect(() => {
@@ -74,8 +76,6 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     student,
     profile,
     milestones,
-    tasks,
-    suggestedActions,
     smartGoals,
     almaSnapshot,
     bookmarks,
@@ -83,11 +83,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     studentWork,
     activityHistory,
     aiReflections,
-    meetings: initialMeetings,
   } = studentData;
-
-  // Use meetings from context (allows adding new meetings)
-  const meetings = useMeetings(studentId, initialMeetings);
 
   const handleGenerateSnapshot = () => {
     setIsGeneratingSnapshot(true);
@@ -97,67 +93,43 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     }, 2000);
   };
 
-  const handleOpenScheduleModal = () => {
-    setSelectedMeeting(null);
-    setIsScheduleModalOpen(true);
+  const handleOpenAddInteractionModal = () => {
+    setIsAddInteractionModalOpen(true);
   };
 
-  const handleCloseScheduleModal = () => {
-    setIsScheduleModalOpen(false);
-    setSelectedMeeting(null);
+  const handleCloseAddInteractionModal = () => {
+    setIsAddInteractionModalOpen(false);
   };
 
-  const handleMeetingScheduled = (data: ScheduledMeetingData) => {
-    addMeeting({
+  const handleAddSummary = (interactionDate: string) => {
+    // Create a new interaction and navigate to detail view in summary-edit mode
+    const newInteraction = addInteraction({
       studentId,
-      title: data.title,
-      scheduledDate: data.scheduledDate,
-      duration: data.duration,
-      agenda: [],
-      notes: data.agenda, // Store the text as notes
+      title: `Interaction with ${student?.firstName || 'Student'}`,
+      interactionDate,
+      summary: '',
     });
-    setIsScheduleModalOpen(false);
-    setSelectedMeeting(null);
-    // Show toast and switch to meetings tab
-    setShowScheduledToast(true);
-    setSidePanelTab('meetings');
+    setIsAddInteractionModalOpen(false);
+    // Navigate to interaction detail page (summary-only mode)
+    router.push(`/students/${studentId}/interactions/${newInteraction.id}?mode=summary`);
   };
 
-  const handleMeetingSaved = (data: ScheduledMeetingData) => {
-    if (!selectedMeeting) return;
-
-    updateMeeting({
-      id: selectedMeeting.id,
-      studentId: selectedMeeting.studentId,
-      title: data.title,
-      scheduledDate: data.scheduledDate,
-      duration: data.duration,
-      notes: data.agenda, // Store the text as notes
+  const handleStartRecording = (interactionDate: string) => {
+    // Create a new interaction and navigate to detail view with recording started
+    const newInteraction = addInteraction({
+      studentId,
+      title: `Interaction with ${student?.firstName || 'Student'}`,
+      interactionDate,
+      summary: '',
     });
-
-    setIsScheduleModalOpen(false);
-    setSelectedMeeting(null);
+    setIsAddInteractionModalOpen(false);
+    // Navigate to interaction detail page with recording auto-start
+    router.push(`/students/${studentId}/interactions/${newInteraction.id}?startInteraction=true`);
   };
 
-  const handleMeetingCompleted = (notes: string) => {
-    if (selectedMeeting) {
-      completeMeeting(studentId, selectedMeeting.id, notes);
-      setIsScheduleModalOpen(false);
-      setSelectedMeeting(null);
-      // Switch to meetings tab to show the meeting moved to past
-      setSidePanelTab('meetings');
-    }
-  };
-
-  const handleMeetingClick = (meeting: Meeting) => {
-    // For upcoming/scheduled meetings, open the edit modal
-    if (meeting.status === 'scheduled' || meeting.status === 'in_progress') {
-      setSelectedMeeting(meeting);
-      setIsScheduleModalOpen(true);
-    } else {
-      // For past/completed meetings, navigate to detail page
-      router.push(`/students/${meeting.studentId}/meetings/${meeting.id}`);
-    }
+  const handleInteractionClick = (interaction: Interaction) => {
+    // Navigate to interaction detail page
+    router.push(`/students/${interaction.studentId}/interactions/${interaction.id}`);
   };
 
   // Toggle task between open and completed
@@ -262,7 +234,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
           studentFirstName={student.firstName}
           tasks={localTasks}
           suggestedActions={localSuggestedActions}
-          meetings={meetings}
+          interactions={interactions}
           studentId={studentId}
           activeTab={sidePanelTab}
           onTabChange={setSidePanelTab}
@@ -272,8 +244,8 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
           onTaskDelete={handleTaskDelete}
           onActionAccept={handleActionAccept}
           onActionDismiss={handleActionDismiss}
-          onMeetingClick={handleMeetingClick}
-          onScheduleMeeting={handleOpenScheduleModal}
+          onInteractionClick={handleInteractionClick}
+          onScheduleInteraction={handleOpenAddInteractionModal}
         />
       }
       currentStudentId={studentId}
@@ -288,7 +260,6 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
         <StudentHeader
           student={student}
           studentId={studentId}
-          onScheduleMeeting={handleOpenScheduleModal}
         />
 
         {/* Tab Navigation */}
@@ -303,30 +274,28 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
         </Box>
       </Box>
 
-      {/* Schedule Meeting Modal */}
-      <ScheduleMeetingModal
-        open={isScheduleModalOpen}
-        onClose={handleCloseScheduleModal}
-        onSchedule={handleMeetingScheduled}
-        onSave={handleMeetingSaved}
-        studentId={studentId}
+      {/* Add Interaction Modal */}
+      <AddInteractionModal
+        open={isAddInteractionModalOpen}
+        onClose={handleCloseAddInteractionModal}
+        onAddSummary={handleAddSummary}
+        onStartRecording={handleStartRecording}
         studentName={student.firstName}
-        existingMeeting={selectedMeeting}
       />
 
-      {/* Meeting Scheduled Toast */}
+      {/* Interaction Created Toast */}
       <Snackbar
-        open={showScheduledToast}
+        open={showInteractionToast}
         autoHideDuration={4000}
-        onClose={() => setShowScheduledToast(false)}
+        onClose={() => setShowInteractionToast(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
-          onClose={() => setShowScheduledToast(false)}
+          onClose={() => setShowInteractionToast(false)}
           severity="success"
           sx={{ width: '100%' }}
         >
-          Meeting scheduled successfully
+          Interaction created successfully
         </Alert>
       </Snackbar>
     </AppLayout>

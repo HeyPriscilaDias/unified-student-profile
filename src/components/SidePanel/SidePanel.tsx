@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Typography, IconButton, TextField, Checkbox, Button, FormControlLabel, Avatar } from '@mui/material';
-import { Sparkles, Plus, Check, X, Lock, Globe, Calendar, Clock, ChevronRight } from 'lucide-react';
+import { Box, Typography, IconButton, TextField, Checkbox, Button, FormControlLabel, Avatar, Fab, useMediaQuery, useTheme } from '@mui/material';
+import { Sparkles, Plus, Check, X, Lock, Globe, MessageSquare, Mic, ChevronRight } from 'lucide-react';
 import { SubTabNavigation, AIReviewBadge } from '@/components/shared';
-import type { Task, SuggestedAction, Meeting } from '@/types/student';
+import type { Task, SuggestedAction, Interaction } from '@/types/student';
 
-export type SidePanelTabType = 'tasks' | 'notes' | 'meetings';
+export type SidePanelTabType = 'tasks' | 'notes' | 'interactions';
 type TabType = SidePanelTabType;
 
 interface Note {
@@ -22,7 +22,7 @@ interface SidePanelProps {
   studentFirstName: string;
   tasks: Task[];
   suggestedActions: SuggestedAction[];
-  meetings?: Meeting[];
+  interactions?: Interaction[];
   studentId?: string;
   activeTab?: TabType;
   onTabChange?: (tab: TabType) => void;
@@ -32,8 +32,8 @@ interface SidePanelProps {
   onTaskDelete?: (taskId: string) => void;
   onActionAccept?: (action: SuggestedAction) => void;
   onActionDismiss?: (action: SuggestedAction) => void;
-  onMeetingClick?: (meeting: Meeting) => void;
-  onScheduleMeeting?: () => void;
+  onInteractionClick?: (interaction: Interaction) => void;
+  onScheduleInteraction?: () => void;
 }
 
 function TaskItem({
@@ -204,7 +204,7 @@ function ActionItem({
         </Typography>
         {action.sourceDate && (
           <Typography sx={{ fontSize: '12px', color: '#6B7280', mt: 0.5 }}>
-            From {action.source === 'meeting_notes' ? 'meeting notes' : 'Alma snapshot'} - {action.sourceDate}
+            From {action.source === 'meeting_summary' ? 'meeting summary' : 'Alma snapshot'} - {action.sourceDate}
           </Typography>
         )}
       </Box>
@@ -301,30 +301,10 @@ function TabButton({
   );
 }
 
-function formatMeetingDate(dateStr: string) {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const meetingDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-  if (meetingDate.getTime() === today.getTime()) {
-    return `Today, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-  } else if (meetingDate.getTime() === tomorrow.getTime()) {
-    return `Tomorrow, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-  }
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
-function formatPastMeetingDate(dateStr: string) {
-  const date = new Date(dateStr);
+function formatInteractionDate(dateStr: string) {
+  // Handle YYYY-MM-DD format
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -332,16 +312,15 @@ function formatPastMeetingDate(dateStr: string) {
   });
 }
 
-function MeetingItem({
-  meeting,
+function InteractionItem({
+  interaction,
   onClick,
-  variant = 'upcoming',
 }: {
-  meeting: Meeting;
+  interaction: Interaction;
   onClick?: () => void;
-  variant?: 'upcoming' | 'past';
 }) {
-  const isUpcoming = variant === 'upcoming';
+  const hasRecording = !!interaction.recordingUrl || !!interaction.transcript;
+  const isPlanned = interaction.status === 'planned';
 
   return (
     <Box
@@ -354,10 +333,10 @@ function MeetingItem({
         px: 1.5,
         borderRadius: '8px',
         cursor: onClick ? 'pointer' : 'default',
-        backgroundColor: isUpcoming ? '#F0FDF4' : '#F9FAFB',
-        border: isUpcoming ? '1px solid #BBF7D0' : '1px solid #E5E7EB',
+        backgroundColor: isPlanned ? '#FFFBEB' : '#F9FAFB',
+        border: isPlanned ? '1px solid #FDE68A' : '1px solid #E5E7EB',
         '&:hover': onClick ? {
-          backgroundColor: isUpcoming ? '#DCFCE7' : '#F3F4F6',
+          backgroundColor: isPlanned ? '#FEF3C7' : '#F3F4F6',
         } : {},
       }}
     >
@@ -366,40 +345,58 @@ function MeetingItem({
           width: 32,
           height: 32,
           borderRadius: '6px',
-          backgroundColor: isUpcoming ? '#22C55E' : '#9CA3AF',
+          backgroundColor: isPlanned ? '#F59E0B' : hasRecording ? '#062F29' : '#6B7280',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
         }}
       >
-        <Calendar size={16} color="#fff" />
+        {hasRecording ? <Mic size={16} color="#fff" /> : <MessageSquare size={16} color="#fff" />}
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography
-          sx={{
-            fontSize: '14px',
-            fontWeight: 500,
-            color: '#111827',
-            mb: 0.25,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {meeting.title}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
+          <Typography
+            sx={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: '#111827',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {interaction.title}
+          </Typography>
+          {isPlanned && (
+            <Box
+              sx={{
+                px: 1,
+                py: 0.25,
+                borderRadius: '4px',
+                backgroundColor: '#FEF3C7',
+                fontSize: '10px',
+                fontWeight: 600,
+                color: '#B45309',
+                textTransform: 'uppercase',
+              }}
+            >
+              Planned
+            </Box>
+          )}
+        </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
-            {isUpcoming ? formatMeetingDate(meeting.scheduledDate) : formatPastMeetingDate(meeting.scheduledDate)}
+            {formatInteractionDate(interaction.interactionDate)}
           </Typography>
-          <Typography sx={{ fontSize: '12px', color: '#9CA3AF' }}>•</Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Clock size={12} color="#9CA3AF" />
-            <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
-              {meeting.duration} min
-            </Typography>
-          </Box>
+          {hasRecording && !isPlanned && (
+            <>
+              <Typography sx={{ fontSize: '12px', color: '#9CA3AF' }}>•</Typography>
+              <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
+                Recorded
+              </Typography>
+            </>
+          )}
         </Box>
       </Box>
       {onClick && (
@@ -460,11 +457,11 @@ function NoteItem({ note }: { note: Note }) {
 }
 
 export function SidePanel({
-  studentFirstName,
+  studentFirstName: _studentFirstName,
   tasks,
   suggestedActions,
-  meetings = [],
-  studentId,
+  interactions = [],
+  studentId: _studentId,
   activeTab: controlledActiveTab,
   onTabChange,
   onTaskToggle,
@@ -473,9 +470,11 @@ export function SidePanel({
   onTaskDelete,
   onActionAccept,
   onActionDismiss,
-  onMeetingClick,
-  onScheduleMeeting,
+  onInteractionClick,
+  onScheduleInteraction,
 }: SidePanelProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [internalActiveTab, setInternalActiveTab] = useState<TabType>('tasks');
 
   // Support both controlled and uncontrolled modes
@@ -559,12 +558,12 @@ export function SidePanel({
           onClick={() => setActiveTab('tasks')}
         />
         <TabButton
-          label="Meetings"
-          isActive={activeTab === 'meetings'}
-          onClick={() => setActiveTab('meetings')}
+          label="Interactions"
+          isActive={activeTab === 'interactions'}
+          onClick={() => setActiveTab('interactions')}
         />
         <TabButton
-          label="Notepad"
+          label="Notes"
           isActive={activeTab === 'notes'}
           onClick={() => setActiveTab('notes')}
         />
@@ -725,7 +724,7 @@ export function SidePanel({
                     mb: 2,
                   }}
                 >
-                  {taskFilter === 'open' ? 'No open tasks' : 'No completed tasks'}
+                  {taskFilter === 'open' ? 'No active tasks for this student.' : 'No completed tasks'}
                 </Typography>
                 {taskFilter === 'open' && (
                   <Button
@@ -742,7 +741,7 @@ export function SidePanel({
                       },
                     }}
                   >
-                    New task
+                    Add task
                   </Button>
                 )}
               </Box>
@@ -762,7 +761,7 @@ export function SidePanel({
                         mt: 1,
                       }}
                     >
-                      Staff Tasks
+                      Counselor tasks
                     </Typography>
                     {staffTasks.map((task) => (
                       <TaskItem
@@ -790,7 +789,7 @@ export function SidePanel({
                         mt: 1,
                       }}
                     >
-                      Student Tasks
+                      Student tasks
                     </Typography>
                     {studentTasks.map((task) => (
                       <TaskItem
@@ -807,7 +806,7 @@ export function SidePanel({
             )}
           </Box>
 
-          {/* New task button */}
+          {/* Add task button */}
           {taskFilter === 'open' && filteredTasks.length > 0 && !isAddingTask && (
             <Box
               sx={{
@@ -831,24 +830,25 @@ export function SidePanel({
                   },
                 }}
               >
-                New task
+                Add task
               </Button>
             </Box>
           )}
         </Box>
       )}
 
-      {/* Meetings Tab Content */}
-      {activeTab === 'meetings' && (
+      {/* Interactions Tab Content */}
+      {activeTab === 'interactions' && (
         <Box
           sx={{
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
             overflowY: 'auto',
+            position: 'relative',
           }}
         >
-          {/* Meetings Header */}
+          {/* Interactions Header */}
           <Box
             sx={{
               display: 'flex',
@@ -866,129 +866,106 @@ export function SidePanel({
                 color: '#111827',
               }}
             >
-              Meetings
+              Interactions
             </Typography>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<Calendar size={14} />}
-              onClick={onScheduleMeeting}
+            {/* Desktop: Show button in header */}
+            {!isMobile && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Plus size={14} />}
+                onClick={onScheduleInteraction}
+                sx={{
+                  textTransform: 'none',
+                  fontSize: '13px',
+                  borderColor: '#E5E7EB',
+                  color: '#374151',
+                  '&:hover': {
+                    borderColor: '#D1D5DB',
+                    backgroundColor: '#F9FAFB',
+                  },
+                }}
+              >
+                Add interaction
+              </Button>
+            )}
+          </Box>
+
+          {/* Mobile: FAB for Add interaction */}
+          {isMobile && (
+            <Fab
+              color="primary"
+              aria-label="Add interaction"
+              onClick={onScheduleInteraction}
               sx={{
-                textTransform: 'none',
-                fontSize: '13px',
-                borderColor: '#E5E7EB',
-                color: '#374151',
+                position: 'absolute',
+                bottom: 24,
+                right: 24,
+                backgroundColor: '#062F29',
                 '&:hover': {
-                  borderColor: '#D1D5DB',
-                  backgroundColor: '#F9FAFB',
+                  backgroundColor: '#2B4C46',
                 },
               }}
             >
-              Schedule
-            </Button>
-          </Box>
+              <Plus size={24} />
+            </Fab>
+          )}
 
-          {/* Meetings list */}
+          {/* Interactions list */}
           <Box sx={{ flex: 1, px: 2, py: 2, overflowY: 'auto' }}>
             {(() => {
-              const upcomingMeetings = meetings.filter(
-                (m) => m.status === 'scheduled' || m.status === 'in_progress'
-              ).sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
-              const pastMeetings = meetings.filter(
-                (m) => m.status === 'completed'
-              ).sort((a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime());
+              // Sort interactions: planned first (by date ascending), then completed (by date descending)
+              const plannedInteractions = interactions
+                .filter(i => i.status === 'planned')
+                .sort((a, b) => a.interactionDate.localeCompare(b.interactionDate));
+              const completedInteractions = interactions
+                .filter(i => i.status === 'completed')
+                .sort((a, b) => b.interactionDate.localeCompare(a.interactionDate));
+              const sortedInteractions = [...plannedInteractions, ...completedInteractions];
 
-              if (meetings.length === 0) {
+              if (interactions.length === 0) {
                 return (
                   <Box sx={{ textAlign: 'center', py: 4 }}>
-                    <Calendar size={32} color="#D1D5DB" style={{ margin: '0 auto 12px' }} />
+                    <MessageSquare size={32} color="#D1D5DB" style={{ margin: '0 auto 12px' }} />
                     <Typography sx={{ fontSize: '14px', color: '#6B7280', mb: 1 }}>
-                      No meetings scheduled
+                      No interactions logged yet.
                     </Typography>
                     <Typography sx={{ fontSize: '13px', color: '#9CA3AF' }}>
-                      Schedule a meeting to discuss {studentFirstName}&apos;s progress
+                      Add an interaction to start tracking conversations.
                     </Typography>
                   </Box>
                 );
               }
 
               return (
-                <>
-                  {/* Upcoming Meetings */}
-                  {upcomingMeetings.length > 0 && (
-                    <Box sx={{ mb: 3 }}>
-                      <Typography
-                        sx={{
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: '#6B7280',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          mb: 1.5,
-                        }}
-                      >
-                        Upcoming
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        {upcomingMeetings.map((meeting) => (
-                          <MeetingItem
-                            key={meeting.id}
-                            meeting={meeting}
-                            variant="upcoming"
-                            onClick={() => onMeetingClick?.(meeting)}
-                          />
-                        ))}
-                      </Box>
-                    </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {sortedInteractions.slice(0, 10).map((interaction) => (
+                    <InteractionItem
+                      key={interaction.id}
+                      interaction={interaction}
+                      onClick={() => onInteractionClick?.(interaction)}
+                    />
+                  ))}
+                  {sortedInteractions.length > 10 && (
+                    <Typography
+                      sx={{
+                        fontSize: '13px',
+                        color: '#6B7280',
+                        textAlign: 'center',
+                        py: 1,
+                      }}
+                    >
+                      + {sortedInteractions.length - 10} more interactions
+                    </Typography>
                   )}
-
-                  {/* Past Meetings */}
-                  {pastMeetings.length > 0 && (
-                    <Box>
-                      <Typography
-                        sx={{
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: '#6B7280',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          mb: 1.5,
-                        }}
-                      >
-                        Past
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        {pastMeetings.slice(0, 5).map((meeting) => (
-                          <MeetingItem
-                            key={meeting.id}
-                            meeting={meeting}
-                            variant="past"
-                            onClick={() => onMeetingClick?.(meeting)}
-                          />
-                        ))}
-                        {pastMeetings.length > 5 && (
-                          <Typography
-                            sx={{
-                              fontSize: '13px',
-                              color: '#6B7280',
-                              textAlign: 'center',
-                              py: 1,
-                            }}
-                          >
-                            + {pastMeetings.length - 5} more past meetings
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  )}
-                </>
+                </Box>
               );
             })()}
           </Box>
         </Box>
       )}
 
-      {/* Notepad Tab Content */}
+      {/* Notes Tab Content */}
       {activeTab === 'notes' && (
         <Box
           sx={{
@@ -1118,7 +1095,7 @@ export function SidePanel({
                   py: 4,
                 }}
               >
-                No notes on this student yet.
+                Add notes to remember important context about this student.
               </Typography>
             ) : (
               notes.map((note) => <NoteItem key={note.id} note={note} />)

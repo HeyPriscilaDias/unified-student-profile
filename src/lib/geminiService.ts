@@ -1,4 +1,21 @@
-import type { StudentData, TopicRecommendation, TopicCategory } from '@/types/student';
+import type { StudentData } from '@/types/student';
+
+// Types for AI topic recommendations (used only in this service)
+export type TopicCategory = 'deadline' | 'milestone' | 'goal' | 'reflection' | 'bookmark' | 'grade_level' | 'follow_up';
+
+export interface TopicRecommendation {
+  id: string;
+  topic: string;
+  description?: string;
+  category: TopicCategory;
+  priority: 'high' | 'medium' | 'low';
+  reason: string;
+  sourceReference?: {
+    type: 'milestone' | 'task' | 'reflection' | 'bookmark' | 'grade_level' | 'goal' | 'interaction';
+    id?: string;
+    title?: string;
+  };
+}
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
@@ -101,7 +118,7 @@ const GRADE_LEVEL_GUIDANCE = `
  * Build the prompt for Gemini to generate topic recommendations
  */
 function buildTopicRecommendationPrompt(studentData: StudentData): string {
-  const { student, milestones, smartGoals, bookmarks, aiReflections, meetings, profile } = studentData;
+  const { student, milestones, smartGoals, bookmarks, aiReflections, interactions, profile } = studentData;
 
   // Get incomplete milestones
   const incompleteMilestones = milestones
@@ -130,20 +147,20 @@ function buildTopicRecommendationPrompt(studentData: StudentData): string {
     .map(r => `- "${r.title}" from lesson "${r.lessonTitle}"`)
     .join('\n');
 
-  // Get last meeting summary if available
-  const completedMeetings = meetings.filter(m => m.status === 'completed');
-  const lastMeeting = completedMeetings.length > 0
-    ? completedMeetings.sort((a, b) =>
-        new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()
+  // Get last interaction summary if available
+  const completedInteractions = interactions.filter(m => m.status === 'completed');
+  const lastInteraction = completedInteractions.length > 0
+    ? completedInteractions.sort((a, b) =>
+        new Date(b.interactionDate).getTime() - new Date(a.interactionDate).getTime()
       )[0]
     : null;
 
-  const lastMeetingSummary = lastMeeting?.summary
-    ? `Last meeting "${lastMeeting.title}" on ${new Date(lastMeeting.scheduledDate).toLocaleDateString()}:
-- Summary: ${lastMeeting.summary.overview}
-- Key points: ${lastMeeting.summary.keyPoints?.join(', ') || 'None'}
-- Pending actions: ${lastMeeting.summary.recommendedActions?.filter(a => a.status === 'pending').map(a => a.title).join(', ') || 'None'}`
-    : 'No previous meeting data available.';
+  const lastInteractionSummary = lastInteraction?.summary || lastInteraction?.aiSummary
+    ? `Last interaction "${lastInteraction.title}" on ${new Date(lastInteraction.interactionDate).toLocaleDateString()}:
+- Summary: ${lastInteraction.aiSummary?.overview || lastInteraction.summary || 'No summary'}
+- Key points: ${lastInteraction.aiSummary?.keyPoints?.join(', ') || 'None'}
+- Pending actions: ${lastInteraction.aiSummary?.recommendedActions?.filter(a => a.status === 'pending').map(a => a.title).join(', ') || 'None'}`
+    : 'No previous interaction data available.';
 
   // Build profile context
   const profileContext = profile ? `
@@ -182,8 +199,8 @@ ${bookmarkedItems || 'No bookmarks'}
 **Recent AI Reflections:**
 ${recentReflections || 'No recent reflections'}
 
-**Previous Meeting Context:**
-${lastMeetingSummary}
+**Previous Interaction Context:**
+${lastInteractionSummary}
 
 ---
 
@@ -207,7 +224,7 @@ Return a JSON array of topic recommendations with this exact structure:
     "priority": "high|medium|low",
     "reason": "Why this topic is recommended based on student data",
     "sourceReference": {
-      "type": "milestone|task|reflection|bookmark|grade_level|goal|meeting",
+      "type": "milestone|task|reflection|bookmark|grade_level|goal|interaction",
       "id": "optional-id-if-applicable",
       "title": "optional-title"
     }
@@ -222,7 +239,7 @@ Categories explained:
 - reflection: Follow-up on recent AI reflections or self-discovery
 - bookmark: Career/program exploration based on bookmarked items
 - grade_level: Standard topics for this grade level from the guidance
-- follow_up: Items from previous meetings that need follow-up
+- follow_up: Items from previous interactions that need follow-up
 
 Return ONLY the JSON array, no other text.`;
 }
@@ -257,7 +274,7 @@ function parseGeminiResponse(responseText: string): TopicRecommendation[] {
         priority: validatePriority(item.priority),
         reason: item.reason || '',
         sourceReference: srcRef ? {
-          type: srcRef.type as 'milestone' | 'task' | 'reflection' | 'bookmark' | 'grade_level' | 'goal' | 'meeting',
+          type: srcRef.type as 'milestone' | 'task' | 'reflection' | 'bookmark' | 'grade_level' | 'goal' | 'interaction',
           id: srcRef.id,
           title: srcRef.title,
         } : undefined,
@@ -343,8 +360,8 @@ export async function generateAITopicRecommendations(
 /**
  * Build the prompt for Gemini to generate a text-based meeting agenda
  */
-function buildTextAgendaPrompt(studentData: StudentData, meetingDate?: string): string {
-  const { student, milestones, smartGoals, bookmarks, aiReflections, meetings, profile } = studentData;
+function buildTextAgendaPrompt(studentData: StudentData, interactionDate?: string): string {
+  const { student, milestones, smartGoals, bookmarks, aiReflections, interactions, profile } = studentData;
 
   // Get incomplete milestones
   const incompleteMilestones = milestones
@@ -373,19 +390,19 @@ function buildTextAgendaPrompt(studentData: StudentData, meetingDate?: string): 
     .map(r => `- "${r.title}" from lesson "${r.lessonTitle}"`)
     .join('\n');
 
-  // Get last meeting summary if available
-  const completedMeetings = meetings.filter(m => m.status === 'completed');
-  const lastMeeting = completedMeetings.length > 0
-    ? completedMeetings.sort((a, b) =>
-        new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()
+  // Get last interaction summary if available
+  const completedInteractions = interactions.filter(m => m.status === 'completed');
+  const lastInteraction = completedInteractions.length > 0
+    ? completedInteractions.sort((a, b) =>
+        new Date(b.interactionDate).getTime() - new Date(a.interactionDate).getTime()
       )[0]
     : null;
 
-  const lastMeetingContext = lastMeeting?.summary
-    ? `Last meeting "${lastMeeting.title}" on ${new Date(lastMeeting.scheduledDate).toLocaleDateString()}:
-- Summary: ${lastMeeting.summary.overview}
-- Pending actions: ${lastMeeting.summary.recommendedActions?.filter(a => a.status === 'pending').map(a => a.title).join(', ') || 'None'}`
-    : 'No previous meeting data available.';
+  const lastInteractionContext = lastInteraction?.summary || lastInteraction?.aiSummary
+    ? `Last interaction "${lastInteraction.title}" on ${new Date(lastInteraction.interactionDate).toLocaleDateString()}:
+- Summary: ${lastInteraction.aiSummary?.overview || lastInteraction.summary || 'No summary'}
+- Pending actions: ${lastInteraction.aiSummary?.recommendedActions?.filter(a => a.status === 'pending').map(a => a.title).join(', ') || 'None'}`
+    : 'No previous interaction data available.';
 
   // Build profile context
   const profileContext = profile ? `
@@ -393,11 +410,11 @@ function buildTextAgendaPrompt(studentData: StudentData, meetingDate?: string): 
 **Strengths:** ${profile.strengths?.join(', ') || 'Not specified'}
 **Work Experience:** ${profile.experiences?.length || 0} experiences logged` : '';
 
-  const formattedDate = meetingDate
-    ? new Date(meetingDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  const formattedDate = interactionDate
+    ? new Date(interactionDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     : 'Upcoming';
 
-  return `You are a high school counselor preparing a meeting agenda for a student. Generate a clear, readable text agenda that can be edited by the counselor.
+  return `You are a high school counselor preparing an interaction agenda for a student. Generate a clear, readable text agenda that can be edited by the counselor.
 
 ${GRADE_LEVEL_GUIDANCE}
 
@@ -423,8 +440,8 @@ ${bookmarkedItems || 'No bookmarks'}
 **Recent AI Reflections:**
 ${recentReflections || 'No recent reflections'}
 
-**Previous Meeting Context:**
-${lastMeetingContext}
+**Previous Interaction Context:**
+${lastInteractionContext}
 
 ---
 
@@ -458,20 +475,20 @@ Requirements:
 }
 
 /**
- * Generate a text-based meeting agenda using Gemini API
+ * Generate a text-based interaction agenda using Gemini API
  */
 export async function generateTextAgenda(
   studentData: StudentData,
-  meetingDate?: string
+  interactionDate?: string
 ): Promise<string> {
   const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
   if (!apiKey) {
     console.warn('Gemini API key not configured, using fallback text agenda');
-    return generateFallbackTextAgenda(studentData, meetingDate);
+    return generateFallbackTextAgenda(studentData, interactionDate);
   }
 
-  const prompt = buildTextAgendaPrompt(studentData, meetingDate);
+  const prompt = buildTextAgendaPrompt(studentData, interactionDate);
 
   try {
     const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
@@ -497,7 +514,7 @@ export async function generateTextAgenda(
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Gemini API error:', response.status, errorText);
-      return generateFallbackTextAgenda(studentData, meetingDate);
+      return generateFallbackTextAgenda(studentData, interactionDate);
     }
 
     const data = await response.json();
@@ -505,13 +522,13 @@ export async function generateTextAgenda(
 
     if (!responseText) {
       console.error('No response text from Gemini');
-      return generateFallbackTextAgenda(studentData, meetingDate);
+      return generateFallbackTextAgenda(studentData, interactionDate);
     }
 
     return responseText.trim();
   } catch (error) {
     console.error('Failed to call Gemini API:', error);
-    return generateFallbackTextAgenda(studentData, meetingDate);
+    return generateFallbackTextAgenda(studentData, interactionDate);
   }
 }
 
@@ -520,13 +537,13 @@ export async function generateTextAgenda(
  */
 export function generateFallbackTextAgenda(
   studentData: StudentData,
-  meetingDate?: string
+  interactionDate?: string
 ): string {
-  const { student, milestones, smartGoals, bookmarks, meetings } = studentData;
+  const { student, milestones, smartGoals, bookmarks, interactions } = studentData;
   const now = new Date();
 
-  const formattedDate = meetingDate
-    ? new Date(meetingDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  const formattedDate = interactionDate
+    ? new Date(interactionDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     : 'Upcoming';
 
   const priorityItems: string[] = [];
@@ -578,13 +595,13 @@ export function generateFallbackTextAgenda(
     discussionItems.push(`<li><b>Career Exploration</b><br>Discuss interest in ${topPicks.map(b => b.title).join(', ')}.</li>`);
   }
 
-  // Add follow-up from previous meeting
-  const lastMeeting = meetings
+  // Add follow-up from previous interaction
+  const lastInteraction = interactions
     .filter(m => m.status === 'completed')
-    .sort((a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime())[0];
+    .sort((a, b) => new Date(b.interactionDate).getTime() - new Date(a.interactionDate).getTime())[0];
 
-  if (lastMeeting?.summary?.recommendedActions?.some(a => a.status === 'pending')) {
-    discussionItems.push(`<li><b>Follow Up from Previous Meeting</b><br>Review pending action items from ${new Date(lastMeeting.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.</li>`);
+  if (lastInteraction?.aiSummary?.recommendedActions?.some(a => a.status === 'pending')) {
+    discussionItems.push(`<li><b>Follow Up from Previous Interaction</b><br>Review pending action items from ${new Date(lastInteraction.interactionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.</li>`);
   }
 
   if (discussionItems.length === 0) {

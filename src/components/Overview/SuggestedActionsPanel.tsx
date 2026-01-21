@@ -48,7 +48,7 @@ function ActionItem({
         </Typography>
         {action.sourceDate && (
           <Typography sx={{ fontSize: '12px', color: '#6B7280', mt: 0.5 }}>
-            From {action.source === 'meeting_notes' ? 'meeting notes' : 'Alma snapshot'} - {action.sourceDate}
+            From {action.source === 'meeting_summary' ? 'meeting summary' : 'Alma snapshot'} - {action.sourceDate}
           </Typography>
         )}
       </Box>
@@ -181,7 +181,7 @@ export function SuggestedActionsPanel({
         }}
       >
         <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
-          These suggestions are AI-generated based on meeting notes and student data.
+          These suggestions are AI-generated based on meeting summaries and student data.
         </Typography>
       </Box>
     </Box>

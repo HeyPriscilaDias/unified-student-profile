@@ -1,18 +1,217 @@
 'use client';
 
-import { Box, Typography, FormControl, Select, MenuItem } from '@mui/material';
+import React, { useState } from 'react';
+import {
+  Box,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  Typography,
+  styled,
+  Collapse,
+  FormControl,
+  Select,
+  MenuItem,
+  ToggleButtonGroup,
+  ToggleButton,
+} from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { getAllStudents } from '@/lib/mockData';
+import { essentials, Slate, neutral } from '@willow/ui-kit';
+import {
+  Home,
+  BookOpen,
+  Award,
+  Careers,
+  School,
+  DollarSign,
+  Settings,
+  Explore,
+  MyLists,
+  Applications,
+  Bell,
+} from '@willow/icons';
 
 interface SidebarProps {
   currentStudentId?: string;
 }
 
+// Styled components
+const SidebarContainer = styled(Box)(() => ({
+  width: '220px',
+  height: '100vh',
+  display: 'flex',
+  flexDirection: 'column',
+  backgroundColor: essentials.white,
+  overflowY: 'auto',
+  borderRight: `1px solid ${neutral[200]}`,
+  position: 'fixed',
+  left: 0,
+  top: 0,
+  zIndex: 100,
+}));
+
+const LogoContainer = styled(Box)({
+  display: 'flex',
+  justifyContent: 'flex-start',
+  alignItems: 'center',
+  padding: '16px 11px',
+  marginLeft: '16px',
+});
+
+const NavList = styled(List)({
+  flexGrow: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  padding: '0',
+  width: '100%',
+});
+
+const NavItem = styled(ListItemButton, {
+  shouldForwardProp: (prop) => prop !== 'active',
+})<{ active?: boolean }>(({ active }) => ({
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  padding: '8px 16px',
+  borderRadius: '24px',
+  backgroundColor: active ? neutral[200] : 'transparent',
+  margin: '6px 8px',
+  width: 'calc(100% - 16px)',
+  '&:hover': {
+    backgroundColor: active ? neutral[200] : 'rgba(0, 0, 0, 0.04)',
+  },
+}));
+
+const NavItemIcon = styled(ListItemIcon, {
+  shouldForwardProp: (prop) => prop !== 'active',
+})<{ active?: boolean }>(({ active }) => ({
+  color: active ? Slate[700] : neutral[500],
+  minWidth: '24px',
+  marginRight: '12px',
+  justifyContent: 'center',
+}));
+
+const SubNavItem = styled(ListItemButton, {
+  shouldForwardProp: (prop) => prop !== 'active',
+})<{ active?: boolean }>(({ active }) => ({
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  padding: '6px 16px 6px 44px',
+  borderRadius: '24px',
+  backgroundColor: active ? neutral[200] : 'transparent',
+  margin: '2px 8px',
+  width: 'calc(100% - 16px)',
+  '&:hover': {
+    backgroundColor: active ? neutral[200] : 'rgba(0, 0, 0, 0.04)',
+  },
+}));
+
+const SubNavItemIcon = styled(ListItemIcon, {
+  shouldForwardProp: (prop) => prop !== 'active',
+})<{ active?: boolean }>(({ active }) => ({
+  color: active ? Slate[700] : neutral[500],
+  minWidth: '20px',
+  marginRight: '8px',
+  justifyContent: 'center',
+}));
+
+const TestingSection = styled(Box)({
+  marginTop: 'auto',
+  borderTop: `1px solid ${neutral[200]}`,
+  padding: '12px',
+});
+
+const TestingSectionHeader = styled(Typography)({
+  fontSize: '10px',
+  color: neutral[500],
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  marginBottom: '8px',
+  paddingLeft: '4px',
+});
+
+// Navigation items
+const navItems = [
+  {
+    id: 'home',
+    label: 'Home',
+    Icon: Home,
+    submenu: undefined,
+  },
+  {
+    id: 'curriculum',
+    label: 'Lessons',
+    Icon: BookOpen,
+    submenu: undefined,
+  },
+  {
+    id: 'portfolio',
+    label: 'Portfolio',
+    Icon: Award,
+    submenu: undefined,
+  },
+  {
+    id: 'feed',
+    label: 'Feed',
+    Icon: Bell,
+    submenu: undefined,
+  },
+  {
+    id: 'careers',
+    label: 'Careers',
+    Icon: Careers,
+    submenu: undefined,
+  },
+  {
+    id: 'schools',
+    label: 'Schools',
+    Icon: School,
+    submenu: [
+      {
+        id: 'explore-schools',
+        label: 'Explore Schools',
+        Icon: Explore,
+      },
+      {
+        id: 'my-list',
+        label: 'My List',
+        Icon: MyLists,
+      },
+      {
+        id: 'applications',
+        label: 'Applications',
+        Icon: Applications,
+      },
+      {
+        id: 'recommendations',
+        label: 'Recommendations',
+        Icon: Award,
+      },
+    ],
+  },
+  {
+    id: 'finances',
+    label: 'Finances',
+    Icon: DollarSign,
+    submenu: undefined,
+  },
+  {
+    id: 'preferences',
+    label: 'Preferences',
+    Icon: Settings,
+    submenu: undefined,
+  },
+];
+
 function WillowLogo() {
   return (
     <svg
-      width="116"
-      height="32"
+      width="105"
+      height="29"
       viewBox="0 0 116 32"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -46,7 +245,7 @@ function WillowLogo() {
         fill="#062F29"
       />
       <path
-        d="M46.8857 26.1064C46.8857 25.2599 47.0591 24.5102 47.4058 23.8575C47.7628 23.2047 48.2422 22.6998 48.844 22.3428C49.4559 21.9757 50.1342 21.7921 50.8787 21.7921C51.4295 21.7921 51.9701 21.9145 52.5005 22.1593C53.041 22.3938 53.4694 22.71 53.7856 23.1078V19.0382H55.545V30.3596H53.7856V29.0898C53.5 29.4978 53.1022 29.8343 52.5923 30.0995C52.0925 30.3647 51.5162 30.4973 50.8635 30.4973C50.1291 30.4973 49.4559 30.3137 48.844 29.9465C48.2422 29.5691 47.7628 29.049 47.4058 28.386C47.0591 27.7129 46.8857 26.953 46.8857 26.1064ZM53.7856 26.137C53.7856 25.5557 53.6632 25.0508 53.4184 24.6224C53.1838 24.194 52.8727 23.8677 52.4852 23.6433C52.0976 23.4189 51.6794 23.3067 51.2306 23.3067C50.7819 23.3067 50.3637 23.4189 49.9761 23.6433C49.5885 23.8575 49.2723 24.1787 49.0276 24.6071C48.793 25.0253 48.6757 25.5251 48.6757 26.1064C48.6757 26.6878 48.793 27.1978 49.0276 27.6364C49.2723 28.0749 49.5885 28.4115 49.9761 28.6461C50.3739 28.8705 50.7921 28.9827 51.2306 28.9827C51.6794 28.9827 52.0976 28.8705 52.4852 28.6461C52.8727 28.4217 53.1838 28.0953 53.4184 27.667C53.6632 27.2284 53.7856 26.7184 53.7856 26.137Z"
+        d="M46.8857 26.1064C46.8857 25.2599 47.0591 24.5102 47.4058 23.8575C47.7628 23.2047 48.2422 22.6998 48.844 22.3428C49.4559 21.9757 50.1342 21.7921 50.8787 21.7921C51.4295 21.7921 51.9701 21.9145 52.5005 22.1593C53.041 22.3938 53.4694 22.71 53.7856 23.1078V19.0382H55.545V30.3596H53.7856V29.0898C53.5 29.4978 53.1022 29.8343 52.5923 30.0995C52.0925 30.3647 51.5162 30.4973 50.8635 30.4973C50.1291 30.4973 49.4559 30.3137 48.844 29.9465C48.2422 29.5691 47.7628 29.049 47.4058 28.386C47.0591 27.7129 46.8857 26.953 46.8857 26.1064ZM53.7856 26.137C53.7856 25.5557 53.6632 25.0508 53.4184 24.6224C53.1838 24.194 52.8727 23.8677 52.4852 23.6433C52.0976 23.4189 51.6794 23.3067 51.2306 23.3067C50.7819 23.3067 50.3637 23.4189 49.9761 23.6433C49.5885 23.8575 49.2723 24.1787 49.0276 24.6071C48.793 25.0253 48.6757 25.5251 48.6757 26.1064C48.6757 26.6878 48.793 27.1978 49.0276 27.6364C49.2723 28.0749 49.5885 28.4115 49.9761 28.6461C50.3739 28.8705 50.7288 28.9827 51.2306 28.9827C51.6794 28.9827 52.0976 28.8705 52.4852 28.6461C52.8727 28.4217 53.1838 28.0953 53.4184 27.667C53.6632 27.2284 53.7856 26.7184 53.7856 26.137Z"
         fill="#062F29"
       />
       <path
@@ -88,99 +287,232 @@ function WillowLogo() {
 export function Sidebar({ currentStudentId }: SidebarProps) {
   const router = useRouter();
   const students = getAllStudents();
+  const [openSubmenus, setOpenSubmenus] = useState<{ [key: string]: boolean }>({});
+  const [viewMode, setViewMode] = useState<'student' | 'staff'>('student');
+
+  // For demo purposes, no active page tracking since menu items are non-functional
+  const activePageId: string | null = null;
+  const activeSubmenuId: string | null = null;
 
   const handleStudentChange = (studentId: string) => {
     router.push(`/students/${studentId}`);
   };
 
-  return (
-    <Box
-      sx={{
-        width: 220,
-        minWidth: 220,
-        height: '100vh',
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        backgroundColor: 'white',
-        borderRight: '1px solid #D5D7DA',
-        display: 'flex',
-        flexDirection: 'column',
-        zIndex: 100,
-      }}
-    >
-      {/* Logo */}
-      <Box
-        sx={{
-          px: 2,
-          py: 2,
-          borderBottom: '1px solid #E5E7EB',
-        }}
-      >
-        <WillowLogo />
-      </Box>
+  const toggleSubmenu = (itemId: string) => {
+    setOpenSubmenus((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
+  };
 
-      {/* Student Selector */}
-      {currentStudentId && (
-        <Box
-          sx={{
-            px: 1.5,
-            py: 1.5,
-            borderBottom: '1px solid #E5E7EB',
-          }}
-        >
+  const handleNavItemClick = (item: typeof navItems[0]) => {
+    if (item.submenu) {
+      toggleSubmenu(item.id);
+    }
+    // Menu items are non-functional for now
+  };
+
+  const handleViewModeChange = (
+    _event: React.MouseEvent<HTMLElement>,
+    newMode: 'student' | 'staff' | null
+  ) => {
+    if (newMode !== null) {
+      setViewMode(newMode);
+    }
+  };
+
+  return (
+    <SidebarContainer>
+      <LogoContainer>
+        <WillowLogo />
+      </LogoContainer>
+
+      <NavList>
+        {navItems.map((item) => {
+          const isActive = activePageId === item.id;
+          const isSubmenuOpen = openSubmenus[item.id];
+
+          return (
+            <React.Fragment key={item.id}>
+              <ListItem disablePadding sx={{ display: 'block' }}>
+                <NavItem active={isActive} onClick={() => handleNavItemClick(item)}>
+                  <NavItemIcon active={isActive}>
+                    <item.Icon size={20} />
+                  </NavItemIcon>
+                  <Typography
+                    sx={{
+                      fontWeight: isActive ? 600 : 400,
+                      fontSize: '14px',
+                      color: isActive ? Slate[700] : neutral[700],
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {item.label}
+                  </Typography>
+                </NavItem>
+              </ListItem>
+
+              {item.submenu && (
+                <Collapse in={isSubmenuOpen} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {item.submenu.map((submenuItem) => {
+                      const isSubmenuItemActive = activeSubmenuId === submenuItem.id;
+
+                      return (
+                        <ListItem key={submenuItem.id} disablePadding sx={{ display: 'block' }}>
+                          <SubNavItem active={isSubmenuItemActive} onClick={() => {}}>
+                            <SubNavItemIcon active={isSubmenuItemActive}>
+                              <submenuItem.Icon size={16} />
+                            </SubNavItemIcon>
+                            <Typography
+                              sx={{
+                                fontWeight: isSubmenuItemActive ? 600 : 400,
+                                fontSize: '14px',
+                                color: isSubmenuItemActive ? Slate[700] : neutral[700],
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {submenuItem.label}
+                            </Typography>
+                          </SubNavItem>
+                        </ListItem>
+                      );
+                    })}
+                  </List>
+                </Collapse>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </NavList>
+
+      {/* Testing Section */}
+      <TestingSection>
+        <TestingSectionHeader>Testing</TestingSectionHeader>
+
+        {/* Student Picker */}
+        {currentStudentId && (
+          <Box sx={{ mb: 1.5 }}>
+            <Typography
+              sx={{
+                fontSize: '11px',
+                color: neutral[500],
+                mb: 0.5,
+                fontWeight: 500,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                px: 0.5,
+              }}
+            >
+              Test Student
+            </Typography>
+            <FormControl size="small" fullWidth>
+              <Select
+                value={currentStudentId}
+                onChange={(e) => handleStudentChange(e.target.value as string)}
+                sx={{
+                  fontSize: '13px',
+                  backgroundColor: neutral[50],
+                  '& .MuiSelect-select': {
+                    padding: '8px 12px',
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: neutral[200],
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: neutral[300],
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: Slate[700],
+                  },
+                }}
+              >
+                {students.map((student) => (
+                  <MenuItem key={student.id} value={student.id} sx={{ py: 1 }}>
+                    <Box>
+                      <Typography sx={{ fontSize: '13px', fontWeight: 500 }}>
+                        {student.firstName} {student.lastName}
+                      </Typography>
+                      <Typography sx={{ fontSize: '11px', color: neutral[500] }}>
+                        Grade {student.grade} •{' '}
+                        {student.onTrackStatus === 'on_track' ? 'On Track' : 'Off Track'}
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        )}
+
+        {/* View Mode Toggle */}
+        <Box>
           <Typography
             sx={{
               fontSize: '11px',
-              color: '#6B7280',
-              mb: 0.75,
+              color: neutral[500],
+              mb: 0.5,
               fontWeight: 500,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
               px: 0.5,
             }}
           >
-            Test Student
+            View Mode
           </Typography>
-          <FormControl size="small" fullWidth>
-            <Select
-              value={currentStudentId}
-              onChange={(e) => handleStudentChange(e.target.value as string)}
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={handleViewModeChange}
+            size="small"
+            fullWidth
+            sx={{
+              '& .MuiToggleButtonGroup-grouped': {
+                border: `1px solid ${neutral[200]}`,
+                '&:not(:first-of-type)': {
+                  borderLeft: `1px solid ${neutral[200]}`,
+                  marginLeft: 0,
+                },
+                '&.Mui-selected': {
+                  backgroundColor: Slate[700],
+                  color: essentials.white,
+                  '&:hover': {
+                    backgroundColor: Slate[600],
+                  },
+                },
+                '&:not(.Mui-selected)': {
+                  backgroundColor: neutral[50],
+                  color: neutral[700],
+                  '&:hover': {
+                    backgroundColor: neutral[100],
+                  },
+                },
+              },
+            }}
+          >
+            <ToggleButton
+              value="student"
               sx={{
-                fontSize: '13px',
-                backgroundColor: '#F9FAFB',
-                '& .MuiSelect-select': {
-                  padding: '8px 12px',
-                },
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#E5E7EB',
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#D1D5DB',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#062F29',
-                },
+                fontSize: '12px',
+                fontWeight: 500,
+                textTransform: 'none',
+                py: 0.75,
               }}
             >
-              {students.map((student) => (
-                <MenuItem key={student.id} value={student.id} sx={{ py: 1 }}>
-                  <Box>
-                    <Typography sx={{ fontSize: '13px', fontWeight: 500 }}>
-                      {student.firstName} {student.lastName}
-                    </Typography>
-                    <Typography sx={{ fontSize: '11px', color: '#6B7280' }}>
-                      Grade {student.grade} • {student.onTrackStatus === 'on_track' ? 'On Track' : 'Off Track'}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+              Student
+            </ToggleButton>
+            <ToggleButton
+              value="staff"
+              sx={{
+                fontSize: '12px',
+                fontWeight: 500,
+                textTransform: 'none',
+                py: 0.75,
+              }}
+            >
+              Staff
+            </ToggleButton>
+          </ToggleButtonGroup>
         </Box>
-      )}
-
-    </Box>
+      </TestingSection>
+    </SidebarContainer>
   );
 }
 

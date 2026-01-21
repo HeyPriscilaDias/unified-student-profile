@@ -1,14 +1,13 @@
 'use client';
 
 import { Box, Typography, Button, Avatar } from '@mui/material';
-import { ArrowLeft, Calendar, MapPin } from 'lucide-react';
+import { ArrowLeft, MapPin } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { Student } from '@/types/student';
 
 interface StudentHeaderProps {
   student: Student;
   studentId: string;
-  onScheduleMeeting?: () => void;
 }
 
 function OnTrackPill({ status }: { status: 'on_track' | 'off_track' }) {
@@ -42,16 +41,8 @@ function OnTrackPill({ status }: { status: 'on_track' | 'off_track' }) {
   );
 }
 
-export function StudentHeader({ student, studentId, onScheduleMeeting }: StudentHeaderProps) {
+export function StudentHeader({ student, studentId }: StudentHeaderProps) {
   const router = useRouter();
-
-  const handleScheduleMeeting = () => {
-    if (onScheduleMeeting) {
-      onScheduleMeeting();
-    } else {
-      router.push(`/students/${studentId}/meetings/schedule`);
-    }
-  };
 
   return (
     <Box>
@@ -131,26 +122,6 @@ export function StudentHeader({ student, studentId, onScheduleMeeting }: Student
               <Typography sx={{ fontSize: '14px', color: '#535862' }}>
                 Grade {student.grade}
               </Typography>
-              <Button
-                variant="outlined"
-                startIcon={<Calendar size={16} />}
-                onClick={handleScheduleMeeting}
-                sx={{
-                  textTransform: 'none',
-                  borderColor: '#D5D7DA',
-                  color: '#414651',
-                  fontWeight: 500,
-                  fontSize: '13px',
-                  py: 0.5,
-                  px: 1.5,
-                  '&:hover': {
-                    backgroundColor: '#FAFAFA',
-                    borderColor: '#D5D7DA',
-                  },
-                }}
-              >
-                Schedule meeting
-              </Button>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#717680' }}>
               <MapPin size={14} />

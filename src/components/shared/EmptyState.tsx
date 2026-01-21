@@ -31,10 +31,10 @@ const emptyStateConfigs: Record<EmptyStateType, EmptyStateConfig> = {
     icon: <UserPlus size={40} style={iconStyle} />,
     message: 'This student is new. Complete onboarding to see more data.',
   },
-  no_meetings: {
+  no_interactions: {
     icon: <Calendar size={40} style={iconStyle} />,
-    message: 'No meetings scheduled yet',
-    cta: 'Schedule meeting',
+    message: 'No interactions scheduled yet',
+    cta: 'Schedule interaction',
   },
   no_bookmarks: {
     icon: <Bookmark size={40} style={iconStyle} />,
@@ -46,7 +46,7 @@ const emptyStateConfigs: Record<EmptyStateType, EmptyStateConfig> = {
   },
   no_tasks: {
     icon: <CheckSquare size={40} style={iconStyle} />,
-    message: 'No open tasks',
+    message: 'No active tasks for this student.',
     cta: 'New task',
   },
   no_goals: {

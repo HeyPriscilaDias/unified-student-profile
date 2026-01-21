@@ -30,11 +30,11 @@ interface ActionItem {
   assignee: 'student' | 'counselor';
 }
 
-interface MeetingIntelligenceProps {
+interface InteractionIntelligenceProps {
   studentName?: string;
   onClose?: () => void;
   autoStart?: boolean;
-  onMeetingCompleted?: (notes: string) => void;
+  onInteractionCompleted?: (notes: string) => void;
 }
 
 // Mock data for the FAFSA meeting
@@ -249,14 +249,14 @@ const ShimmerLoader: React.FC = () => (
 );
 
 // Main Component
-const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
+const InteractionIntelligence: React.FC<InteractionIntelligenceProps> = ({
   studentName = 'Student',
   onClose,
   autoStart = false,
-  onMeetingCompleted,
+  onInteractionCompleted,
 }) => {
-  // Generate combined meeting notes as HTML
-  const generateMeetingNotes = () => {
+  // Generate combined summary as HTML
+  const generateSummary = () => {
     const actionItemsHtml = MOCK_ACTION_ITEMS.map(item =>
       `<li>${item.text} (${item.assignee === 'student' ? 'Student' : 'Counselor'})</li>`
     ).join('');
@@ -376,13 +376,13 @@ const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
 
     // Simulate AI processing (3-4 seconds)
     setTimeout(() => {
-      const notes = generateMeetingNotes();
+      const summary = generateSummary();
       setPhase('results');
-      setMeetingNotes(notes);
-      // Notify parent that meeting is completed with generated notes
-      onMeetingCompleted?.(notes);
+      setMeetingNotes(summary);
+      // Notify parent that meeting is completed with generated summary
+      onInteractionCompleted?.(summary);
     }, 3500);
-  }, [onMeetingCompleted]);
+  }, [onInteractionCompleted]);
 
   // Reset to initial state
   const resetIntelligence = () => {
@@ -426,12 +426,12 @@ const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
             <Typography
               sx={{ fontSize: '18px', fontWeight: 600, color: '#111827', mb: 1 }}
             >
-              Meeting Notes
+              Record Meeting
             </Typography>
             <Typography
               sx={{ fontSize: '14px', color: '#6B7280', mb: 4, maxWidth: '280px' }}
             >
-              Record your meeting to automatically generate notes, action items, and a full transcript.
+              Record your meeting to automatically generate a summary, action items, and transcript.
             </Typography>
             <Button
               variant="contained"
@@ -531,7 +531,7 @@ const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
                 },
               }}
             >
-              Stop & Generate Notes
+              Stop & Generate Summary
             </Button>
           </Box>
         );
@@ -555,7 +555,7 @@ const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
             <Typography
               sx={{ fontSize: '16px', fontWeight: 600, color: '#111827', mb: 2 }}
             >
-              Processing your meeting notes...
+              Processing your meeting...
             </Typography>
 
             <Typography
@@ -663,7 +663,7 @@ const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
         sx={{ borderColor: '#E5E7EB' }}
       >
         <Typography sx={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
-          Meeting Notes
+          Meeting Recording
         </Typography>
         <Box className="flex items-center gap-1">
           <IconButton
@@ -751,4 +751,4 @@ const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
   return mainContent;
 };
 
-export default MeetingIntelligence;
+export default InteractionIntelligence;

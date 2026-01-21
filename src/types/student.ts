@@ -35,7 +35,7 @@ export interface Task {
   title: string;
   dueDate: string | null;
   status: 'open' | 'completed';
-  source: 'manual' | 'suggested_action' | 'meeting';
+  source: 'manual' | 'suggested_action' | 'interaction';
   taskType: 'staff' | 'student';
 }
 
@@ -44,7 +44,7 @@ export interface SuggestedAction {
   id: string;
   title: string;
   description: string;
-  source: 'meeting_notes' | 'alma_snapshot';
+  source: 'meeting_summary' | 'alma_snapshot';
   sourceDate?: string;
   status: 'pending' | 'accepted' | 'dismissed';
   assignee: 'staff' | 'student';
@@ -199,25 +199,10 @@ export interface ActivityItem {
   milestoneName?: string; // For milestone_completion type
 }
 
-// Meeting types
-export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+// Interaction types
+export type InteractionStatus = 'planned' | 'completed';
 
-export interface AgendaItem {
-  id: string;
-  topic: string;
-  description?: string;
-  source: 'ai_recommended' | 'counselor_added';
-  sourceReason?: string;
-  sourceReference?: {
-    type: 'milestone' | 'task' | 'reflection' | 'bookmark' | 'grade_level' | 'goal';
-    id?: string;
-  };
-  duration?: number; // estimated minutes
-  covered: boolean;
-  notes?: string;
-}
-
-export interface MeetingRecommendedAction {
+export interface InteractionRecommendedAction {
   id: string;
   title: string;
   description?: string;
@@ -228,59 +213,38 @@ export interface MeetingRecommendedAction {
   assignee: 'staff' | 'student';
 }
 
-export interface MeetingSummary {
+export interface InteractionSummary {
   overview: string;
   keyPoints: string[];
   studentSentiment?: 'positive' | 'neutral' | 'concerned';
-  recommendedActions: MeetingRecommendedAction[];
+  recommendedActions: InteractionRecommendedAction[];
   generatedAt: string;
 }
 
-export interface Meeting {
+export interface Interaction {
   id: string;
   studentId: string;
   counselorId: string;
   counselorName: string;
   title: string;
 
-  // Scheduling
-  scheduledDate: string;
-  duration: number; // minutes
-  status: MeetingStatus;
+  // Date and status (NOT scheduling)
+  interactionDate: string; // YYYY-MM-DD format, date only
+  status: InteractionStatus;
 
-  // Agenda
-  agenda: AgendaItem[];
+  // Summary (user-written or AI-generated)
+  summary?: string;
 
-  // Meeting notes (persists across pre-meeting, during, and post-meeting)
-  notes?: string;
-
-  // Recording & Transcript (post-meeting)
+  // Recording & Transcript (if recorded)
   recordingUrl?: string;
   transcript?: string;
 
-  // AI-generated content
-  summary?: MeetingSummary;
+  // AI-generated content (from recording)
+  aiSummary?: InteractionSummary;
 
   // Metadata
   createdAt: string;
   updatedAt: string;
-}
-
-// Topic Recommendation types (for scheduling flow)
-export type TopicCategory = 'deadline' | 'milestone' | 'goal' | 'reflection' | 'bookmark' | 'grade_level' | 'follow_up';
-
-export interface TopicRecommendation {
-  id: string;
-  topic: string;
-  description?: string;
-  category: TopicCategory;
-  priority: 'high' | 'medium' | 'low';
-  reason: string;
-  sourceReference?: {
-    type: 'milestone' | 'task' | 'reflection' | 'bookmark' | 'grade_level' | 'goal' | 'meeting';
-    id?: string;
-    title?: string;
-  };
 }
 
 // AI Reflection types
@@ -314,7 +278,7 @@ export type TabType = 'overview' | 'profile' | 'postsecondary' | 'student-work' 
 export type EmptyStateType =
   | 'no_milestones'
   | 'new_student'
-  | 'no_meetings'
+  | 'no_interactions'
   | 'no_bookmarks'
   | 'no_reflections'
   | 'no_tasks'
@@ -339,5 +303,5 @@ export interface StudentData {
   activityHistory: ActivityItem[];
   aiReflections: AIReflection[];
   qualityFlags: QualityFlag[];
-  meetings: Meeting[];
+  interactions: Interaction[];
 }

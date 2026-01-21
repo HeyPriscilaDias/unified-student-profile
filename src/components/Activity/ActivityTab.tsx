@@ -2,7 +2,7 @@
 
 import { Box } from '@mui/material';
 import { SectionCard, EmptyState } from '@/components/shared';
-import { ActivityItem } from '@/components/Meetings/ActivityItem';
+import { ActivityItem } from '@/components/Interactions/ActivityItem';
 import type { ActivityItem as ActivityItemType } from '@/types/student';
 
 interface ActivityTabProps {

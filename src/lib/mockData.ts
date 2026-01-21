@@ -13,7 +13,7 @@ import type {
   AIReflection,
   QualityFlag,
   StudentData,
-  Meeting,
+  Interaction,
 } from '@/types/student';
 
 // =============================================================================
@@ -189,7 +189,7 @@ export const jessicaTasks: Task[] = [
     title: 'Follow up with Mrs. Johnson about recommendation letter',
     dueDate: '2025-01-10',
     status: 'open',
-    source: 'meeting',
+    source: 'interaction',
     taskType: 'staff',
   },
   {
@@ -230,7 +230,7 @@ export const jessicaTasks: Task[] = [
     title: 'Request transcript from registrar',
     dueDate: '2025-01-10',
     status: 'open',
-    source: 'meeting',
+    source: 'interaction',
     taskType: 'student',
   },
   {
@@ -255,8 +255,8 @@ export const jessicaSuggestedActions: SuggestedAction[] = [
   {
     id: 'action-2',
     title: 'Connect with the pre-nursing advisor at UT Austin',
-    description: 'From your recent meeting notes, reaching out to the pre-nursing program could help clarify prerequisites.',
-    source: 'meeting_notes',
+    description: 'From your recent meeting summary, reaching out to the pre-nursing program could help clarify prerequisites.',
+    source: 'meeting_summary',
     sourceDate: '2024-12-28',
     status: 'pending',
     assignee: 'staff',
@@ -514,50 +514,17 @@ export const jessicaAIReflections: AIReflection[] = [
 
 export const jessicaQualityFlags: QualityFlag[] = [];
 
-export const jessicaMeetings: Meeting[] = [
-  // Past meeting with full summary
+export const jessicaInteractions: Interaction[] = [
+  // Completed interaction with recording
   {
-    id: 'meeting-2',
+    id: 'interaction-1',
     studentId: 'jessica-santiago',
     counselorId: 'counselor-rodriguez',
     counselorName: 'Mr. Rodriguez',
     title: 'College Planning Check-in',
-    scheduledDate: '2024-12-28T10:00:00Z',
-    duration: 32,
+    interactionDate: '2024-12-28',
     status: 'completed',
-    agenda: [
-      {
-        id: 'agenda-2-1',
-        topic: 'Application Progress Review',
-        description: 'Check status of all college applications',
-        source: 'ai_recommended',
-        sourceReason: 'Based on active goal: Complete all applications by Jan 15',
-        sourceReference: { type: 'goal', id: 'goal-1' },
-        duration: 15,
-        covered: true,
-        notes: 'Texas A&M submitted, Baylor and UH in progress',
-      },
-      {
-        id: 'agenda-2-2',
-        topic: 'Financial Aid Discussion',
-        description: 'Review FAFSA timeline and scholarship opportunities',
-        source: 'ai_recommended',
-        sourceReason: 'Senior year checklist item',
-        sourceReference: { type: 'grade_level' },
-        duration: 12,
-        covered: true,
-        notes: 'Jessica confident about process, parents helping with taxes',
-      },
-      {
-        id: 'agenda-2-3',
-        topic: 'January Goals',
-        description: 'Set specific goals for the month',
-        source: 'counselor_added',
-        duration: 5,
-        covered: true,
-      },
-    ],
-    notes: `COLLEGE PLANNING CHECK-IN
+    summary: `COLLEGE PLANNING CHECK-IN
 
 APPLICATION STATUS
 - Texas A&M: Submitted
@@ -573,22 +540,29 @@ ACTION ITEMS
 - Complete Baylor supplemental essay
 - Submit University of Houston application
 - Follow up on FAFSA submission`,
-    transcript: `[00:00] Mr. Rodriguez: Hi Jessica, thanks for coming in today. How are you feeling about everything?
-[00:15] Jessica: Pretty good actually! I submitted my Texas A&M application last week and I'm feeling confident about my essays.
-[00:32] Mr. Rodriguez: That's great to hear! Let's go through your application status. You mentioned Texas A&M is done - what about the others?
-[01:05] Jessica: Baylor is almost ready, I just need to finish the supplemental essay. And Houston I haven't started yet but it uses the Common App so it should be quick.
-[01:28] Mr. Rodriguez: Good plan. What's your timeline for getting those submitted?
-[01:45] Jessica: I want to have Baylor done by New Year's and Houston by the first week of January.
-[02:10] Mr. Rodriguez: Perfect. Now let's talk about financial aid. Have you started the FAFSA?
-[02:25] Jessica: Yes! My parents and I got through most of it over the break. We just need to get the tax documents sorted out.
-[02:48] Mr. Rodriguez: That's the most common holdup. Do you know when your parents will have their taxes ready?
-[03:05] Jessica: They said they're going to try to do them early this year, hopefully by mid-January.
-[03:22] Mr. Rodriguez: Great. The FAFSA deadline for priority consideration is January 15th, so try to submit as soon as you can after that.
-[03:45] Jessica: Got it, I'll remind them.
-[04:00] Mr. Rodriguez: Any questions or concerns about the process?
-[04:15] Jessica: Not really, I feel like I have a good handle on things. I'm just a little stressed about waiting to hear back.
-[04:35] Mr. Rodriguez: That's completely normal. Remember, you've done great work and put together strong applications. Let's set some goals for January.`,
-    summary: {
+    recordingUrl: 'https://example.com/recording-1',
+    transcript: `Counselor: Hi Jessica, thanks for coming in today. How are you feeling about everything?
+
+Student: Pretty good actually! I submitted my Texas A&M application last week and I'm feeling confident about my essays.
+
+Counselor: That's great to hear! Let's go through your application status. You mentioned Texas A&M is done - what about the others?
+
+Student: Baylor is almost ready, I just need to finish the supplemental essay. And Houston I haven't started yet but it uses the Common App so it should be quick.
+
+Counselor: Good plan. What's your timeline for getting those submitted?
+
+Student: I want to have Baylor done by New Year's and Houston by the first week of January.
+
+Counselor: Perfect. Now let's talk about financial aid. Have you started the FAFSA?
+
+Student: Yes! My parents and I got through most of it over the break. We just need to get the tax documents sorted out.
+
+Counselor: That's the most common holdup. Do you know when your parents will have their taxes ready?
+
+Student: They said they're going to try to do them early this year, hopefully by mid-January.
+
+Counselor: Great. The FAFSA deadline for priority consideration is January 15th, so try to submit as soon as you can after that.`,
+    aiSummary: {
       overview: 'Jessica is making excellent progress on her college applications. Texas A&M has been submitted, and she has clear plans to complete Baylor and University of Houston applications in early January. FAFSA is mostly complete, pending tax documents from parents.',
       keyPoints: [
         'Texas A&M application submitted successfully',
@@ -600,17 +574,17 @@ ACTION ITEMS
       studentSentiment: 'positive',
       recommendedActions: [
         {
-          id: 'action-m2-1',
+          id: 'action-1-1',
           title: 'Complete Baylor supplemental essay',
           description: 'Finish the supplemental essay for Baylor application',
           priority: 'high',
           dueDate: '2025-01-01',
           status: 'converted_to_task',
-          convertedTaskId: 'task-from-meeting-1',
+          convertedTaskId: 'task-from-interaction-1',
           assignee: 'student',
         },
         {
-          id: 'action-m2-2',
+          id: 'action-1-2',
           title: 'Submit University of Houston application',
           priority: 'medium',
           dueDate: '2025-01-07',
@@ -618,7 +592,7 @@ ACTION ITEMS
           assignee: 'student',
         },
         {
-          id: 'action-m2-3',
+          id: 'action-1-3',
           title: 'Follow up with parents on tax documents',
           description: 'Ensure tax documents are ready for FAFSA completion',
           priority: 'high',
@@ -629,60 +603,19 @@ ACTION ITEMS
       ],
       generatedAt: '2024-12-28T10:35:00Z',
     },
-    createdAt: '2024-12-20T09:00:00Z',
+    createdAt: '2024-12-28T09:00:00Z',
     updatedAt: '2024-12-28T10:35:00Z',
   },
-  // Older past meeting
+  // Completed interaction (summary only, no recording)
   {
-    id: 'meeting-3',
+    id: 'interaction-2',
     studentId: 'jessica-santiago',
     counselorId: 'counselor-rodriguez',
     counselorName: 'Mr. Rodriguez',
-    title: 'Senior Year Kickoff Meeting',
-    scheduledDate: '2024-09-05T09:30:00Z',
-    duration: 45,
+    title: 'Senior Year Kickoff',
+    interactionDate: '2024-09-05',
     status: 'completed',
-    agenda: [
-      {
-        id: 'agenda-3-1',
-        topic: 'Senior Year Overview',
-        description: 'Review key milestones and deadlines for senior year',
-        source: 'ai_recommended',
-        sourceReference: { type: 'grade_level' },
-        duration: 10,
-        covered: true,
-      },
-      {
-        id: 'agenda-3-2',
-        topic: 'College List Review',
-        description: 'Finalize target, reach, and safety schools',
-        source: 'ai_recommended',
-        sourceReason: 'College list milestone incomplete',
-        sourceReference: { type: 'milestone', id: 'milestone-2' },
-        duration: 15,
-        covered: true,
-        notes: 'Finalized list: UT Austin, Texas State, Texas A&M, Baylor, UH',
-      },
-      {
-        id: 'agenda-3-3',
-        topic: 'Application Timeline',
-        description: 'Create detailed timeline for applications',
-        source: 'counselor_added',
-        duration: 15,
-        covered: true,
-      },
-      {
-        id: 'agenda-3-4',
-        topic: 'Recommendation Letters',
-        description: 'Discuss who to ask for recommendations',
-        source: 'ai_recommended',
-        sourceReference: { type: 'milestone', id: 'milestone-3' },
-        duration: 5,
-        covered: true,
-        notes: 'Will ask Mrs. Johnson (AP Bio) and Mr. Chen (AP Calc)',
-      },
-    ],
-    notes: `SENIOR YEAR KICKOFF
+    summary: `SENIOR YEAR KICKOFF
 
 COLLEGE LIST (finalized)
 - UT Austin (reach)
@@ -701,47 +634,21 @@ NEXT STEPS
 - Request recommendation letters by Sept 15
 - Start Common App essay brainstorming
 - Research Texas State early action requirements`,
-    summary: {
-      overview: 'Productive kickoff meeting to align on senior year goals. Jessica has a strong college list focused on Texas schools with nursing programs. She is enthusiastic and well-prepared for the application process.',
-      keyPoints: [
-        'College list finalized: UT Austin (reach), Texas A&M, Baylor, Texas State, University of Houston',
-        'All schools have strong nursing or pre-nursing programs',
-        'Early action deadline for Texas State is November 1st',
-        'Will request recommendations from Mrs. Johnson and Mr. Chen',
-        'Common App essay brainstorming to begin this month',
-      ],
-      studentSentiment: 'positive',
-      recommendedActions: [
-        {
-          id: 'action-m3-1',
-          title: 'Request recommendation letters',
-          description: 'Ask Mrs. Johnson and Mr. Chen for letters of recommendation',
-          priority: 'high',
-          dueDate: '2024-09-15',
-          status: 'converted_to_task',
-          assignee: 'student',
-        },
-        {
-          id: 'action-m3-2',
-          title: 'Start Common App essay brainstorming',
-          priority: 'medium',
-          dueDate: '2024-09-20',
-          status: 'converted_to_task',
-          assignee: 'student',
-        },
-        {
-          id: 'action-m3-3',
-          title: 'Research Texas State early action requirements',
-          priority: 'medium',
-          dueDate: '2024-09-10',
-          status: 'converted_to_task',
-          assignee: 'student',
-        },
-      ],
-      generatedAt: '2024-09-05T10:20:00Z',
-    },
-    createdAt: '2024-08-28T14:00:00Z',
+    createdAt: '2024-09-05T09:00:00Z',
     updatedAt: '2024-09-05T10:20:00Z',
+  },
+  // Planned interaction (upcoming)
+  {
+    id: 'interaction-3',
+    studentId: 'jessica-santiago',
+    counselorId: 'counselor-rodriguez',
+    counselorName: 'Mr. Rodriguez',
+    title: 'FAFSA Follow-up',
+    interactionDate: '2025-01-25',
+    status: 'planned',
+    summary: 'Topics to discuss:\n- FAFSA submission status\n- Financial aid award letters\n- Scholarship applications',
+    createdAt: '2025-01-15T14:00:00Z',
+    updatedAt: '2025-01-15T14:00:00Z',
   },
 ];
 
@@ -760,7 +667,7 @@ export const jessicaData: StudentData = {
   activityHistory: jessicaActivityHistory,
   aiReflections: jessicaAIReflections,
   qualityFlags: jessicaQualityFlags,
-  meetings: jessicaMeetings,
+  interactions: jessicaInteractions,
 };
 
 // =============================================================================
@@ -812,7 +719,7 @@ export const studentAData: StudentData = {
   activityHistory: [],
   aiReflections: [],
   qualityFlags: [],
-  meetings: [],
+  interactions: [],
 };
 
 // Student B - Off-track (GPA < 2.0)
@@ -869,7 +776,7 @@ export const studentBData: StudentData = {
   activityHistory: [],
   aiReflections: [],
   qualityFlags: [],
-  meetings: [],
+  interactions: [],
 };
 
 // Student C - Off-track (missed deadline)
@@ -923,7 +830,7 @@ export const studentCData: StudentData = {
   activityHistory: [],
   aiReflections: [],
   qualityFlags: [],
-  meetings: [],
+  interactions: [],
 };
 
 // Student D - Many reflections (20+) - tests pagination
@@ -983,7 +890,7 @@ export const studentDData: StudentData = {
   activityHistory: [],
   aiReflections: danaReflections,
   qualityFlags: [],
-  meetings: [],
+  interactions: [],
 };
 
 // Student E - GPA exactly 2.0 - boundary condition
@@ -1031,7 +938,7 @@ export const studentEData: StudentData = {
   activityHistory: [],
   aiReflections: [],
   qualityFlags: [],
-  meetings: [],
+  interactions: [],
 };
 
 // =============================================================================

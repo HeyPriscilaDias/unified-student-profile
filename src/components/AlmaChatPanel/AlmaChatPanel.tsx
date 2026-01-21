@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { Box, Typography, IconButton, TextField, InputAdornment, Checkbox, Button, FormControlLabel, Tooltip, Avatar } from '@mui/material';
 import { RotateCcw, History, Sparkles, ChevronDown, ChevronUp, Info, Send, Plus, Check, X, Lock, Globe, Calendar, Clock, ChevronRight } from 'lucide-react';
 import { SubTabNavigation, AIReviewBadge } from '@/components/shared';
-import type { Task, SuggestedAction, Milestone, SmartGoal, Bookmark, StudentProfile, Meeting } from '@/types/student';
+import type { Task, SuggestedAction, Milestone, SmartGoal, Bookmark, StudentProfile, Interaction } from '@/types/student';
 
-type TabType = 'alma' | 'tasks' | 'notes' | 'meetings';
+type TabType = 'alma' | 'tasks' | 'notes' | 'interactions';
 
 interface Note {
   id: string;
@@ -33,7 +33,7 @@ interface AlmaChatPanelProps {
   studentContext?: StudentContext;
   tasks: Task[];
   suggestedActions: SuggestedAction[];
-  meetings?: Meeting[];
+  interactions?: Interaction[];
   studentId?: string;
   onTaskToggle?: (task: Task) => void;
   onNewTask?: (title: string) => void;
@@ -41,8 +41,8 @@ interface AlmaChatPanelProps {
   onTaskDelete?: (taskId: string) => void;
   onActionAccept?: (action: SuggestedAction) => void;
   onActionDismiss?: (action: SuggestedAction) => void;
-  onMeetingClick?: (meeting: Meeting) => void;
-  onScheduleMeeting?: () => void;
+  onInteractionClick?: (interaction: Interaction) => void;
+  onScheduleInteraction?: () => void;
   isFloating?: boolean;
 }
 
@@ -306,7 +306,7 @@ function ActionItem({
         </Typography>
         {action.sourceDate && (
           <Typography sx={{ fontSize: '12px', color: '#6B7280', mt: 0.5 }}>
-            From {action.source === 'meeting_notes' ? 'meeting notes' : 'Alma snapshot'} - {action.sourceDate}
+            From {action.source === 'meeting_summary' ? 'meeting summary' : 'Alma snapshot'} - {action.sourceDate}
           </Typography>
         )}
       </Box>
@@ -377,7 +377,7 @@ function TabButton({
   );
 }
 
-function formatMeetingDate(dateStr: string) {
+function formatInteractionDate(dateStr: string) {
   const date = new Date(dateStr);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -399,7 +399,7 @@ function formatMeetingDate(dateStr: string) {
   });
 }
 
-function formatPastMeetingDate(dateStr: string) {
+function formatPastInteractionDate(dateStr: string) {
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-US', {
     month: 'short',
@@ -408,16 +408,14 @@ function formatPastMeetingDate(dateStr: string) {
   });
 }
 
-function MeetingItem({
-  meeting,
+function InteractionItem({
+  interaction,
   onClick,
-  variant = 'upcoming',
 }: {
-  meeting: Meeting;
+  interaction: Interaction;
   onClick?: () => void;
-  variant?: 'upcoming' | 'past';
 }) {
-  const isUpcoming = variant === 'upcoming';
+  const isPlanned = interaction.status === 'planned';
 
   return (
     <Box
@@ -430,10 +428,10 @@ function MeetingItem({
         px: 1.5,
         borderRadius: '8px',
         cursor: onClick ? 'pointer' : 'default',
-        backgroundColor: isUpcoming ? '#F0FDF4' : '#F9FAFB',
-        border: isUpcoming ? '1px solid #BBF7D0' : '1px solid #E5E7EB',
+        backgroundColor: isPlanned ? '#FFFBEB' : '#F9FAFB',
+        border: isPlanned ? '1px solid #FDE68A' : '1px solid #E5E7EB',
         '&:hover': onClick ? {
-          backgroundColor: isUpcoming ? '#DCFCE7' : '#F3F4F6',
+          backgroundColor: isPlanned ? '#FEF3C7' : '#F3F4F6',
         } : {},
       }}
     >
@@ -442,7 +440,7 @@ function MeetingItem({
           width: 32,
           height: 32,
           borderRadius: '6px',
-          backgroundColor: isUpcoming ? '#22C55E' : '#9CA3AF',
+          backgroundColor: isPlanned ? '#F59E0B' : '#22C55E',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -452,31 +450,39 @@ function MeetingItem({
         <Calendar size={16} color="#fff" />
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography
-          sx={{
-            fontSize: '14px',
-            fontWeight: 500,
-            color: '#111827',
-            mb: 0.25,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {meeting.title}
-        </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
-            {isUpcoming ? formatMeetingDate(meeting.scheduledDate) : formatPastMeetingDate(meeting.scheduledDate)}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
+          <Typography
+            sx={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: '#111827',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {interaction.title}
           </Typography>
-          <Typography sx={{ fontSize: '12px', color: '#9CA3AF' }}>•</Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Clock size={12} color="#9CA3AF" />
-            <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
-              {meeting.duration} min
-            </Typography>
-          </Box>
+          {isPlanned && (
+            <Box
+              sx={{
+                px: 1,
+                py: 0.25,
+                borderRadius: '4px',
+                backgroundColor: '#FEF3C7',
+                fontSize: '10px',
+                fontWeight: 600,
+                color: '#B45309',
+                textTransform: 'uppercase',
+              }}
+            >
+              Planned
+            </Box>
+          )}
         </Box>
+        <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
+          {isPlanned ? formatInteractionDate(interaction.interactionDate) : formatPastInteractionDate(interaction.interactionDate)}
+        </Typography>
       </Box>
       {onClick && (
         <ChevronRight size={16} color="#9CA3AF" style={{ marginTop: 8 }} />
@@ -537,7 +543,7 @@ function NoteItem({ note }: { note: Note }) {
   );
 }
 
-export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggestedActions, meetings = [], studentId, onTaskToggle, onNewTask, onTaskEdit, onTaskDelete, onActionAccept, onActionDismiss, onMeetingClick, onScheduleMeeting, isFloating = false }: AlmaChatPanelProps) {
+export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggestedActions, interactions = [], studentId, onTaskToggle, onNewTask, onTaskEdit, onTaskDelete, onActionAccept, onActionDismiss, onInteractionClick, onScheduleInteraction, isFloating = false }: AlmaChatPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>('alma');
   const [message, setMessage] = useState('');
   const [showMoreSuggestions, setShowMoreSuggestions] = useState(false);
@@ -653,9 +659,9 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
           onClick={() => setActiveTab('tasks')}
         />
         <TabButton
-          label="Meetings"
-          isActive={activeTab === 'meetings'}
-          onClick={() => setActiveTab('meetings')}
+          label="Interactions"
+          isActive={activeTab === 'interactions'}
+          onClick={() => setActiveTab('interactions')}
         />
         <TabButton
           label="Notes"
@@ -1129,8 +1135,8 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
         </Box>
       )}
 
-      {/* Meetings Tab Content */}
-      {activeTab === 'meetings' && (
+      {/* Interactions Tab Content */}
+      {activeTab === 'interactions' && (
         <Box
           sx={{
             flex: 1,
@@ -1139,7 +1145,7 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
             overflowY: 'auto',
           }}
         >
-          {/* Meetings Header */}
+          {/* Interactions Header */}
           <Box
             sx={{
               display: 'flex',
@@ -1163,7 +1169,7 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
               variant="outlined"
               size="small"
               startIcon={<Calendar size={14} />}
-              onClick={onScheduleMeeting}
+              onClick={onScheduleInteraction}
               sx={{
                 textTransform: 'none',
                 fontSize: '13px',
@@ -1179,25 +1185,25 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
             </Button>
           </Box>
 
-          {/* Meetings list */}
+          {/* Interactions list */}
           <Box sx={{ flex: 1, px: 2, py: 2, overflowY: 'auto' }}>
             {(() => {
-              const upcomingMeetings = meetings.filter(
-                (m) => m.status === 'scheduled' || m.status === 'in_progress'
-              ).sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
-              const pastMeetings = meetings.filter(
+              const plannedInteractions = interactions.filter(
+                (m) => m.status === 'planned'
+              ).sort((a, b) => new Date(a.interactionDate).getTime() - new Date(b.interactionDate).getTime());
+              const completedInteractions = interactions.filter(
                 (m) => m.status === 'completed'
-              ).sort((a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime());
+              ).sort((a, b) => new Date(b.interactionDate).getTime() - new Date(a.interactionDate).getTime());
 
-              if (meetings.length === 0) {
+              if (interactions.length === 0) {
                 return (
                   <Box sx={{ textAlign: 'center', py: 4 }}>
                     <Calendar size={32} color="#D1D5DB" style={{ margin: '0 auto 12px' }} />
                     <Typography sx={{ fontSize: '14px', color: '#6B7280', mb: 1 }}>
-                      No meetings scheduled
+                      No interactions logged yet
                     </Typography>
                     <Typography sx={{ fontSize: '13px', color: '#9CA3AF' }}>
-                      Schedule a meeting to discuss {studentFirstName}&apos;s progress
+                      Add an interaction to track conversations with {studentFirstName}
                     </Typography>
                   </Box>
                 );
@@ -1205,8 +1211,8 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
 
               return (
                 <>
-                  {/* Upcoming Meetings */}
-                  {upcomingMeetings.length > 0 && (
+                  {/* Planned Interactions */}
+                  {plannedInteractions.length > 0 && (
                     <Box sx={{ mb: 3 }}>
                       <Typography
                         sx={{
@@ -1218,23 +1224,22 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
                           mb: 1.5,
                         }}
                       >
-                        Upcoming
+                        Planned
                       </Typography>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        {upcomingMeetings.map((meeting) => (
-                          <MeetingItem
-                            key={meeting.id}
-                            meeting={meeting}
-                            variant="upcoming"
-                            onClick={() => onMeetingClick?.(meeting)}
+                        {plannedInteractions.map((interaction) => (
+                          <InteractionItem
+                            key={interaction.id}
+                            interaction={interaction}
+                            onClick={() => onInteractionClick?.(interaction)}
                           />
                         ))}
                       </Box>
                     </Box>
                   )}
 
-                  {/* Past Meetings */}
-                  {pastMeetings.length > 0 && (
+                  {/* Completed Interactions */}
+                  {completedInteractions.length > 0 && (
                     <Box>
                       <Typography
                         sx={{
@@ -1246,18 +1251,17 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
                           mb: 1.5,
                         }}
                       >
-                        Past
+                        Completed
                       </Typography>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        {pastMeetings.slice(0, 5).map((meeting) => (
-                          <MeetingItem
-                            key={meeting.id}
-                            meeting={meeting}
-                            variant="past"
-                            onClick={() => onMeetingClick?.(meeting)}
+                        {completedInteractions.slice(0, 5).map((interaction) => (
+                          <InteractionItem
+                            key={interaction.id}
+                            interaction={interaction}
+                            onClick={() => onInteractionClick?.(interaction)}
                           />
                         ))}
-                        {pastMeetings.length > 5 && (
+                        {completedInteractions.length > 5 && (
                           <Typography
                             sx={{
                               fontSize: '13px',
@@ -1266,7 +1270,7 @@ export function AlmaChatPanel({ studentFirstName, studentContext, tasks, suggest
                               py: 1,
                             }}
                           >
-                            + {pastMeetings.length - 5} more past meetings
+                            + {completedInteractions.length - 5} more completed interactions
                           </Typography>
                         )}
                       </Box>

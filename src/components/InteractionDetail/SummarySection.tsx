@@ -3,10 +3,10 @@
 import { Box, Typography, Button, Chip } from '@mui/material';
 import { Sparkles, RefreshCw, ThumbsUp, Minus, AlertTriangle } from 'lucide-react';
 import { SectionCard } from '@/components/shared';
-import type { MeetingSummary } from '@/types/student';
+import type { InteractionSummary } from '@/types/student';
 
 interface SummarySectionProps {
-  summary: MeetingSummary;
+  summary: InteractionSummary;
   onRegenerate?: () => void;
 }
 

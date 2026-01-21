@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
-import { MeetingsProvider } from "../contexts/MeetingsContext";
+import { InteractionsProvider } from "../contexts/InteractionsContext";
 import { AlmaChatProvider } from "../contexts/AlmaChatContext";
 import { FloatingAlmaChat } from "../components/FloatingAlmaChat";
 
@@ -19,12 +19,12 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ThemeProvider>
-          <MeetingsProvider>
+          <InteractionsProvider>
             <AlmaChatProvider>
               {children}
               <FloatingAlmaChat />
             </AlmaChatProvider>
-          </MeetingsProvider>
+          </InteractionsProvider>
         </ThemeProvider>
       </body>
     </html>

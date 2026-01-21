@@ -27,7 +27,7 @@ export function NotesSection({ notes: initialNotes = '', onNotesChange }: NotesS
 
   return (
     <SectionCard
-      title="Notes"
+      title="Summary"
       icon={<FileText size={18} />}
     >
       <Box>
@@ -38,7 +38,7 @@ export function NotesSection({ notes: initialNotes = '', onNotesChange }: NotesS
           maxRows={20}
           value={notes}
           onChange={handleNotesChange}
-          placeholder="Meeting notes..."
+          placeholder="Add a summary of your interaction..."
           sx={{
             '& .MuiInputBase-root': {
               fontSize: '0.875rem',
