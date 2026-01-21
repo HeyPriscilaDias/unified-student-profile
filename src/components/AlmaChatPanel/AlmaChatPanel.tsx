@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Box, Typography, IconButton, TextField, InputAdornment } from '@mui/material';
-import { RotateCcw, History, ChevronDown, ChevronUp, Info, Send, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Send, X, Maximize2, Minimize2, Plus } from 'lucide-react';
 import { Alma } from '@/components/icons/AlmaIcon';
 import type { Milestone, SmartGoal, Bookmark, StudentProfile } from '@/types/student';
 
@@ -22,26 +22,49 @@ interface AlmaChatPanelProps {
   studentContext?: StudentContext;
   studentId?: string;
   isFloating?: boolean;
+  isExpanded?: boolean;
+  showStudentContext?: boolean;
   onClose?: () => void;
+  onToggleExpand?: () => void;
+  onDismissContext?: () => void;
+  onAddContext?: () => void;
 }
 
-function generateContextAwareSuggestions(context?: StudentContext): { initial: string[]; more: string[] } {
-  if (!context) {
+function generateContextAwareSuggestions(studentFirstName?: string, context?: StudentContext): { initial: string[]; more: string[] } {
+  // No student context - show general suggestions
+  if (!studentFirstName && !context) {
     return {
       initial: [
-        'How to choose the best college for me?',
-        'How to choose a major?',
+        'How to choose the best college for a student?',
+        'What are the key milestones for college readiness?',
       ],
       more: [
-        'What scholarships am I eligible for?',
-        'How do I write a strong personal statement?',
-        'What extracurriculars should I focus on?',
+        'How do I help students with financial aid applications?',
+        'What resources are available for first-generation students?',
+        'Tips for writing effective recommendation letters',
       ],
     };
   }
 
+  // Student context but no detailed data - show student-specific general suggestions
+  if (studentFirstName && !context) {
+    return {
+      initial: [
+        `What colleges might be a good fit for ${studentFirstName}?`,
+        `How can I help ${studentFirstName} explore career options?`,
+      ],
+      more: [
+        `What are ${studentFirstName}'s upcoming deadlines?`,
+        `How to support ${studentFirstName}'s college applications?`,
+        `What scholarships might ${studentFirstName} qualify for?`,
+      ],
+    };
+  }
+
+  // Full context available - generate detailed suggestions
   const suggestions: string[] = [];
-  const { firstName, grade, careerVision, milestones, smartGoals, bookmarks, profile } = context;
+  const { firstName, grade, careerVision, milestones, smartGoals, bookmarks, profile } = context!;
+  const name = studentFirstName || firstName;
 
   // Get career interests from bookmarks
   const careerBookmarks = bookmarks.filter(b => b.type === 'career' && b.isBookmarked);
@@ -58,25 +81,25 @@ function generateContextAwareSuggestions(context?: StudentContext): { initial: s
     const topCareer = careerBookmarks[0];
     suggestions.push(`What are the best pathways to become a ${topCareer.title}?`);
     if (topCareer.tags?.includes('Healthcare')) {
-      suggestions.push(`What clinical experiences would help ${firstName}'s healthcare career goals?`);
+      suggestions.push(`What clinical experiences would help ${name}'s healthcare career goals?`);
     }
   }
 
   // School-specific suggestions
   if (schoolBookmarks.length > 0) {
     const topSchool = schoolBookmarks[0];
-    suggestions.push(`How can ${firstName} strengthen their ${topSchool.title} application?`);
+    suggestions.push(`How can ${name} strengthen their ${topSchool.title} application?`);
   }
 
   // Milestone-based suggestions
   if (pendingMilestones.length > 0) {
     const urgentMilestone = pendingMilestones[0];
     if (urgentMilestone.title.toLowerCase().includes('fafsa')) {
-      suggestions.push(`What documents does ${firstName} need for FAFSA completion?`);
+      suggestions.push(`What documents does ${name} need for FAFSA completion?`);
     } else if (urgentMilestone.title.toLowerCase().includes('college')) {
-      suggestions.push(`What are the key deadlines ${firstName} should track?`);
+      suggestions.push(`What are the key deadlines ${name} should track?`);
     } else if (urgentMilestone.title.toLowerCase().includes('shadow')) {
-      suggestions.push(`How can ${firstName} find job shadowing opportunities?`);
+      suggestions.push(`How can ${name} find job shadowing opportunities?`);
     }
   }
 
@@ -84,32 +107,38 @@ function generateContextAwareSuggestions(context?: StudentContext): { initial: s
   if (activeGoals.length > 0) {
     const topGoal = activeGoals[0];
     if (topGoal.title.toLowerCase().includes('application')) {
-      suggestions.push(`Tips for completing ${firstName}'s remaining college applications?`);
+      suggestions.push(`Tips for completing ${name}'s remaining college applications?`);
     } else if (topGoal.title.toLowerCase().includes('sat') || topGoal.title.toLowerCase().includes('score')) {
-      suggestions.push(`What study strategies could help ${firstName} improve test scores?`);
+      suggestions.push(`What study strategies could help ${name} improve test scores?`);
     }
   }
 
   // Grade-level suggestions
   if (grade === 12) {
-    suggestions.push(`What should ${firstName} know about senior year financial aid?`);
+    suggestions.push(`What should ${name} know about senior year financial aid?`);
     suggestions.push(`How to prepare for college transition?`);
   } else if (grade === 11) {
-    suggestions.push(`What can ${firstName} do this year to prepare for college applications?`);
+    suggestions.push(`What can ${name} do this year to prepare for college applications?`);
   }
 
   // Career vision suggestions
   if (careerVision && careerVision.toLowerCase().includes('nurs')) {
-    suggestions.push(`What nursing programs align with ${firstName}'s goals?`);
+    suggestions.push(`What nursing programs align with ${name}'s goals?`);
   }
 
   // Profile-based suggestions
   if (profile?.experiences?.some(exp => exp.type === 'volunteer')) {
-    suggestions.push(`How can ${firstName}'s volunteer experience strengthen applications?`);
+    suggestions.push(`How can ${name}'s volunteer experience strengthen applications?`);
   }
 
   // Deduplicate and split into initial and more
   const uniqueSuggestions = [...new Set(suggestions)];
+
+  // If we don't have enough suggestions, add some defaults
+  if (uniqueSuggestions.length < 2) {
+    uniqueSuggestions.push(`What colleges might be a good fit for ${name}?`);
+    uniqueSuggestions.push(`How can I help ${name} with their applications?`);
+  }
 
   return {
     initial: uniqueSuggestions.slice(0, 2),
@@ -117,12 +146,27 @@ function generateContextAwareSuggestions(context?: StudentContext): { initial: s
   };
 }
 
-export function AlmaChatPanel({ studentFirstName, studentContext, isFloating = false, onClose }: AlmaChatPanelProps) {
+export function AlmaChatPanel({
+  studentFirstName,
+  studentContext,
+  isFloating = false,
+  isExpanded = false,
+  showStudentContext = false,
+  onClose,
+  onToggleExpand,
+  onDismissContext,
+  onAddContext
+}: AlmaChatPanelProps) {
+  // Determine if we can show add context option (student exists but context is dismissed)
+  const canAddContext = Boolean(onAddContext) && !showStudentContext && Boolean(studentFirstName);
   const [message, setMessage] = useState('');
   const [showMoreSuggestions, setShowMoreSuggestions] = useState(false);
 
-  // Generate context-aware suggestions based on student data
-  const contextSuggestions = generateContextAwareSuggestions(studentContext);
+  // Only use student name for suggestions/welcome when context is active
+  const activeStudentName = showStudentContext ? studentFirstName : '';
+
+  // Generate context-aware suggestions based on student data (only when context is shown)
+  const contextSuggestions = generateContextAwareSuggestions(activeStudentName, showStudentContext ? studentContext : undefined);
 
   const handleSend = () => {
     if (message.trim()) {
@@ -135,14 +179,6 @@ export function AlmaChatPanel({ studentFirstName, studentContext, isFloating = f
     console.log('Suggestion clicked:', suggestion);
   };
 
-  const handleReset = () => {
-    console.log('Reset chat');
-  };
-
-  const handleHistory = () => {
-    console.log('View history');
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -153,13 +189,9 @@ export function AlmaChatPanel({ studentFirstName, studentContext, isFloating = f
   return (
     <Box
       sx={{
-        width: isFloating ? '100%' : '350px',
-        height: isFloating ? '100%' : '100vh',
-        position: isFloating ? 'relative' : 'fixed',
-        right: isFloating ? 'auto' : 0,
-        top: isFloating ? 'auto' : 0,
+        width: '100%',
+        height: '100%',
         backgroundColor: '#fff',
-        borderLeft: isFloating ? 'none' : '1px solid #E5E7EB',
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -193,43 +225,103 @@ export function AlmaChatPanel({ studentFirstName, studentContext, isFloating = f
             fontSize: '14px',
             fontWeight: 600,
             color: '#111827',
-            flex: 1,
           }}
         >
-          Alma
+          Ask Alma
         </Typography>
-        <IconButton
-          size="small"
-          onClick={handleReset}
-          sx={{
-            color: '#6B7280',
-            fontSize: '13px',
-            gap: 0.5,
-            borderRadius: '6px',
-            '&:hover': { backgroundColor: '#F3F4F6' },
-          }}
-        >
-          <RotateCcw size={14} />
-          <Typography component="span" sx={{ fontSize: '13px' }}>
-            Reset
-          </Typography>
-        </IconButton>
-        <IconButton
-          size="small"
-          onClick={handleHistory}
-          sx={{
-            color: '#6B7280',
-            fontSize: '13px',
-            gap: 0.5,
-            borderRadius: '6px',
-            '&:hover': { backgroundColor: '#F3F4F6' },
-          }}
-        >
-          <History size={14} />
-          <Typography component="span" sx={{ fontSize: '13px' }}>
-            History
-          </Typography>
-        </IconButton>
+
+        {/* Student Context Tag */}
+        {showStudentContext && studentFirstName && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              backgroundColor: '#F3F4F6',
+              borderRadius: '20px',
+              pl: 1.5,
+              pr: 0.75,
+              py: 0.5,
+            }}
+          >
+            <Typography
+              sx={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '13px',
+                fontWeight: 400,
+                color: '#4B5563',
+              }}
+            >
+              about {studentFirstName}
+            </Typography>
+            {onDismissContext && (
+              <IconButton
+                size="small"
+                onClick={onDismissContext}
+                sx={{
+                  p: 0.25,
+                  color: '#6B7280',
+                  '&:hover': {
+                    backgroundColor: '#E5E7EB',
+                  },
+                }}
+              >
+                <X size={14} />
+              </IconButton>
+            )}
+          </Box>
+        )}
+
+        {/* Add Student Context Tag */}
+        {canAddContext && (
+          <Box
+            onClick={onAddContext}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              backgroundColor: '#F3F4F6',
+              borderRadius: '20px',
+              px: 1.5,
+              py: 0.5,
+              cursor: 'pointer',
+              '&:hover': {
+                backgroundColor: '#E5E7EB',
+              },
+            }}
+          >
+            <Plus size={14} color="#6B7280" />
+            <Typography
+              sx={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '13px',
+                fontWeight: 400,
+                color: '#4B5563',
+              }}
+            >
+              add student context
+            </Typography>
+          </Box>
+        )}
+
+        {/* Spacer */}
+        <Box sx={{ flex: 1 }} />
+
+        {/* Expand/Collapse Button */}
+        {isFloating && onToggleExpand && (
+          <IconButton
+            size="small"
+            onClick={onToggleExpand}
+            sx={{
+              color: '#6B7280',
+              '&:hover': { backgroundColor: '#F3F4F6' },
+            }}
+          >
+            {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          </IconButton>
+        )}
+
+        {/* Close Button */}
         {isFloating && onClose && (
           <IconButton
             size="small"
@@ -261,8 +353,8 @@ export function AlmaChatPanel({ studentFirstName, studentContext, isFloating = f
             lineHeight: 1.5,
           }}
         >
-          {studentFirstName
-            ? `Hey Sarah, how can I help you support ${studentFirstName} today?`
+          {activeStudentName
+            ? `Hey Sarah, how can I help you support ${activeStudentName} today?`
             : 'Hey Sarah, how can I help you today?'}
         </Typography>
       </Box>
@@ -390,9 +482,6 @@ export function AlmaChatPanel({ studentFirstName, studentContext, isFloating = f
             input: {
               endAdornment: (
                 <InputAdornment position="end" sx={{ gap: 0.5 }}>
-                  <IconButton size="small" sx={{ color: '#9CA3AF' }}>
-                    <Info size={18} />
-                  </IconButton>
                   <IconButton
                     size="small"
                     onClick={handleSend}

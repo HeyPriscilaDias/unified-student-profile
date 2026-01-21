@@ -645,23 +645,25 @@ export function SidePanel({
             </Typography>
           </Box>
 
-          {/* Tasks Filter */}
-          <Box
-            sx={{
-              px: 2,
-              py: 1.5,
-              borderBottom: '1px solid #E5E7EB',
-            }}
-          >
-            <SubTabNavigation
-              options={[
-                { value: 'open', label: `Open (${openCount})` },
-                { value: 'completed', label: `Completed (${completedCount})` },
-              ]}
-              value={taskFilter}
-              onChange={(v) => setTaskFilter(v as 'open' | 'completed')}
-            />
-          </Box>
+          {/* Tasks Filter - only show when there are tasks */}
+          {tasks.length > 0 && (
+            <Box
+              sx={{
+                px: 2,
+                py: 1.5,
+                borderBottom: '1px solid #E5E7EB',
+              }}
+            >
+              <SubTabNavigation
+                options={[
+                  { value: 'open', label: `Open (${openCount})` },
+                  { value: 'completed', label: `Completed (${completedCount})` },
+                ]}
+                value={taskFilter}
+                onChange={(v) => setTaskFilter(v as 'open' | 'completed')}
+              />
+            </Box>
+          )}
 
           {/* Tasks list */}
           <Box sx={{ flex: 1, px: 2, py: 1, overflowY: 'auto' }}>
@@ -735,7 +737,17 @@ export function SidePanel({
             )}
 
             {filteredTasks.length === 0 && !isAddingTask ? (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Box sx={{ textAlign: 'center', py: 4, px: 2, backgroundColor: '#F9FAFB', borderRadius: 2, mt: 1 }}>
+                <Typography
+                  sx={{
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#374151',
+                    mb: 0.5,
+                  }}
+                >
+                  {taskFilter === 'open' ? 'No tasks yet.' : 'No completed tasks.'}
+                </Typography>
                 <Typography
                   sx={{
                     fontSize: '13px',
@@ -743,7 +755,7 @@ export function SidePanel({
                     mb: 2,
                   }}
                 >
-                  {taskFilter === 'open' ? 'No active tasks for this student.' : 'No completed tasks'}
+                  {taskFilter === 'open' ? 'Next steps and follow-ups for this student will show up here.' : ''}
                 </Typography>
                 {taskFilter === 'open' && (
                   <Button
@@ -939,14 +951,29 @@ export function SidePanel({
 
               if (interactions.length === 0) {
                 return (
-                  <Box sx={{ textAlign: 'center', py: 4 }}>
-                    <MessageSquare size={32} color="#D1D5DB" style={{ margin: '0 auto 12px' }} />
-                    <Typography sx={{ fontSize: '14px', color: '#6B7280', mb: 1 }}>
-                      No interactions logged yet.
+                  <Box sx={{ textAlign: 'center', py: 4, px: 2, backgroundColor: '#F9FAFB', borderRadius: 2 }}>
+                    <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#374151', mb: 0.5 }}>
+                      No interactions yet.
                     </Typography>
-                    <Typography sx={{ fontSize: '13px', color: '#9CA3AF' }}>
-                      Add an interaction to start tracking conversations.
+                    <Typography sx={{ fontSize: '13px', color: '#6B7280', mb: 2 }}>
+                      Track conversations, check-ins, and follow-ups with this student.
                     </Typography>
+                    <Button
+                      variant="text"
+                      startIcon={<Plus size={16} />}
+                      onClick={onScheduleInteraction}
+                      sx={{
+                        textTransform: 'none',
+                        color: '#4B5563',
+                        fontSize: '14px',
+                        '&:hover': {
+                          color: '#062F29',
+                          backgroundColor: 'transparent',
+                        },
+                      }}
+                    >
+                      Add interaction
+                    </Button>
                   </Box>
                 );
               }
@@ -1096,7 +1123,18 @@ export function SidePanel({
 
           {/* Notepad list */}
           <Box sx={{ flex: 1, px: 2, py: 2, overflowY: 'auto' }}>
-            {notes.map((note) => <NoteItem key={note.id} note={note} />)}
+            {notes.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4, px: 2, backgroundColor: '#F9FAFB', borderRadius: 2 }}>
+                <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#374151', mb: 0.5 }}>
+                  No notes yet.
+                </Typography>
+                <Typography sx={{ fontSize: '13px', color: '#6B7280' }}>
+                  Add context or reflections to help you and your team support this student.
+                </Typography>
+              </Box>
+            ) : (
+              notes.map((note) => <NoteItem key={note.id} note={note} />)
+            )}
           </Box>
         </Box>
       )}

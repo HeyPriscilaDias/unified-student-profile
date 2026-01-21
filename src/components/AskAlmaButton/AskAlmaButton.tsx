@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, Dialog, DialogContent } from '@mui/material';
+import { Box, Typography, IconButton, Slide } from '@mui/material';
 import { X, Plus } from 'lucide-react';
 import { Alma } from '@/components/icons/AlmaIcon';
 import { AlmaChatPanel } from '@/components/AlmaChatPanel';
@@ -18,6 +18,7 @@ interface AskAlmaButtonProps {
 
 export function AskAlmaButton({ currentStudent }: AskAlmaButtonProps) {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isContextDismissed, setIsContextDismissed] = useState(false);
 
   // Reset context dismissed state when student changes
@@ -33,6 +34,11 @@ export function AskAlmaButton({ currentStudent }: AskAlmaButtonProps) {
 
   const handleClosePanel = () => {
     setIsPanelOpen(false);
+    setIsExpanded(false);
+  };
+
+  const handleToggleExpand = () => {
+    setIsExpanded(!isExpanded);
   };
 
   const handleDismissContext = (e: React.MouseEvent) => {
@@ -48,163 +54,168 @@ export function AskAlmaButton({ currentStudent }: AskAlmaButtonProps) {
   const showStudentContext = currentStudent && !isContextDismissed;
   const showAddContextOption = currentStudent && isContextDismissed;
 
-  // Format student name as "FirstName L."
-  const formatStudentName = (student: StudentInfo) => {
-    return `${student.firstName} ${student.lastName.charAt(0)}.`;
-  };
+  // Panel dimensions based on expanded state
+  const panelStyles = isExpanded
+    ? {
+        width: 'calc(100vw - 48px)',
+        height: 'calc(100vh - 48px)',
+        right: 24,
+        bottom: 24,
+        borderRadius: '12px',
+      }
+    : {
+        width: '50vw',
+        height: '80vh',
+        right: 24,
+        bottom: 0,
+        borderRadius: '12px 12px 0 0',
+      };
 
   return (
     <>
-      {/* Sticky Button */}
-      <Box
-        onClick={handleOpenPanel}
-        sx={{
-          position: 'fixed',
-          bottom: 0,
-          right: 32,
-          width: 350,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          gap: 1.5,
-          backgroundColor: '#ffffff',
-          borderRadius: '12px 12px 0 0',
-          boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.15)',
-          px: 2.5,
-          py: 1.5,
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          zIndex: 2147483647,
-          isolation: 'isolate',
-          '&:hover': {
-            boxShadow: '0 -6px 24px rgba(0, 0, 0, 0.2)',
-          },
-        }}
-      >
-        {/* Alma Icon */}
-        <Alma size={22} color="#062F29" />
-
-        {/* Ask Alma Text */}
-        <Typography
+      {/* Sticky Button - Hidden when panel is open */}
+      {!isPanelOpen && (
+        <Box
+          onClick={handleOpenPanel}
           sx={{
-            fontFamily: 'Inter, sans-serif',
-            fontSize: '14px',
-            fontWeight: 600,
-            color: '#1F2937',
+            position: 'fixed',
+            bottom: 0,
+            right: 24,
+            width: 350,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: 1.5,
+            backgroundColor: '#ffffff',
+            borderRadius: '12px 12px 0 0',
+            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.15)',
+            px: 2.5,
+            py: 1.5,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            zIndex: 2147483647,
+            isolation: 'isolate',
+            '&:hover': {
+              boxShadow: '0 -6px 24px rgba(0, 0, 0, 0.2)',
+            },
           }}
         >
-          Ask Alma
-        </Typography>
+          {/* Alma Icon */}
+          <Alma size={22} color="#062F29" />
 
-        {/* Student Context Tag */}
-        {showStudentContext && (
-          <Box
+          {/* Ask Alma Text */}
+          <Typography
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.75,
-              backgroundColor: '#F3F4F6',
-              borderRadius: '20px',
-              pl: 1.5,
-              pr: 0.75,
-              py: 0.5,
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '14px',
+              fontWeight: 600,
+              color: '#1F2937',
             }}
           >
-            <Typography
+            Ask Alma
+          </Typography>
+
+          {/* Student Context Tag */}
+          {showStudentContext && (
+            <Box
               sx={{
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '14px',
-                fontWeight: 400,
-                color: '#4B5563',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.75,
+                backgroundColor: '#F3F4F6',
+                borderRadius: '20px',
+                pl: 1.5,
+                pr: 0.75,
+                py: 0.5,
               }}
             >
-              about {formatStudentName(currentStudent)}
-            </Typography>
-            <IconButton
-              size="small"
-              onClick={handleDismissContext}
+              <Typography
+                sx={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  color: '#4B5563',
+                }}
+              >
+                about {currentStudent.firstName}
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={handleDismissContext}
+                sx={{
+                  p: 0.25,
+                  color: '#6B7280',
+                  '&:hover': {
+                    backgroundColor: '#E5E7EB',
+                  },
+                }}
+              >
+                <X size={16} />
+              </IconButton>
+            </Box>
+          )}
+
+          {/* Add Student Context Tag */}
+          {showAddContextOption && (
+            <Box
+              onClick={handleAddContext}
               sx={{
-                p: 0.25,
-                color: '#6B7280',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                backgroundColor: '#F3F4F6',
+                borderRadius: '20px',
+                px: 1.5,
+                py: 0.5,
+                cursor: 'pointer',
                 '&:hover': {
                   backgroundColor: '#E5E7EB',
                 },
               }}
             >
-              <X size={16} />
-            </IconButton>
-          </Box>
-        )}
+              <Plus size={14} color="#6B7280" />
+              <Typography
+                sx={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  color: '#4B5563',
+                }}
+              >
+                add student context
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      )}
 
-        {/* Add Student Context Tag */}
-        {showAddContextOption && (
-          <Box
-            onClick={handleAddContext}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.5,
-              backgroundColor: '#F3F4F6',
-              borderRadius: '20px',
-              px: 1.5,
-              py: 0.5,
-              cursor: 'pointer',
-              '&:hover': {
-                backgroundColor: '#E5E7EB',
-              },
-            }}
-          >
-            <Plus size={14} color="#6B7280" />
-            <Typography
-              sx={{
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '14px',
-                fontWeight: 400,
-                color: '#4B5563',
-              }}
-            >
-              add student context
-            </Typography>
-          </Box>
-        )}
-      </Box>
-
-      {/* Alma Chat Panel Dialog */}
-      <Dialog
-        open={isPanelOpen}
-        onClose={handleClosePanel}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
+      {/* Alma Chat Panel */}
+      <Slide direction="left" in={isPanelOpen} mountOnEnter unmountOnExit>
+        <Box
+          sx={{
             position: 'fixed',
-            bottom: 80,
-            right: 40,
-            m: 0,
-            width: 420,
-            maxWidth: 420,
-            maxHeight: 'calc(100vh - 120px)',
-            borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-          },
-        }}
-        slotProps={{
-          backdrop: {
-            sx: {
-              backgroundColor: 'transparent',
-            },
-          },
-        }}
-      >
-        <DialogContent sx={{ p: 0, height: 600 }}>
+            ...panelStyles,
+            backgroundColor: '#ffffff',
+            boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.15)',
+            zIndex: 2147483647,
+            isolation: 'isolate',
+            overflow: 'hidden',
+            transition: 'all 0.3s ease',
+          }}
+        >
           <AlmaChatPanel
-            studentFirstName={showStudentContext ? currentStudent.firstName : ''}
-            studentId={showStudentContext ? currentStudent.id : undefined}
+            studentFirstName={currentStudent?.firstName || ''}
+            studentId={showStudentContext ? currentStudent?.id : undefined}
             isFloating
+            isExpanded={isExpanded}
+            showStudentContext={showStudentContext}
             onClose={handleClosePanel}
+            onToggleExpand={handleToggleExpand}
+            onDismissContext={() => setIsContextDismissed(true)}
+            onAddContext={() => setIsContextDismissed(false)}
           />
-        </DialogContent>
-      </Dialog>
+        </Box>
+      </Slide>
     </>
   );
 }
