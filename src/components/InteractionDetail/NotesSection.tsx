@@ -1,7 +1,11 @@
 'use client';
 
-import { Box, TextField, Button } from '@mui/material';
-import { FileText } from 'lucide-react';
+import { useEffect } from 'react';
+import { Box, Button, IconButton, Tooltip } from '@mui/material';
+import { FileText, Bold, Italic, List, ListOrdered, Heading2 } from 'lucide-react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Placeholder from '@tiptap/extension-placeholder';
 import { Alma } from '@/components/icons/AlmaIcon';
 import { SectionCard } from '@/components/shared';
 import { Slate } from '@/theme/primitives';
@@ -16,6 +20,86 @@ interface NotesSectionProps {
   readOnly?: boolean;
 }
 
+function MenuBar({ editor }: { editor: ReturnType<typeof useEditor> }) {
+  if (!editor) return null;
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        gap: 0.5,
+        p: 1,
+        borderBottom: `1px solid ${Slate[200]}`,
+        backgroundColor: '#FAFAFA',
+        borderTopLeftRadius: '4px',
+        borderTopRightRadius: '4px',
+      }}
+    >
+      <Tooltip title="Bold">
+        <IconButton
+          size="small"
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          sx={{
+            backgroundColor: editor.isActive('bold') ? Slate[200] : 'transparent',
+            '&:hover': { backgroundColor: Slate[100] },
+          }}
+        >
+          <Bold size={16} />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Italic">
+        <IconButton
+          size="small"
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          sx={{
+            backgroundColor: editor.isActive('italic') ? Slate[200] : 'transparent',
+            '&:hover': { backgroundColor: Slate[100] },
+          }}
+        >
+          <Italic size={16} />
+        </IconButton>
+      </Tooltip>
+      <Box sx={{ width: '1px', backgroundColor: Slate[200], mx: 0.5 }} />
+      <Tooltip title="Heading">
+        <IconButton
+          size="small"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          sx={{
+            backgroundColor: editor.isActive('heading', { level: 2 }) ? Slate[200] : 'transparent',
+            '&:hover': { backgroundColor: Slate[100] },
+          }}
+        >
+          <Heading2 size={16} />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Bullet List">
+        <IconButton
+          size="small"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          sx={{
+            backgroundColor: editor.isActive('bulletList') ? Slate[200] : 'transparent',
+            '&:hover': { backgroundColor: Slate[100] },
+          }}
+        >
+          <List size={16} />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Numbered List">
+        <IconButton
+          size="small"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          sx={{
+            backgroundColor: editor.isActive('orderedList') ? Slate[200] : 'transparent',
+            '&:hover': { backgroundColor: Slate[100] },
+          }}
+        >
+          <ListOrdered size={16} />
+        </IconButton>
+      </Tooltip>
+    </Box>
+  );
+}
+
 export function NotesSection({
   notes = '',
   onNotesChange,
@@ -25,60 +109,96 @@ export function NotesSection({
   onGenerate,
   readOnly = false,
 }: NotesSectionProps) {
-  const handleNotesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onNotesChange?.(e.target.value);
-  };
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Placeholder.configure({
+        placeholder,
+      }),
+    ],
+    content: notes,
+    editable: !readOnly,
+    immediatelyRender: false, // Prevent SSR hydration mismatch
+    onUpdate: ({ editor }) => {
+      onNotesChange?.(editor.getHTML());
+    },
+  });
+
+  // Update editor content when notes prop changes externally
+  useEffect(() => {
+    if (editor && notes !== editor.getHTML()) {
+      editor.commands.setContent(notes);
+    }
+  }, [notes, editor]);
+
+  // Update editable state when readOnly changes
+  useEffect(() => {
+    if (editor) {
+      editor.setEditable(!readOnly);
+    }
+  }, [readOnly, editor]);
 
   return (
     <SectionCard
       title={label}
       icon={<FileText size={18} />}
     >
-      <Box sx={{ position: 'relative' }}>
-        <TextField
-          fullWidth
-          multiline
-          minRows={readOnly ? undefined : 12}
-          maxRows={readOnly ? undefined : 20}
-          value={notes}
-          onChange={handleNotesChange}
-          placeholder={placeholder}
-          disabled={readOnly}
+      <Box
+        sx={{
+          border: `1px solid ${Slate[200]}`,
+          borderRadius: '4px',
+          backgroundColor: readOnly ? '#F9FAFB' : 'white',
+          position: 'relative',
+          '&:hover': {
+            borderColor: readOnly ? Slate[200] : Slate[300],
+          },
+          '&:focus-within': {
+            borderColor: Slate[400],
+          },
+        }}
+      >
+        {!readOnly && <MenuBar editor={editor} />}
+        <Box
           sx={{
-            '& .MuiInputBase-root': {
+            minHeight: readOnly ? '300px' : '250px',
+            maxHeight: readOnly ? '300px' : '400px',
+            overflow: 'auto',
+            p: 2,
+            pb: showGenerateButton && !readOnly ? 7 : 2,
+            '& .tiptap': {
+              outline: 'none',
               fontSize: '0.875rem',
-              fontFamily: 'inherit',
               lineHeight: 1.7,
-              backgroundColor: readOnly ? '#F9FAFB' : 'white',
-              paddingBottom: showGenerateButton && !readOnly ? '56px' : undefined,
-              ...(readOnly && {
-                height: '300px',
-                alignItems: 'flex-start',
-                overflow: 'auto',
-              }),
-            },
-            '& .MuiOutlinedInput-root': {
-              '& fieldset': {
-                borderColor: Slate[200],
+              fontFamily: 'inherit',
+              '& p': {
+                margin: 0,
+                marginBottom: '0.5em',
               },
-              '&:hover fieldset': {
-                borderColor: readOnly ? Slate[200] : Slate[300],
+              '& h2': {
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                marginTop: '1em',
+                marginBottom: '0.5em',
               },
-              '&.Mui-focused fieldset': {
-                borderColor: Slate[400],
+              '& ul, & ol': {
+                paddingLeft: '1.5em',
+                marginBottom: '0.5em',
               },
-              '&.Mui-disabled': {
-                '& fieldset': {
-                  borderColor: Slate[200],
-                },
+              '& li': {
+                marginBottom: '0.25em',
               },
-            },
-            '& .MuiInputBase-input': {
-              whiteSpace: 'pre-wrap',
-              WebkitTextFillColor: readOnly ? '#374151' : undefined,
+              '& p.is-editor-empty:first-child::before': {
+                content: 'attr(data-placeholder)',
+                color: '#9CA3AF',
+                float: 'left',
+                height: 0,
+                pointerEvents: 'none',
+              },
             },
           }}
-        />
+        >
+          <EditorContent editor={editor} />
+        </Box>
         {showGenerateButton && !readOnly && (
           <Box sx={{ position: 'absolute', bottom: 12, left: 12 }}>
             <Button
