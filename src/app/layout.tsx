@@ -3,7 +3,6 @@ import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { InteractionsProvider } from "../contexts/InteractionsContext";
 import { AlmaChatProvider } from "../contexts/AlmaChatContext";
-import { FloatingAlmaChat } from "../components/FloatingAlmaChat";
 
 export const metadata: Metadata = {
   title: "Unified Student Profile",
@@ -22,7 +21,6 @@ export default function RootLayout({
           <InteractionsProvider>
             <AlmaChatProvider>
               {children}
-              <FloatingAlmaChat />
             </AlmaChatProvider>
           </InteractionsProvider>
         </ThemeProvider>

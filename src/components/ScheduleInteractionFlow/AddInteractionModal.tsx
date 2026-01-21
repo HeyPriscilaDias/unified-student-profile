@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   IconButton,
   TextField,
 } from '@mui/material';
-import { X, FileText, Mic, Calendar } from 'lucide-react';
+import { X, FileText, Mic } from 'lucide-react';
 
 interface AddInteractionModalProps {
   open: boolean;
@@ -30,6 +30,11 @@ export function AddInteractionModal({
   const [interactionDate, setInteractionDate] = useState<string>(
     new Date().toISOString().split('T')[0] // Default to today YYYY-MM-DD
   );
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDateFieldClick = () => {
+    dateInputRef.current?.showPicker();
+  };
 
   const handleClose = () => {
     // Reset date when closing
@@ -100,23 +105,26 @@ export function AddInteractionModal({
               mb: 1.5,
             }}
           >
-            When is this interaction expected to happen?
+            Date
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Calendar size={20} color="#6B7280" />
-            <TextField
+          <TextField
               type="date"
               value={interactionDate}
               onChange={(e) => setInteractionDate(e.target.value)}
+              onClick={handleDateFieldClick}
+              inputRef={dateInputRef}
               size="small"
               fullWidth
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
+                  cursor: 'pointer',
+                },
+                '& .MuiOutlinedInput-input': {
+                  cursor: 'pointer',
                 },
               }}
             />
-          </Box>
         </Box>
 
         {/* Action options */}

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Box, IconButton, Typography, Switch, Chip, Slide, TextField, InputAdornment } from '@mui/material';
-import { Sparkles, X, RotateCcw, History, ChevronDown, ChevronUp, Info, Send } from 'lucide-react';
+import { X, RotateCcw, History, ChevronDown, ChevronUp, Info, Send } from 'lucide-react';
+import { Alma } from '@willow/icons';
 import { useAlmaChatContext } from '@/contexts/AlmaChatContext';
 import { useStudentData } from '@/hooks/useStudentData';
 import type { Milestone, SmartGoal, Bookmark, StudentProfile } from '@/types/student';
@@ -173,32 +174,40 @@ export function FloatingAlmaChat() {
 
   return (
     <>
-      {/* Floating Button - shown when collapsed */}
+      {/* Ask Alma Button - shown when collapsed */}
       {!isExpanded && (
         <Box
           onClick={toggleExpanded}
           sx={{
             position: 'fixed',
-            bottom: 24,
-            right: 24,
-            width: 56,
-            height: 56,
-            borderRadius: '50%',
-            backgroundColor: '#12B76A',
+            bottom: 0,
+            right: 40,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            gap: 1.5,
+            backgroundColor: 'white',
+            borderRadius: '12px 12px 0 0',
+            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.15)',
+            px: 2.5,
+            py: 1.5,
             cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(18, 183, 106, 0.4)',
             transition: 'all 0.2s ease',
-            zIndex: 1100,
+            zIndex: 9999,
             '&:hover': {
-              transform: 'scale(1.05)',
-              boxShadow: '0 6px 16px rgba(18, 183, 106, 0.5)',
+              boxShadow: '0 -6px 24px rgba(0, 0, 0, 0.2)',
             },
           }}
         >
-          <Sparkles size={24} color="#fff" />
+          <Alma size={22} color="#062F29" />
+          <Typography
+            sx={{
+              fontSize: '16px',
+              fontWeight: 600,
+              color: '#1F2937',
+            }}
+          >
+            Ask Alma
+          </Typography>
         </Box>
       )}
 
@@ -245,10 +254,10 @@ export function FloatingAlmaChat() {
                   justifyContent: 'center',
                 }}
               >
-                <Sparkles size={18} color="#fff" />
+                <Alma size={18} color="#fff" />
               </Box>
               <Typography sx={{ fontSize: '15px', fontWeight: 600, color: '#111827' }}>
-                Alma AI Coach
+                Alma
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -340,7 +349,7 @@ export function FloatingAlmaChat() {
                     },
                   }}
                 >
-                  <Sparkles size={16} color="#12B76A" style={{ marginTop: 2, flexShrink: 0 }} />
+                  <Alma size={16} color="#12B76A" style={{ marginTop: 2, flexShrink: 0 }} />
                   <Typography
                     className="suggestion-text"
                     sx={{
@@ -372,7 +381,7 @@ export function FloatingAlmaChat() {
                       },
                     }}
                   >
-                    <Sparkles size={16} color="#12B76A" style={{ marginTop: 2, flexShrink: 0 }} />
+                    <Alma size={16} color="#12B76A" style={{ marginTop: 2, flexShrink: 0 }} />
                     <Typography
                       className="suggestion-text"
                       sx={{

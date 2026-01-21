@@ -543,6 +543,7 @@ export function SidePanel({
         borderLeft: '1px solid #E5E7EB',
         display: 'flex',
         flexDirection: 'column',
+        zIndex: 1000,
       }}
     >
       {/* Tab Navigation */}
@@ -625,6 +626,24 @@ export function SidePanel({
               </Box>
             </>
           )}
+
+          {/* Tasks Description */}
+          <Box
+            sx={{
+              px: 2,
+              py: 1.5,
+              borderBottom: '1px solid #E5E7EB',
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: '13px',
+                color: '#6B7280',
+              }}
+            >
+              Next steps and follow-ups for this student.
+            </Typography>
+          </Box>
 
           {/* Tasks Filter */}
           <Box
@@ -851,9 +870,6 @@ export function SidePanel({
           {/* Interactions Header */}
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
               px: 2,
               py: 1.5,
               borderBottom: '1px solid #E5E7EB',
@@ -861,28 +877,26 @@ export function SidePanel({
           >
             <Typography
               sx={{
-                fontSize: '14px',
-                fontWeight: 600,
-                color: '#111827',
+                fontSize: '13px',
+                color: '#6B7280',
+                mb: 1.5,
               }}
             >
-              Interactions
+              Keep track of meaningful conversations and follow-ups with this student.
             </Typography>
-            {/* Desktop: Show button in header */}
             {!isMobile && (
               <Button
-                variant="outlined"
-                size="small"
-                startIcon={<Plus size={14} />}
+                variant="contained"
+                fullWidth
+                startIcon={<Plus size={16} />}
                 onClick={onScheduleInteraction}
                 sx={{
                   textTransform: 'none',
-                  fontSize: '13px',
-                  borderColor: '#E5E7EB',
-                  color: '#374151',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  backgroundColor: '#062F29',
                   '&:hover': {
-                    borderColor: '#D1D5DB',
-                    backgroundColor: '#F9FAFB',
+                    backgroundColor: '#2B4C46',
                   },
                 }}
               >
@@ -978,9 +992,6 @@ export function SidePanel({
           {/* Notepad Header */}
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
               px: 2,
               py: 1.5,
               borderBottom: '1px solid #E5E7EB',
@@ -988,12 +999,11 @@ export function SidePanel({
           >
             <Typography
               sx={{
-                fontSize: '14px',
-                fontWeight: 600,
-                color: '#111827',
+                fontSize: '13px',
+                color: '#6B7280',
               }}
             >
-              Notes on this student
+              Add notes to remember important context about this student.
             </Typography>
           </Box>
 
@@ -1086,20 +1096,7 @@ export function SidePanel({
 
           {/* Notepad list */}
           <Box sx={{ flex: 1, px: 2, py: 2, overflowY: 'auto' }}>
-            {notes.length === 0 ? (
-              <Typography
-                sx={{
-                  fontSize: '13px',
-                  color: '#6B7280',
-                  textAlign: 'center',
-                  py: 4,
-                }}
-              >
-                Add notes to remember important context about this student.
-              </Typography>
-            ) : (
-              notes.map((note) => <NoteItem key={note.id} note={note} />)
-            )}
+            {notes.map((note) => <NoteItem key={note.id} note={note} />)}
           </Box>
         </Box>
       )}
