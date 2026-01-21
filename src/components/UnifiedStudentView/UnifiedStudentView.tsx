@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Box } from '@mui/material';
+import { Box, Snackbar, Alert } from '@mui/material';
 import { AppLayout } from '@/components/AppLayout';
 import { StudentHeader } from '@/components/StudentHeader';
 import { TabNavigation } from '@/components/TabNavigation';
@@ -12,12 +12,11 @@ import { PostsecondaryTab } from '@/components/Postsecondary';
 import { StudentWorkTab } from '@/components/StudentWork';
 import { ActivityTab } from '@/components/Activity';
 import { LoadingSection } from '@/components/shared';
-import { SidePanel } from '@/components/SidePanel';
+import { SidePanel, SidePanelTabType } from '@/components/SidePanel';
 import { ScheduleMeetingModal } from '@/components/ScheduleMeetingFlow';
 import type { ScheduledMeetingData } from '@/components/ScheduleMeetingFlow/ScheduleMeetingModal';
 import { useStudentData } from '@/hooks/useStudentData';
 import { useMeetings, useMeetingsContext } from '@/contexts/MeetingsContext';
-import { textToAgendaItems } from '@/components/ScheduleMeetingFlow';
 import type { TabType, Task, SuggestedAction, Meeting } from '@/types/student';
 
 interface UnifiedStudentViewProps {
@@ -33,9 +32,11 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
+  const [sidePanelTab, setSidePanelTab] = useState<SidePanelTabType>('tasks');
+  const [showScheduledToast, setShowScheduledToast] = useState(false);
 
   const studentData = useStudentData(studentId);
-  const { addMeeting, updateMeeting } = useMeetingsContext();
+  const { addMeeting, updateMeeting, completeMeeting } = useMeetingsContext();
 
   // Handle tab query parameter
   useEffect(() => {
@@ -107,31 +108,23 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   };
 
   const handleMeetingScheduled = (data: ScheduledMeetingData) => {
-    // Convert text agenda to a single AgendaItem for storage
-    const agendaItems = data.agenda ? [{
-      id: `agenda-${Date.now()}`,
-      topic: 'Meeting Agenda',
-      description: data.agenda,
-      source: 'counselor_added' as const,
-      covered: false,
-    }] : [];
-
     addMeeting({
       studentId,
       title: data.title,
       scheduledDate: data.scheduledDate,
       duration: data.duration,
-      agenda: agendaItems,
+      agenda: [],
+      notes: data.agenda, // Store the text as notes
     });
     setIsScheduleModalOpen(false);
     setSelectedMeeting(null);
+    // Show toast and switch to meetings tab
+    setShowScheduledToast(true);
+    setSidePanelTab('meetings');
   };
 
   const handleMeetingSaved = (data: ScheduledMeetingData) => {
     if (!selectedMeeting) return;
-
-    // Convert text agenda to AgendaItem[]
-    const agendaItems = textToAgendaItems(data.agenda, data.duration);
 
     updateMeeting({
       id: selectedMeeting.id,
@@ -139,11 +132,21 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
       title: data.title,
       scheduledDate: data.scheduledDate,
       duration: data.duration,
-      agenda: agendaItems,
+      notes: data.agenda, // Store the text as notes
     });
 
     setIsScheduleModalOpen(false);
     setSelectedMeeting(null);
+  };
+
+  const handleMeetingCompleted = (notes: string) => {
+    if (selectedMeeting) {
+      completeMeeting(studentId, selectedMeeting.id, notes);
+      setIsScheduleModalOpen(false);
+      setSelectedMeeting(null);
+      // Switch to meetings tab to show the meeting moved to past
+      setSidePanelTab('meetings');
+    }
   };
 
   const handleMeetingClick = (meeting: Meeting) => {
@@ -261,6 +264,8 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
           suggestedActions={localSuggestedActions}
           meetings={meetings}
           studentId={studentId}
+          activeTab={sidePanelTab}
+          onTabChange={setSidePanelTab}
           onTaskToggle={handleTaskToggle}
           onNewTask={handleNewTask}
           onTaskEdit={handleTaskEdit}
@@ -308,6 +313,22 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
         studentName={student.firstName}
         existingMeeting={selectedMeeting}
       />
+
+      {/* Meeting Scheduled Toast */}
+      <Snackbar
+        open={showScheduledToast}
+        autoHideDuration={4000}
+        onClose={() => setShowScheduledToast(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setShowScheduledToast(false)}
+          severity="success"
+          sx={{ width: '100%' }}
+        >
+          Meeting scheduled successfully
+        </Alert>
+      </Snackbar>
     </AppLayout>
   );
 }

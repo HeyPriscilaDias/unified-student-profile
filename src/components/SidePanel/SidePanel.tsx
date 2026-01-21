@@ -6,7 +6,8 @@ import { Sparkles, Plus, Check, X, Lock, Globe, Calendar, Clock, ChevronRight } 
 import { SubTabNavigation, AIReviewBadge } from '@/components/shared';
 import type { Task, SuggestedAction, Meeting } from '@/types/student';
 
-type TabType = 'tasks' | 'notes' | 'meetings';
+export type SidePanelTabType = 'tasks' | 'notes' | 'meetings';
+type TabType = SidePanelTabType;
 
 interface Note {
   id: string;
@@ -23,6 +24,8 @@ interface SidePanelProps {
   suggestedActions: SuggestedAction[];
   meetings?: Meeting[];
   studentId?: string;
+  activeTab?: TabType;
+  onTabChange?: (tab: TabType) => void;
   onTaskToggle?: (task: Task) => void;
   onNewTask?: (title: string) => void;
   onTaskEdit?: (taskId: string, newTitle: string) => void;
@@ -206,18 +209,44 @@ function ActionItem({
         )}
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <IconButton
-          size="small"
-          onClick={onAccept}
-          sx={{
-            color: '#16A34A',
-            '&:hover': {
-              backgroundColor: '#DCFCE7',
-            },
-          }}
-        >
-          <Check size={18} />
-        </IconButton>
+        {action.assignee === 'student' ? (
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<Plus size={14} />}
+            onClick={onAccept}
+            sx={{
+              textTransform: 'none',
+              fontSize: '12px',
+              fontWeight: 500,
+              color: '#062F29',
+              borderColor: '#D1D5DB',
+              backgroundColor: 'white',
+              px: 1.5,
+              py: 0.5,
+              whiteSpace: 'nowrap',
+              '&:hover': {
+                borderColor: '#062F29',
+                backgroundColor: '#F9FAFB',
+              },
+            }}
+          >
+            Add to student tasks
+          </Button>
+        ) : (
+          <IconButton
+            size="small"
+            onClick={onAccept}
+            sx={{
+              color: '#16A34A',
+              '&:hover': {
+                backgroundColor: '#DCFCE7',
+              },
+            }}
+          >
+            <Check size={18} />
+          </IconButton>
+        )}
         <IconButton
           size="small"
           onClick={onDismiss}
@@ -436,6 +465,8 @@ export function SidePanel({
   suggestedActions,
   meetings = [],
   studentId,
+  activeTab: controlledActiveTab,
+  onTabChange,
   onTaskToggle,
   onNewTask,
   onTaskEdit,
@@ -445,7 +476,17 @@ export function SidePanel({
   onMeetingClick,
   onScheduleMeeting,
 }: SidePanelProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('tasks');
+  const [internalActiveTab, setInternalActiveTab] = useState<TabType>('tasks');
+
+  // Support both controlled and uncontrolled modes
+  const activeTab = controlledActiveTab ?? internalActiveTab;
+  const setActiveTab = (tab: TabType) => {
+    if (onTabChange) {
+      onTabChange(tab);
+    } else {
+      setInternalActiveTab(tab);
+    }
+  };
   const [taskFilter, setTaskFilter] = useState<'open' | 'completed'>('open');
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -513,7 +554,7 @@ export function SidePanel({
         }}
       >
         <TabButton
-          label="To-dos"
+          label="Tasks"
           isActive={activeTab === 'tasks'}
           onClick={() => setActiveTab('tasks')}
         />

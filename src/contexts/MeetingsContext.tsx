@@ -9,6 +9,7 @@ interface NewMeetingData {
   scheduledDate: string;
   duration: number;
   agenda: AgendaItem[];
+  notes?: string;
 }
 
 interface UpdateMeetingData {
@@ -18,6 +19,7 @@ interface UpdateMeetingData {
   scheduledDate?: string;
   duration?: number;
   agenda?: AgendaItem[];
+  notes?: string;
 }
 
 interface MeetingsContextType {
@@ -25,6 +27,8 @@ interface MeetingsContextType {
   getMeetingsForStudent: (studentId: string) => Meeting[];
   addMeeting: (data: NewMeetingData) => Meeting;
   updateMeeting: (data: UpdateMeetingData) => Meeting | null;
+  updateMeetingNotes: (studentId: string, meetingId: string, notes: string) => void;
+  completeMeeting: (studentId: string, meetingId: string, notes?: string) => void;
   initializeMeetings: (studentId: string, meetings: Meeting[]) => void;
 }
 
@@ -60,6 +64,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
       duration: data.duration,
       status: 'scheduled',
       agenda: data.agenda,
+      notes: data.notes,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -91,6 +96,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
         ...(data.scheduledDate !== undefined && { scheduledDate: data.scheduledDate }),
         ...(data.duration !== undefined && { duration: data.duration }),
         ...(data.agenda !== undefined && { agenda: data.agenda }),
+        ...(data.notes !== undefined && { notes: data.notes }),
         updatedAt: new Date().toISOString(),
       };
 
@@ -104,8 +110,55 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
     return updatedMeeting;
   }, []);
 
+  const updateMeetingNotes = useCallback((studentId: string, meetingId: string, notes: string) => {
+    setMeetings(prev => {
+      const newMap = new Map(prev);
+      const studentMeetings = newMap.get(studentId) || [];
+      const meetingIndex = studentMeetings.findIndex(m => m.id === meetingId);
+
+      if (meetingIndex === -1) return prev;
+
+      const existingMeeting = studentMeetings[meetingIndex];
+      const updatedMeeting = {
+        ...existingMeeting,
+        notes,
+        updatedAt: new Date().toISOString(),
+      };
+
+      const newStudentMeetings = [...studentMeetings];
+      newStudentMeetings[meetingIndex] = updatedMeeting;
+      newMap.set(studentId, newStudentMeetings);
+
+      return newMap;
+    });
+  }, []);
+
+  const completeMeeting = useCallback((studentId: string, meetingId: string, notes?: string) => {
+    setMeetings(prev => {
+      const newMap = new Map(prev);
+      const studentMeetings = newMap.get(studentId) || [];
+      const meetingIndex = studentMeetings.findIndex(m => m.id === meetingId);
+
+      if (meetingIndex === -1) return prev;
+
+      const existingMeeting = studentMeetings[meetingIndex];
+      const updatedMeeting = {
+        ...existingMeeting,
+        status: 'completed' as const,
+        ...(notes !== undefined && { notes }),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const newStudentMeetings = [...studentMeetings];
+      newStudentMeetings[meetingIndex] = updatedMeeting;
+      newMap.set(studentId, newStudentMeetings);
+
+      return newMap;
+    });
+  }, []);
+
   return (
-    <MeetingsContext.Provider value={{ meetings, getMeetingsForStudent, addMeeting, updateMeeting, initializeMeetings }}>
+    <MeetingsContext.Provider value={{ meetings, getMeetingsForStudent, addMeeting, updateMeeting, updateMeetingNotes, completeMeeting, initializeMeetings }}>
       {children}
     </MeetingsContext.Provider>
   );

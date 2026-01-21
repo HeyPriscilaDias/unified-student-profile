@@ -47,6 +47,7 @@ export interface SuggestedAction {
   source: 'meeting_notes' | 'alma_snapshot';
   sourceDate?: string;
   status: 'pending' | 'accepted' | 'dismissed';
+  assignee: 'staff' | 'student';
 }
 
 // SMART Goal types
@@ -224,6 +225,7 @@ export interface MeetingRecommendedAction {
   dueDate?: string;
   status: 'pending' | 'converted_to_task' | 'dismissed';
   convertedTaskId?: string;
+  assignee: 'staff' | 'student';
 }
 
 export interface MeetingSummary {
@@ -248,6 +250,9 @@ export interface Meeting {
 
   // Agenda
   agenda: AgendaItem[];
+
+  // Meeting notes (persists across pre-meeting, during, and post-meeting)
+  notes?: string;
 
   // Recording & Transcript (post-meeting)
   recordingUrl?: string;

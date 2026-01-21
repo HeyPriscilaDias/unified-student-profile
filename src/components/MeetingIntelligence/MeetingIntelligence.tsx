@@ -9,9 +9,9 @@ import {
   Modal,
   Snackbar,
   Alert,
-  TextField,
   Collapse,
 } from '@mui/material';
+import { SimpleTextEditor } from '@/components/shared/SimpleTextEditor';
 import {
   Mic,
   Square,
@@ -33,6 +33,8 @@ interface ActionItem {
 interface MeetingIntelligenceProps {
   studentName?: string;
   onClose?: () => void;
+  autoStart?: boolean;
+  onMeetingCompleted?: (notes: string) => void;
 }
 
 // Mock data for the FAFSA meeting
@@ -250,26 +252,28 @@ const ShimmerLoader: React.FC = () => (
 const MeetingIntelligence: React.FC<MeetingIntelligenceProps> = ({
   studentName = 'Student',
   onClose,
+  autoStart = false,
+  onMeetingCompleted,
 }) => {
-  // Generate combined meeting notes
+  // Generate combined meeting notes as HTML
   const generateMeetingNotes = () => {
-    const actionItemsText = MOCK_ACTION_ITEMS.map(item =>
-      `• ${item.text} (${item.assignee === 'student' ? 'Student' : 'Counselor'})`
-    ).join('\n');
+    const actionItemsHtml = MOCK_ACTION_ITEMS.map(item =>
+      `<li>${item.text} (${item.assignee === 'student' ? 'Student' : 'Counselor'})</li>`
+    ).join('');
 
-    const keyDecisionsText = MOCK_KEY_DECISIONS.map(d => `• ${d}`).join('\n');
+    const keyDecisionsHtml = MOCK_KEY_DECISIONS.map(d => `<li>${d}</li>`).join('');
 
-    return `SUMMARY
-${MOCK_SUMMARY}
-
-ACTION ITEMS
-${actionItemsText}
-
-KEY DECISIONS
-${keyDecisionsText}
-
-NEXT STEPS
-Schedule follow-up for March 15th to review Student Aid Report and discuss award letters.`;
+    return `<div><b>SUMMARY</b></div>
+<div>${MOCK_SUMMARY}</div>
+<br>
+<div><b>ACTION ITEMS</b></div>
+<ul>${actionItemsHtml}</ul>
+<br>
+<div><b>KEY DECISIONS</b></div>
+<ul>${keyDecisionsHtml}</ul>
+<br>
+<div><b>NEXT STEPS</b></div>
+<div>Schedule follow-up for March 15th to review Student Aid Report and discuss award letters.</div>`;
   };
 
   // State
@@ -372,10 +376,13 @@ Schedule follow-up for March 15th to review Student Aid Report and discuss award
 
     // Simulate AI processing (3-4 seconds)
     setTimeout(() => {
+      const notes = generateMeetingNotes();
       setPhase('results');
-      setMeetingNotes(generateMeetingNotes());
+      setMeetingNotes(notes);
+      // Notify parent that meeting is completed with generated notes
+      onMeetingCompleted?.(notes);
     }, 3500);
-  }, []);
+  }, [onMeetingCompleted]);
 
   // Reset to initial state
   const resetIntelligence = () => {
@@ -396,6 +403,13 @@ Schedule follow-up for March 15th to review Student Aid Report and discuss award
       }
     };
   }, []);
+
+  // Auto-start recording when autoStart prop is true
+  useEffect(() => {
+    if (autoStart && phase === 'idle') {
+      startRecording();
+    }
+  }, [autoStart]);
 
   // Content renderer
   const renderContent = () => {
@@ -575,31 +589,10 @@ Schedule follow-up for March 15th to review Student Aid Report and discuss award
             {/* Scrollable content area */}
             <Box sx={{ flex: 1, overflow: 'auto', px: 2, pb: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
               {/* Editable text area */}
-              <TextField
-                fullWidth
-                multiline
-                minRows={8}
+              <SimpleTextEditor
                 value={meetingNotes}
-                onChange={(e) => setMeetingNotes(e.target.value)}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    alignItems: 'flex-start',
-                    fontSize: '14px',
-                    color: '#374151',
-                    lineHeight: 1.7,
-                    backgroundColor: '#FAFAFA',
-                    fontFamily: 'inherit',
-                    '& fieldset': {
-                      borderColor: '#E5E7EB',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#D1D5DB',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#062F29',
-                    },
-                  },
-                }}
+                onChange={setMeetingNotes}
+                minRows={8}
               />
 
               {/* Transcript Toggle */}

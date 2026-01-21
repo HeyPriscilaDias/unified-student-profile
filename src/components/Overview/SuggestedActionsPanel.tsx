@@ -1,7 +1,7 @@
 'use client';
 
-import { Box, Typography, IconButton } from '@mui/material';
-import { Sparkles, Check, X } from 'lucide-react';
+import { Box, Typography, IconButton, Button } from '@mui/material';
+import { Sparkles, Check, X, Plus } from 'lucide-react';
 import { AIReviewBadge } from '@/components/shared';
 import type { SuggestedAction } from '@/types/student';
 
@@ -53,18 +53,43 @@ function ActionItem({
         )}
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <IconButton
-          size="small"
-          onClick={onAccept}
-          sx={{
-            color: '#16A34A',
-            '&:hover': {
-              backgroundColor: '#DCFCE7',
-            },
-          }}
-        >
-          <Check size={18} />
-        </IconButton>
+        {action.assignee === 'student' ? (
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<Plus size={14} />}
+            onClick={onAccept}
+            sx={{
+              textTransform: 'none',
+              fontSize: '12px',
+              fontWeight: 500,
+              color: '#062F29',
+              borderColor: '#D1D5DB',
+              backgroundColor: 'white',
+              px: 1.5,
+              py: 0.5,
+              '&:hover': {
+                borderColor: '#062F29',
+                backgroundColor: '#F9FAFB',
+              },
+            }}
+          >
+            Add to student tasks
+          </Button>
+        ) : (
+          <IconButton
+            size="small"
+            onClick={onAccept}
+            sx={{
+              color: '#16A34A',
+              '&:hover': {
+                backgroundColor: '#DCFCE7',
+              },
+            }}
+          >
+            <Check size={18} />
+          </IconButton>
+        )}
         <IconButton
           size="small"
           onClick={onDismiss}

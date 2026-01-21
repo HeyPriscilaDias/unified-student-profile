@@ -1,15 +1,16 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Box, Typography, Button, IconButton, Modal } from '@mui/material';
+import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Box, Typography, Button, IconButton } from '@mui/material';
 import { ArrowLeft, Edit, Trash2, Mic } from 'lucide-react';
 import { MeetingIntelligence } from '@/components/MeetingIntelligence';
 import { AppLayout } from '@/components/AppLayout';
-import { LoadingSection } from '@/components/shared';
+import { LoadingSection, SectionCard } from '@/components/shared';
 import { useStudentData } from '@/hooks/useStudentData';
+import { useMeetings, useMeetingsContext } from '@/contexts/MeetingsContext';
 import { MeetingHeader } from './MeetingHeader';
-import { AgendaSection } from './AgendaSection';
+import { NotesSection } from './NotesSection';
 import { SummarySection } from './SummarySection';
 import { TranscriptSection } from './TranscriptSection';
 import { RecommendedActionsSection } from './RecommendedActionsSection';
@@ -21,13 +22,42 @@ interface MeetingDetailViewProps {
 
 export function MeetingDetailView({ studentId, meetingId }: MeetingDetailViewProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const studentData = useStudentData(studentId);
-  const [showMeetingIntelligence, setShowMeetingIntelligence] = useState(false);
+  const startMeetingParam = searchParams.get('startMeeting') === 'true';
+  const [isInMeetingMode, setIsInMeetingMode] = useState(startMeetingParam);
+  const { updateMeetingNotes, completeMeeting } = useMeetingsContext();
+
+  // Clean up the URL after reading the param
+  useEffect(() => {
+    if (startMeetingParam) {
+      router.replace(`/students/${studentId}/meetings/${meetingId}`, { scroll: false });
+    }
+  }, [startMeetingParam, router, studentId, meetingId]);
+
+  // Use meetings from context (allows real-time updates)
+  const meetings = useMeetings(studentId, studentData?.meetings || []);
 
   const meeting = useMemo(() => {
-    if (!studentData) return null;
-    return studentData.meetings.find((m) => m.id === meetingId) || null;
-  }, [studentData, meetingId]);
+    return meetings.find((m) => m.id === meetingId) || null;
+  }, [meetings, meetingId]);
+
+  const handleNotesChange = useCallback((notes: string) => {
+    updateMeetingNotes(studentId, meetingId, notes);
+  }, [studentId, meetingId, updateMeetingNotes]);
+
+  const handleMeetingCompleted = useCallback((notes: string) => {
+    completeMeeting(studentId, meetingId, notes);
+    setIsInMeetingMode(false);
+  }, [studentId, meetingId, completeMeeting]);
+
+  const handleStartMeeting = useCallback(() => {
+    setIsInMeetingMode(true);
+  }, []);
+
+  const handleCancelMeeting = useCallback(() => {
+    setIsInMeetingMode(false);
+  }, []);
 
   const handleBack = () => {
     router.push(`/students/${studentId}?tab=meetings`);
@@ -109,11 +139,11 @@ export function MeetingDetailView({ studentId, meetingId }: MeetingDetailViewPro
             </Button>
 
             <Box className="flex items-center gap-2">
-              {isUpcoming && (
+              {isUpcoming && !isInMeetingMode && (
                 <Button
                   variant="contained"
                   startIcon={<Mic size={16} />}
-                  onClick={() => setShowMeetingIntelligence(true)}
+                  onClick={handleStartMeeting}
                   sx={{
                     textTransform: 'none',
                     backgroundColor: '#062F29',
@@ -125,17 +155,21 @@ export function MeetingDetailView({ studentId, meetingId }: MeetingDetailViewPro
                   Start Meeting
                 </Button>
               )}
-              <Button
-                variant="outlined"
-                startIcon={<Edit size={16} />}
-                onClick={handleEdit}
-                sx={{ textTransform: 'none' }}
-              >
-                Edit
-              </Button>
-              <IconButton onClick={handleDelete} size="small" className="text-neutral-500">
-                <Trash2 size={18} />
-              </IconButton>
+              {!isInMeetingMode && (
+                <>
+                  <Button
+                    variant="outlined"
+                    startIcon={<Edit size={16} />}
+                    onClick={handleEdit}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    Edit
+                  </Button>
+                  <IconButton onClick={handleDelete} size="small" className="text-neutral-500">
+                    <Trash2 size={18} />
+                  </IconButton>
+                </>
+              )}
             </Box>
           </Box>
         </Box>
@@ -145,14 +179,29 @@ export function MeetingDetailView({ studentId, meetingId }: MeetingDetailViewPro
           {/* Meeting Header */}
           <MeetingHeader meeting={meeting} />
 
-          {/* Agenda */}
-          <Box sx={{ mt: 4 }}>
-            <AgendaSection
-              agenda={meeting.agenda}
-              isEditable={isUpcoming}
-              onEditAgenda={() => console.log('Edit agenda')}
-            />
-          </Box>
+          {/* Meeting Intelligence - shown inline when in meeting mode */}
+          {isInMeetingMode && (
+            <Box sx={{ mt: 4 }}>
+              <SectionCard title="Meeting Notes" icon={<Mic size={18} className="text-green-600" />}>
+                <MeetingIntelligence
+                  studentName={`${studentData.student.firstName} ${studentData.student.lastName}`}
+                  onClose={handleCancelMeeting}
+                  onMeetingCompleted={handleMeetingCompleted}
+                  autoStart
+                />
+              </SectionCard>
+            </Box>
+          )}
+
+          {/* Notes - show when not in meeting mode */}
+          {!isInMeetingMode && (
+            <Box sx={{ mt: 4 }}>
+              <NotesSection
+                notes={meeting.notes}
+                onNotesChange={handleNotesChange}
+              />
+            </Box>
+          )}
 
           {/* AI Summary (completed meetings only) */}
           {isCompleted && meeting.summary && (
@@ -183,44 +232,6 @@ export function MeetingDetailView({ studentId, meetingId }: MeetingDetailViewPro
           )}
         </Box>
       </Box>
-
-      {/* Meeting Intelligence Modal */}
-      <Modal
-        open={showMeetingIntelligence}
-        onClose={() => setShowMeetingIntelligence(false)}
-        slotProps={{
-          backdrop: {
-            sx: {
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            },
-          },
-        }}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1300,
-        }}
-      >
-        <Box
-          sx={{
-            width: '100%',
-            maxWidth: 500,
-            maxHeight: '90vh',
-            mx: 2,
-            borderRadius: '12px',
-            overflow: 'hidden',
-            backgroundColor: '#FFFFFF',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            outline: 'none',
-          }}
-        >
-          <MeetingIntelligence
-            studentName={`${studentData.student.firstName} ${studentData.student.lastName}`}
-            onClose={() => setShowMeetingIntelligence(false)}
-          />
-        </Box>
-      </Modal>
     </AppLayout>
   );
 }

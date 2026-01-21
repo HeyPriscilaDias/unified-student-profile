@@ -250,6 +250,7 @@ export const jessicaSuggestedActions: SuggestedAction[] = [
     description: 'Based on your profile and academic achievements, you may qualify for this scholarship.',
     source: 'alma_snapshot',
     status: 'pending',
+    assignee: 'student',
   },
   {
     id: 'action-2',
@@ -258,6 +259,7 @@ export const jessicaSuggestedActions: SuggestedAction[] = [
     source: 'meeting_notes',
     sourceDate: '2024-12-28',
     status: 'pending',
+    assignee: 'staff',
   },
   {
     id: 'action-3',
@@ -265,6 +267,7 @@ export const jessicaSuggestedActions: SuggestedAction[] = [
     description: 'Your hospital volunteer experience should be documented in your applications.',
     source: 'alma_snapshot',
     status: 'pending',
+    assignee: 'student',
   },
 ];
 
@@ -512,48 +515,6 @@ export const jessicaAIReflections: AIReflection[] = [
 export const jessicaQualityFlags: QualityFlag[] = [];
 
 export const jessicaMeetings: Meeting[] = [
-  // Upcoming meeting
-  {
-    id: 'meeting-1',
-    studentId: 'jessica-santiago',
-    counselorId: 'counselor-rodriguez',
-    counselorName: 'Mr. Rodriguez',
-    title: 'FAFSA Review',
-    scheduledDate: '2025-01-15T10:00:00Z',
-    duration: 30,
-    status: 'scheduled',
-    agenda: [
-      {
-        id: 'agenda-1-1',
-        topic: 'FAFSA Completion Status',
-        description: 'Review remaining steps and discuss any blockers',
-        source: 'ai_recommended',
-        sourceReason: 'Deadline in 9 days, milestone at 33% progress',
-        sourceReference: { type: 'milestone', id: 'milestone-5' },
-        duration: 15,
-        covered: false,
-      },
-      {
-        id: 'agenda-1-2',
-        topic: 'Tax Document Collection',
-        description: 'Ensure all required financial documents are gathered',
-        source: 'ai_recommended',
-        sourceReason: 'Required for FAFSA completion',
-        duration: 10,
-        covered: false,
-      },
-      {
-        id: 'agenda-1-3',
-        topic: 'Next Steps & Follow-up',
-        description: 'Set action items and schedule follow-up if needed',
-        source: 'counselor_added',
-        duration: 5,
-        covered: false,
-      },
-    ],
-    createdAt: '2025-01-03T14:00:00Z',
-    updatedAt: '2025-01-03T14:00:00Z',
-  },
   // Past meeting with full summary
   {
     id: 'meeting-2',
@@ -596,6 +557,22 @@ export const jessicaMeetings: Meeting[] = [
         covered: true,
       },
     ],
+    notes: `COLLEGE PLANNING CHECK-IN
+
+APPLICATION STATUS
+- Texas A&M: Submitted
+- Baylor: Supplemental essay in progress, target by New Year's
+- UH: Not started, using Common App
+
+FINANCIAL AID
+- FAFSA mostly complete
+- Waiting on parent tax documents
+- Priority deadline: January 15th
+
+ACTION ITEMS
+- Complete Baylor supplemental essay
+- Submit University of Houston application
+- Follow up on FAFSA submission`,
     transcript: `[00:00] Mr. Rodriguez: Hi Jessica, thanks for coming in today. How are you feeling about everything?
 [00:15] Jessica: Pretty good actually! I submitted my Texas A&M application last week and I'm feeling confident about my essays.
 [00:32] Mr. Rodriguez: That's great to hear! Let's go through your application status. You mentioned Texas A&M is done - what about the others?
@@ -630,6 +607,7 @@ export const jessicaMeetings: Meeting[] = [
           dueDate: '2025-01-01',
           status: 'converted_to_task',
           convertedTaskId: 'task-from-meeting-1',
+          assignee: 'student',
         },
         {
           id: 'action-m2-2',
@@ -637,6 +615,7 @@ export const jessicaMeetings: Meeting[] = [
           priority: 'medium',
           dueDate: '2025-01-07',
           status: 'pending',
+          assignee: 'student',
         },
         {
           id: 'action-m2-3',
@@ -645,6 +624,7 @@ export const jessicaMeetings: Meeting[] = [
           priority: 'high',
           dueDate: '2025-01-10',
           status: 'pending',
+          assignee: 'student',
         },
       ],
       generatedAt: '2024-12-28T10:35:00Z',
@@ -702,6 +682,25 @@ export const jessicaMeetings: Meeting[] = [
         notes: 'Will ask Mrs. Johnson (AP Bio) and Mr. Chen (AP Calc)',
       },
     ],
+    notes: `SENIOR YEAR KICKOFF
+
+COLLEGE LIST (finalized)
+- UT Austin (reach)
+- Texas A&M
+- Baylor
+- Texas State (early action Nov 1)
+- University of Houston
+
+All schools have nursing/pre-nursing programs
+
+RECOMMENDATION LETTERS
+- Mrs. Johnson (AP Bio)
+- Mr. Chen (AP Calc)
+
+NEXT STEPS
+- Request recommendation letters by Sept 15
+- Start Common App essay brainstorming
+- Research Texas State early action requirements`,
     summary: {
       overview: 'Productive kickoff meeting to align on senior year goals. Jessica has a strong college list focused on Texas schools with nursing programs. She is enthusiastic and well-prepared for the application process.',
       keyPoints: [
@@ -720,6 +719,7 @@ export const jessicaMeetings: Meeting[] = [
           priority: 'high',
           dueDate: '2024-09-15',
           status: 'converted_to_task',
+          assignee: 'student',
         },
         {
           id: 'action-m3-2',
@@ -727,6 +727,7 @@ export const jessicaMeetings: Meeting[] = [
           priority: 'medium',
           dueDate: '2024-09-20',
           status: 'converted_to_task',
+          assignee: 'student',
         },
         {
           id: 'action-m3-3',
@@ -734,6 +735,7 @@ export const jessicaMeetings: Meeting[] = [
           priority: 'medium',
           dueDate: '2024-09-10',
           status: 'converted_to_task',
+          assignee: 'student',
         },
       ],
       generatedAt: '2024-09-05T10:20:00Z',
@@ -852,7 +854,7 @@ export const studentBData: StudentData = {
   ],
   tasks: [],
   suggestedActions: [
-    { id: 'action-1', title: 'Meet with academic advisor', description: 'Discuss strategies for improving grades.', source: 'alma_snapshot', status: 'pending' },
+    { id: 'action-1', title: 'Meet with academic advisor', description: 'Discuss strategies for improving grades.', source: 'alma_snapshot', status: 'pending', assignee: 'staff' },
   ],
   smartGoals: [],
   almaSnapshot: {

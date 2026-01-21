@@ -430,28 +430,31 @@ ${lastMeetingContext}
 
 ## Instructions
 
-Generate a meeting agenda as plain text that follows this format exactly:
+Generate a meeting agenda as HTML that follows this format exactly:
 
-Meeting with ${student.firstName} ${student.lastName}
-Grade ${student.grade} | ${formattedDate}
-
-PRIORITY ITEMS
-- [Topic title]
-  [1-2 sentence context based on student data]
-
-DISCUSSION TOPICS
-- [Topic title]
-  [1-2 sentence context based on student data]
-
-NOTES
-[Leave blank for counselor notes]
+<div><b>Meeting with ${student.firstName} ${student.lastName}</b></div>
+<div>Grade ${student.grade} | ${formattedDate}</div>
+<br>
+<div><b>PRIORITY ITEMS</b></div>
+<ul>
+<li><b>[Topic title]</b><br>[1-2 sentence context based on student data]</li>
+</ul>
+<br>
+<div><b>DISCUSSION TOPICS</b></div>
+<ul>
+<li><b>[Topic title]</b><br>[1-2 sentence context based on student data]</li>
+</ul>
+<br>
+<div><b>NOTES</b></div>
+<div></div>
 
 Requirements:
 1. Include 2-3 priority items based on urgent deadlines, incomplete milestones, or key decision points for this grade level
 2. Include 2-3 discussion topics for career exploration, goals, or grade-level milestones
 3. Each item should have specific context from the student's data
 4. Keep descriptions brief but personalized
-5. Output ONLY the agenda text, no additional commentary or markdown formatting`;
+5. Output ONLY the HTML agenda, no additional commentary or markdown formatting
+6. Use <b> tags for bold text, <ul> and <li> for lists, <br> for line breaks, and <div> for paragraphs`;
 }
 
 /**
@@ -513,7 +516,7 @@ export async function generateTextAgenda(
 }
 
 /**
- * Generate a fallback text agenda when AI is unavailable
+ * Generate a fallback HTML agenda when AI is unavailable
  */
 export function generateFallbackTextAgenda(
   studentData: StudentData,
@@ -526,12 +529,8 @@ export function generateFallbackTextAgenda(
     ? new Date(meetingDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     : 'Upcoming';
 
-  const lines: string[] = [
-    `Meeting with ${student.firstName} ${student.lastName}`,
-    `Grade ${student.grade} | ${formattedDate}`,
-    '',
-    'PRIORITY ITEMS',
-  ];
+  const priorityItems: string[] = [];
+  const discussionItems: string[] = [];
 
   // Add urgent milestones
   const urgentMilestones = milestones
@@ -547,8 +546,7 @@ export function generateFallbackTextAgenda(
     urgentMilestones.forEach(m => {
       const dueDate = new Date(m.dueDate!);
       const daysUntil = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      lines.push(`- ${m.title}`);
-      lines.push(`  Due in ${daysUntil} days. Currently ${m.progress}% complete.`);
+      priorityItems.push(`<li><b>${m.title}</b><br>Due in ${daysUntil} days. Currently ${m.progress}% complete.</li>`);
     });
   }
 
@@ -560,31 +558,24 @@ export function generateFallbackTextAgenda(
 
     activeGoals.forEach(g => {
       const completedCount = g.subtasks.filter(s => s.completed).length;
-      lines.push(`- ${g.title}`);
-      lines.push(`  ${completedCount}/${g.subtasks.length} subtasks completed.`);
+      priorityItems.push(`<li><b>${g.title}</b><br>${completedCount}/${g.subtasks.length} subtasks completed.</li>`);
     });
   }
 
-  if (lines.length === 4) {
-    lines.push('- Review current progress');
-    lines.push('  Check in on overall academic and career planning progress.');
+  if (priorityItems.length === 0) {
+    priorityItems.push('<li><b>Review current progress</b><br>Check in on overall academic and career planning progress.</li>');
   }
-
-  lines.push('');
-  lines.push('DISCUSSION TOPICS');
 
   // Add grade-level topic
   const gradeTopic = getGradeTopicForText(student.grade);
   if (gradeTopic) {
-    lines.push(`- ${gradeTopic.topic}`);
-    lines.push(`  ${gradeTopic.description}`);
+    discussionItems.push(`<li><b>${gradeTopic.topic}</b><br>${gradeTopic.description}</li>`);
   }
 
   // Add career exploration if they have bookmarks
   const topPicks = bookmarks.filter(b => b.isTopPick).slice(0, 2);
   if (topPicks.length > 0) {
-    lines.push('- Career Exploration');
-    lines.push(`  Discuss interest in ${topPicks.map(b => b.title).join(', ')}.`);
+    discussionItems.push(`<li><b>Career Exploration</b><br>Discuss interest in ${topPicks.map(b => b.title).join(', ')}.</li>`);
   }
 
   // Add follow-up from previous meeting
@@ -593,15 +584,24 @@ export function generateFallbackTextAgenda(
     .sort((a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime())[0];
 
   if (lastMeeting?.summary?.recommendedActions?.some(a => a.status === 'pending')) {
-    lines.push('- Follow Up from Previous Meeting');
-    lines.push(`  Review pending action items from ${new Date(lastMeeting.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.`);
+    discussionItems.push(`<li><b>Follow Up from Previous Meeting</b><br>Review pending action items from ${new Date(lastMeeting.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.</li>`);
   }
 
-  lines.push('');
-  lines.push('NOTES');
-  lines.push('');
+  if (discussionItems.length === 0) {
+    discussionItems.push('<li><b>General Check-in</b><br>Review overall progress and upcoming goals.</li>');
+  }
 
-  return lines.join('\n');
+  return `<div><b>Meeting with ${student.firstName} ${student.lastName}</b></div>
+<div>Grade ${student.grade} | ${formattedDate}</div>
+<br>
+<div><b>PRIORITY ITEMS</b></div>
+<ul>${priorityItems.join('')}</ul>
+<br>
+<div><b>DISCUSSION TOPICS</b></div>
+<ul>${discussionItems.join('')}</ul>
+<br>
+<div><b>NOTES</b></div>
+<div></div>`;
 }
 
 function getGradeTopicForText(grade: number): { topic: string; description: string } | null {

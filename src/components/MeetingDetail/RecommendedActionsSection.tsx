@@ -11,27 +11,6 @@ interface RecommendedActionsSectionProps {
   onDismiss?: (actionId: string) => void;
 }
 
-const priorityConfig = {
-  high: {
-    label: 'High',
-    color: 'error' as const,
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-200',
-  },
-  medium: {
-    label: 'Medium',
-    color: 'warning' as const,
-    bgColor: 'bg-amber-50',
-    borderColor: 'border-amber-200',
-  },
-  low: {
-    label: 'Low',
-    color: 'default' as const,
-    bgColor: 'bg-neutral-50',
-    borderColor: 'border-neutral-200',
-  },
-};
-
 export function RecommendedActionsSection({
   actions,
   onAddToTasks,
@@ -42,85 +21,70 @@ export function RecommendedActionsSection({
 
   return (
     <SectionCard
-      title="Recommended Actions"
+      title="Recommended tasks"
       icon={<ListTodo size={18} className="text-amber-500" />}
     >
       <Box className="space-y-3">
         {/* Pending actions */}
-        {pendingActions.map((action) => {
-          const priority = priorityConfig[action.priority];
+        {pendingActions.map((action) => (
+          <Box
+            key={action.id}
+            className="flex items-start gap-3 p-3 rounded-lg border bg-neutral-50 border-neutral-200"
+          >
+            <AlertCircle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
 
-          return (
-            <Box
-              key={action.id}
-              className={`
-                flex items-start gap-3 p-3 rounded-lg border
-                ${priority.bgColor} ${priority.borderColor}
-              `}
-            >
-              <AlertCircle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
+            <Box className="flex-1 min-w-0">
+              <Typography className="font-medium text-neutral-900 text-sm mb-1">
+                {action.title}
+              </Typography>
 
-              <Box className="flex-1 min-w-0">
-                <Box className="flex items-center gap-2 mb-1">
-                  <Typography className="font-medium text-neutral-900 text-sm">
-                    {action.title}
-                  </Typography>
-                  <Chip
-                    label={priority.label}
-                    size="small"
-                    color={priority.color}
-                    sx={{ height: 18, fontSize: '0.65rem' }}
-                  />
-                </Box>
+              {action.description && (
+                <Typography className="text-xs text-neutral-600 mb-2">
+                  {action.description}
+                </Typography>
+              )}
 
-                {action.description && (
-                  <Typography className="text-xs text-neutral-600 mb-2">
-                    {action.description}
-                  </Typography>
-                )}
-
-                {action.dueDate && (
-                  <Typography className="text-xs text-neutral-500">
-                    Suggested due: {new Date(action.dueDate).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                  </Typography>
-                )}
-              </Box>
-
-              <Box className="flex items-center gap-1 flex-shrink-0">
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={<Plus size={14} />}
-                  onClick={() => onAddToTasks?.(action.id)}
-                  sx={{
-                    textTransform: 'none',
-                    fontSize: '0.75rem',
-                    py: 0.5,
-                    px: 1.5,
-                  }}
-                >
-                  Add to Tasks
-                </Button>
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => onDismiss?.(action.id)}
-                  sx={{
-                    textTransform: 'none',
-                    color: 'text.secondary',
-                    minWidth: 'auto',
-                    p: 0.5,
-                  }}
-                >
-                  <X size={16} />
-                </Button>
-              </Box>
+              {action.dueDate && (
+                <Typography className="text-xs text-neutral-500">
+                  Suggested due: {new Date(action.dueDate).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </Typography>
+              )}
             </Box>
-          );
-        })}
+
+            <Box className="flex items-center gap-1 flex-shrink-0">
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<Plus size={14} />}
+                onClick={() => onAddToTasks?.(action.id)}
+                sx={{
+                  textTransform: 'none',
+                  fontSize: '0.75rem',
+                  py: 0.5,
+                  px: 1.5,
+                }}
+              >
+                {action.assignee === 'student' ? 'Add to student tasks' : 'Add to Tasks'}
+              </Button>
+              <Button
+                variant="text"
+                size="small"
+                onClick={() => onDismiss?.(action.id)}
+                sx={{
+                  textTransform: 'none',
+                  color: 'text.secondary',
+                  minWidth: 'auto',
+                  p: 0.5,
+                }}
+              >
+                <X size={16} />
+              </Button>
+            </Box>
+          </Box>
+        ))}
 
         {/* Processed actions */}
         {processedActions.length > 0 && (

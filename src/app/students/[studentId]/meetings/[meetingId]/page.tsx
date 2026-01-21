@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { MeetingDetailView } from '@/components/MeetingDetail';
 
 interface MeetingPageProps {
@@ -6,7 +7,11 @@ interface MeetingPageProps {
 
 export default async function MeetingPage({ params }: MeetingPageProps) {
   const { studentId, meetingId } = await params;
-  return <MeetingDetailView studentId={studentId} meetingId={meetingId} />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <MeetingDetailView studentId={studentId} meetingId={meetingId} />
+    </Suspense>
+  );
 }
 
 export function generateStaticParams() {

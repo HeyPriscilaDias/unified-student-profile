@@ -1,28 +1,26 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
   Box,
   Typography,
   Button,
-  TextField,
   Chip,
   IconButton,
   CircularProgress,
-  Modal,
 } from '@mui/material';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { X, Sparkles, Mic } from 'lucide-react';
-import { MeetingIntelligence } from '@/components/MeetingIntelligence';
+import { SimpleTextEditor } from '@/components/shared/SimpleTextEditor';
 import { Slate } from '@/theme/primitives';
 import { useStudentData } from '@/hooks/useStudentData';
 import { generateTextAgenda } from '@/lib/geminiService';
-import { agendaItemsToText } from './agendaUtils';
 import type { Meeting } from '@/types/student';
 
 interface ScheduleMeetingModalProps {
@@ -119,6 +117,7 @@ export function ScheduleMeetingModal({
   studentName,
   existingMeeting,
 }: ScheduleMeetingModalProps) {
+  const router = useRouter();
   const isEditMode = !!existingMeeting;
 
   const [step, setStep] = useState<Step>('datetime');
@@ -127,7 +126,6 @@ export function ScheduleMeetingModal({
   const [agendaText, setAgendaText] = useState<string>('');
   const [isGeneratingAgenda, setIsGeneratingAgenda] = useState<boolean>(false);
   const [hasInitialized, setHasInitialized] = useState<boolean>(false);
-  const [showMeetingIntelligence, setShowMeetingIntelligence] = useState(false);
 
   const studentData = useStudentData(studentId);
 
@@ -138,19 +136,12 @@ export function ScheduleMeetingModal({
       setSelectedDate(meetingDate.format('YYYY-MM-DD'));
       setSelectedTime(meetingDate.format('HH:mm'));
 
-      // Convert agenda items to text
-      const formattedDate = meetingDate.format('MMMM D, YYYY');
-      const agendaAsText = agendaItemsToText(
-        existingMeeting.agenda,
-        studentName,
-        studentData?.student.grade,
-        formattedDate
-      );
-      setAgendaText(agendaAsText);
+      // Use the meeting notes directly
+      setAgendaText(existingMeeting.notes || '');
       setStep('details');
       setHasInitialized(true);
     }
-  }, [open, existingMeeting, hasInitialized, studentName, studentData?.student.grade]);
+  }, [open, existingMeeting, hasInitialized]);
 
   // Reset hasInitialized when modal closes
   useEffect(() => {
@@ -180,12 +171,12 @@ export function ScheduleMeetingModal({
         setAgendaText(generatedAgenda);
       } else {
         // Fallback if student data not loaded
-        setAgendaText(`Meeting with ${studentName}\n\nPRIORITY ITEMS\n- \n\nDISCUSSION TOPICS\n- \n\nNOTES\n`);
+        setAgendaText(`<div><b>Meeting with ${studentName}</b></div><br><div><b>PRIORITY ITEMS</b></div><ul><li></li></ul><br><div><b>DISCUSSION TOPICS</b></div><ul><li></li></ul><br><div><b>NOTES</b></div><div></div>`);
       }
     } catch (error) {
       console.error('Failed to generate agenda:', error);
       // Set a basic fallback
-      setAgendaText(`Meeting with ${studentName}\n\nPRIORITY ITEMS\n- \n\nDISCUSSION TOPICS\n- \n\nNOTES\n`);
+      setAgendaText(`<div><b>Meeting with ${studentName}</b></div><br><div><b>PRIORITY ITEMS</b></div><ul><li></li></ul><br><div><b>DISCUSSION TOPICS</b></div><ul><li></li></ul><br><div><b>NOTES</b></div><div></div>`);
     } finally {
       setIsGeneratingAgenda(false);
     }
@@ -283,7 +274,7 @@ export function ScheduleMeetingModal({
             {selectedDate && (
               <Box className="mt-4">
                 <Typography className="text-sm font-medium text-neutral-700 mb-3">
-                  Available times for {formatDisplayDate(selectedDate)}
+                  Your availability on {formatDisplayDate(selectedDate)}
                 </Typography>
                 <Box className="flex flex-wrap gap-2">
                   {getAvailableTimeSlots(selectedDate).map((slot) => (
@@ -365,46 +356,24 @@ export function ScheduleMeetingModal({
                 </Typography>
               </Box>
             ) : (
-              <TextField
-                fullWidth
-                multiline
-                minRows={14}
-                maxRows={20}
+              <SimpleTextEditor
                 value={agendaText}
-                onChange={(e) => setAgendaText(e.target.value)}
+                onChange={setAgendaText}
                 placeholder="Meeting agenda will appear here..."
-                sx={{
-                  '& .MuiInputBase-root': {
-                    fontSize: '0.875rem',
-                    fontFamily: 'inherit',
-                    lineHeight: 1.7,
-                    backgroundColor: 'white',
-                  },
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: Slate[200],
-                    },
-                    '&:hover fieldset': {
-                      borderColor: Slate[300],
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: Slate[400],
-                    },
-                  },
-                  '& .MuiInputBase-input': {
-                    whiteSpace: 'pre-wrap',
-                  },
-                }}
+                minRows={14}
               />
             )}
 
             {/* Actions */}
             <Box className="flex flex-col gap-3 mt-4 pt-4 border-t border-neutral-100">
-              {isEditMode && (
+              {isEditMode && existingMeeting && (
                 <Button
                   variant="contained"
                   startIcon={<Mic size={18} />}
-                  onClick={() => setShowMeetingIntelligence(true)}
+                  onClick={() => {
+                    onClose();
+                    router.push(`/students/${studentId}/meetings/${existingMeeting.id}?startMeeting=true`);
+                  }}
                   sx={{
                     textTransform: 'none',
                     py: 1.25,
@@ -439,44 +408,6 @@ export function ScheduleMeetingModal({
           </Box>
         )}
       </DialogContent>
-
-      {/* Meeting Intelligence Modal */}
-      <Modal
-        open={showMeetingIntelligence}
-        onClose={() => setShowMeetingIntelligence(false)}
-        slotProps={{
-          backdrop: {
-            sx: {
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            },
-          },
-        }}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1400,
-        }}
-      >
-        <Box
-          sx={{
-            width: '100%',
-            maxWidth: 500,
-            maxHeight: '90vh',
-            mx: 2,
-            borderRadius: '12px',
-            overflow: 'hidden',
-            backgroundColor: '#FFFFFF',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            outline: 'none',
-          }}
-        >
-          <MeetingIntelligence
-            studentName={studentName}
-            onClose={() => setShowMeetingIntelligence(false)}
-          />
-        </Box>
-      </Modal>
     </Dialog>
   );
 }
