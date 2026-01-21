@@ -13,7 +13,7 @@ import { StudentWorkTab } from '@/components/StudentWork';
 import { ActivityTab } from '@/components/Activity';
 import { LoadingSection } from '@/components/shared';
 import { SidePanel, SidePanelTabType } from '@/components/SidePanel';
-import { AddInteractionModal } from '@/components/ScheduleInteractionFlow';
+import { AddInteractionPopover } from '@/components/ScheduleInteractionFlow';
 import { useStudentData } from '@/hooks/useStudentData';
 import { useInteractions, useInteractionsContext } from '@/contexts/InteractionsContext';
 import type { TabType, Task, SuggestedAction, Interaction } from '@/types/student';
@@ -29,7 +29,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   const [isGeneratingSnapshot, setIsGeneratingSnapshot] = useState(false);
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
-  const [isAddInteractionModalOpen, setIsAddInteractionModalOpen] = useState(false);
+  const [interactionPopoverAnchor, setInteractionPopoverAnchor] = useState<HTMLElement | null>(null);
   const [sidePanelTab, setSidePanelTab] = useState<SidePanelTabType>('tasks');
   const [showInteractionToast, setShowInteractionToast] = useState(false);
 
@@ -93,38 +93,25 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     }, 2000);
   };
 
-  const handleOpenAddInteractionModal = () => {
-    setIsAddInteractionModalOpen(true);
+  const handleOpenAddInteractionPopover = (event: React.MouseEvent<HTMLElement>) => {
+    setInteractionPopoverAnchor(event.currentTarget);
   };
 
-  const handleCloseAddInteractionModal = () => {
-    setIsAddInteractionModalOpen(false);
+  const handleCloseAddInteractionPopover = () => {
+    setInteractionPopoverAnchor(null);
   };
 
-  const handleAddSummary = (interactionDate: string) => {
-    // Create a new interaction and navigate to detail view in summary-edit mode
+  const handleCreateInteraction = (interactionDate: string) => {
+    // Create a new interaction and navigate to detail view
     const newInteraction = addInteraction({
       studentId,
       title: `Interaction with ${student?.firstName || 'Student'}`,
       interactionDate,
       summary: '',
     });
-    setIsAddInteractionModalOpen(false);
-    // Navigate to interaction detail page (summary-only mode)
-    router.push(`/students/${studentId}/interactions/${newInteraction.id}?mode=summary`);
-  };
-
-  const handleStartRecording = (interactionDate: string) => {
-    // Create a new interaction and navigate to detail view with recording started
-    const newInteraction = addInteraction({
-      studentId,
-      title: `Interaction with ${student?.firstName || 'Student'}`,
-      interactionDate,
-      summary: '',
-    });
-    setIsAddInteractionModalOpen(false);
-    // Navigate to interaction detail page with recording auto-start
-    router.push(`/students/${studentId}/interactions/${newInteraction.id}?startInteraction=true`);
+    setInteractionPopoverAnchor(null);
+    // Navigate to interaction detail page
+    router.push(`/students/${studentId}/interactions/${newInteraction.id}`);
   };
 
   const handleInteractionClick = (interaction: Interaction) => {
@@ -245,7 +232,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
           onActionAccept={handleActionAccept}
           onActionDismiss={handleActionDismiss}
           onInteractionClick={handleInteractionClick}
-          onScheduleInteraction={handleOpenAddInteractionModal}
+          onScheduleInteraction={handleOpenAddInteractionPopover}
         />
       }
       currentStudentId={studentId}
@@ -274,13 +261,12 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
         </Box>
       </Box>
 
-      {/* Add Interaction Modal */}
-      <AddInteractionModal
-        open={isAddInteractionModalOpen}
-        onClose={handleCloseAddInteractionModal}
-        onAddSummary={handleAddSummary}
-        onStartRecording={handleStartRecording}
-        studentName={student.firstName}
+      {/* Add Interaction Popover */}
+      <AddInteractionPopover
+        anchorEl={interactionPopoverAnchor}
+        open={Boolean(interactionPopoverAnchor)}
+        onClose={handleCloseAddInteractionPopover}
+        onCreateInteraction={handleCreateInteraction}
       />
 
       {/* Interaction Created Toast */}

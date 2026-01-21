@@ -1,1 +1,1 @@
-export { AddInteractionModal } from './AddInteractionModal';
+export { AddInteractionPopover } from './AddInteractionPopover';

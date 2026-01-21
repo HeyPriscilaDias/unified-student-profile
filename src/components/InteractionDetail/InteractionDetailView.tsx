@@ -208,12 +208,14 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
             </Box>
           )}
 
-          {/* Summary - show when not in interaction mode */}
+          {/* Summary/Talking points - show when not in interaction mode */}
           {!isInInteractionMode && (
             <Box sx={{ mt: 4 }}>
               <NotesSection
                 notes={interaction.summary || ''}
                 onNotesChange={handleSummaryChange}
+                label={isPlanned ? 'Talking points' : 'Summary'}
+                placeholder={isPlanned ? 'Plan what you want to talk about...' : 'Add a summary of your interaction...'}
               />
             </Box>
           )}

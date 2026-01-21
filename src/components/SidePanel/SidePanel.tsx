@@ -33,7 +33,7 @@ interface SidePanelProps {
   onActionAccept?: (action: SuggestedAction) => void;
   onActionDismiss?: (action: SuggestedAction) => void;
   onInteractionClick?: (interaction: Interaction) => void;
-  onScheduleInteraction?: () => void;
+  onScheduleInteraction?: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
 function TaskItem({
@@ -901,7 +901,7 @@ export function SidePanel({
                 variant="contained"
                 fullWidth
                 startIcon={<Plus size={16} />}
-                onClick={onScheduleInteraction}
+                onClick={(e) => onScheduleInteraction?.(e)}
                 sx={{
                   textTransform: 'none',
                   fontSize: '14px',
@@ -922,7 +922,7 @@ export function SidePanel({
             <Fab
               color="primary"
               aria-label="Add interaction"
-              onClick={onScheduleInteraction}
+              onClick={(e) => onScheduleInteraction?.(e)}
               sx={{
                 position: 'absolute',
                 bottom: 24,
@@ -961,7 +961,7 @@ export function SidePanel({
                     <Button
                       variant="text"
                       startIcon={<Plus size={16} />}
-                      onClick={onScheduleInteraction}
+                      onClick={(e) => onScheduleInteraction?.(e)}
                       sx={{
                         textTransform: 'none',
                         color: '#4B5563',

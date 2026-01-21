@@ -9,9 +9,16 @@ import { Slate } from '@/theme/primitives';
 interface NotesSectionProps {
   notes?: string;
   onNotesChange?: (notes: string) => void;
+  label?: string;
+  placeholder?: string;
 }
 
-export function NotesSection({ notes: initialNotes = '', onNotesChange }: NotesSectionProps) {
+export function NotesSection({
+  notes: initialNotes = '',
+  onNotesChange,
+  label = 'Summary',
+  placeholder = 'Add a summary of your interaction...',
+}: NotesSectionProps) {
   const [notes, setNotes] = useState(initialNotes);
 
   // Sync local state with prop changes (e.g., when meeting data loads)
@@ -27,7 +34,7 @@ export function NotesSection({ notes: initialNotes = '', onNotesChange }: NotesS
 
   return (
     <SectionCard
-      title="Summary"
+      title={label}
       icon={<FileText size={18} />}
     >
       <Box>
@@ -38,7 +45,7 @@ export function NotesSection({ notes: initialNotes = '', onNotesChange }: NotesS
           maxRows={20}
           value={notes}
           onChange={handleNotesChange}
-          placeholder="Add a summary of your interaction..."
+          placeholder={placeholder}
           sx={{
             '& .MuiInputBase-root': {
               fontSize: '0.875rem',
