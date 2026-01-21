@@ -20,8 +20,6 @@
     "@fontsource/inter": "^5.2.8",
     "@fontsource/poppins": "^5.2.7",
     "@mui/material": "^7.3.6",
-    "@willow/icons": "workspace:*",
-    "@willow/ui-kit": "workspace:*",
     "@mui/x-date-pickers": "^8.25.0",
     "dayjs": "^1.11.19",
     "lucide-react": "^0.555.0",

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Box, Typography, IconButton, Dialog, DialogContent } from '@mui/material';
 import { X, Plus } from 'lucide-react';
-import { Alma } from '@willow/icons';
+import { Alma } from '@/components/icons/AlmaIcon';
 import { AlmaChatPanel } from '@/components/AlmaChatPanel';
 
 interface StudentInfo {

@@ -18,20 +18,24 @@ import {
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { getAllStudents } from '@/lib/mockData';
-import { essentials, Slate, neutral } from '@willow/ui-kit';
 import {
   Home,
   BookOpen,
   Award,
-  Careers,
-  School,
+  Briefcase,
+  GraduationCap,
   DollarSign,
   Settings,
-  Explore,
-  MyLists,
-  Applications,
+  Compass,
+  List as ListIcon,
+  FileText,
   Bell,
-} from '@willow/icons';
+} from 'lucide-react';
+
+// Inline color tokens (replacing @willow/ui-kit)
+const essentials = { white: '#ffffff' };
+const neutral: Record<number, string> = { 200: '#E5E7EB', 500: '#6B7280' };
+const Slate: Record<number, string> = { 700: '#334155' };
 
 interface SidebarProps {
   currentStudentId?: string;
@@ -163,28 +167,28 @@ const navItems = [
   {
     id: 'careers',
     label: 'Careers',
-    Icon: Careers,
+    Icon: Briefcase,
     submenu: undefined,
   },
   {
     id: 'schools',
     label: 'Schools',
-    Icon: School,
+    Icon: GraduationCap,
     submenu: [
       {
         id: 'explore-schools',
         label: 'Explore Schools',
-        Icon: Explore,
+        Icon: Compass,
       },
       {
         id: 'my-list',
         label: 'My List',
-        Icon: MyLists,
+        Icon: ListIcon,
       },
       {
         id: 'applications',
         label: 'Applications',
-        Icon: Applications,
+        Icon: FileText,
       },
       {
         id: 'recommendations',

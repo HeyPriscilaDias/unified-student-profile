@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Box, Typography, IconButton, TextField, InputAdornment } from '@mui/material';
 import { RotateCcw, History, ChevronDown, ChevronUp, Info, Send, X } from 'lucide-react';
-import { Alma } from '@willow/icons';
+import { Alma } from '@/components/icons/AlmaIcon';
 import type { Milestone, SmartGoal, Bookmark, StudentProfile } from '@/types/student';
 
 interface StudentContext {

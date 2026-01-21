@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Box, IconButton, Typography, Switch, Chip, Slide, TextField, InputAdornment } from '@mui/material';
 import { X, RotateCcw, History, ChevronDown, ChevronUp, Info, Send } from 'lucide-react';
-import { Alma } from '@willow/icons';
+import { Alma } from '@/components/icons/AlmaIcon';
 import { useAlmaChatContext } from '@/contexts/AlmaChatContext';
 import { useStudentData } from '@/hooks/useStudentData';
 import type { Milestone, SmartGoal, Bookmark, StudentProfile } from '@/types/student';
