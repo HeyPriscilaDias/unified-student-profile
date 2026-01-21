@@ -15,10 +15,12 @@ function ActionItem({
   action,
   onAddToTasks,
   onDismiss,
+  isStudentTask,
 }: {
   action: InteractionRecommendedAction;
   onAddToTasks?: (actionId: string) => void;
   onDismiss?: (actionId: string) => void;
+  isStudentTask?: boolean;
 }) {
   const isPending = action.status === 'pending';
 
@@ -75,7 +77,7 @@ function ActionItem({
             px: 1.5,
           }}
         >
-          Add to tasks
+          {isStudentTask ? 'Assign to student' : 'Add to tasks'}
         </Button>
         <Button
           variant="text"
@@ -114,6 +116,42 @@ export function RecommendedActionsSection({
       icon={<ListTodo size={18} className="text-amber-500" />}
     >
       <Box className="space-y-6">
+        {/* Your tasks (counselor) section */}
+        {counselorTasks.length > 0 && (
+          <Box>
+            <Typography
+              sx={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#6B7280',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                mb: 1.5,
+              }}
+            >
+              Your tasks
+            </Typography>
+            <Box className="space-y-2">
+              {pendingCounselorTasks.map((action) => (
+                <ActionItem
+                  key={action.id}
+                  action={action}
+                  onAddToTasks={onAddToTasks}
+                  onDismiss={onDismiss}
+                />
+              ))}
+              {processedCounselorTasks.map((action) => (
+                <ActionItem
+                  key={action.id}
+                  action={action}
+                  onAddToTasks={onAddToTasks}
+                  onDismiss={onDismiss}
+                />
+              ))}
+            </Box>
+          </Box>
+        )}
+
         {/* Student tasks section */}
         {studentTasks.length > 0 && (
           <Box>
@@ -136,6 +174,7 @@ export function RecommendedActionsSection({
                   action={action}
                   onAddToTasks={onAddToTasks}
                   onDismiss={onDismiss}
+                  isStudentTask
                 />
               ))}
               {processedStudentTasks.map((action) => (
@@ -144,42 +183,7 @@ export function RecommendedActionsSection({
                   action={action}
                   onAddToTasks={onAddToTasks}
                   onDismiss={onDismiss}
-                />
-              ))}
-            </Box>
-          </Box>
-        )}
-
-        {/* Counselor tasks section */}
-        {counselorTasks.length > 0 && (
-          <Box>
-            <Typography
-              sx={{
-                fontSize: '12px',
-                fontWeight: 600,
-                color: '#6B7280',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                mb: 1.5,
-              }}
-            >
-              Counselor tasks
-            </Typography>
-            <Box className="space-y-2">
-              {pendingCounselorTasks.map((action) => (
-                <ActionItem
-                  key={action.id}
-                  action={action}
-                  onAddToTasks={onAddToTasks}
-                  onDismiss={onDismiss}
-                />
-              ))}
-              {processedCounselorTasks.map((action) => (
-                <ActionItem
-                  key={action.id}
-                  action={action}
-                  onAddToTasks={onAddToTasks}
-                  onDismiss={onDismiss}
+                  isStudentTask
                 />
               ))}
             </Box>

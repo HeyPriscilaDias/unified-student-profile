@@ -381,7 +381,7 @@ function InteractionItem({
                 textTransform: 'uppercase',
               }}
             >
-              Planned
+              Upcoming
             </Box>
           )}
         </Box>
@@ -752,29 +752,10 @@ export function SidePanel({
                   sx={{
                     fontSize: '13px',
                     color: '#6B7280',
-                    mb: 2,
                   }}
                 >
                   {taskFilter === 'open' ? 'Next steps and follow-ups for this student will show up here.' : ''}
                 </Typography>
-                {taskFilter === 'open' && (
-                  <Button
-                    variant="text"
-                    startIcon={<Plus size={16} />}
-                    onClick={() => setIsAddingTask(true)}
-                    sx={{
-                      textTransform: 'none',
-                      color: '#4B5563',
-                      fontSize: '14px',
-                      '&:hover': {
-                        color: '#062F29',
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
-                    Add task
-                  </Button>
-                )}
               </Box>
             ) : (
               <>
@@ -955,25 +936,9 @@ export function SidePanel({
                     <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#374151', mb: 0.5 }}>
                       No interactions yet.
                     </Typography>
-                    <Typography sx={{ fontSize: '13px', color: '#6B7280', mb: 2 }}>
+                    <Typography sx={{ fontSize: '13px', color: '#6B7280' }}>
                       Track conversations, check-ins, and follow-ups with this student.
                     </Typography>
-                    <Button
-                      variant="text"
-                      startIcon={<Plus size={16} />}
-                      onClick={(e) => onScheduleInteraction?.(e)}
-                      sx={{
-                        textTransform: 'none',
-                        color: '#4B5563',
-                        fontSize: '14px',
-                        '&:hover': {
-                          color: '#062F29',
-                          backgroundColor: 'transparent',
-                        },
-                      }}
-                    >
-                      Add interaction
-                    </Button>
                   </Box>
                 );
               }

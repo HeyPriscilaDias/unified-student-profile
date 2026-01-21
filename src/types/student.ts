@@ -232,6 +232,9 @@ export interface Interaction {
   interactionDate: string; // YYYY-MM-DD format, date only
   status: InteractionStatus;
 
+  // Talking points (planning what to discuss)
+  talkingPoints?: string;
+
   // Summary (user-written or AI-generated)
   summary?: string;
 

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Box, TextField } from '@mui/material';
+import { Box, TextField, Button } from '@mui/material';
 import { FileText } from 'lucide-react';
+import { Alma } from '@/components/icons/AlmaIcon';
 import { SectionCard } from '@/components/shared';
 import { Slate } from '@/theme/primitives';
 
@@ -11,25 +11,22 @@ interface NotesSectionProps {
   onNotesChange?: (notes: string) => void;
   label?: string;
   placeholder?: string;
+  showGenerateButton?: boolean;
+  onGenerate?: () => void;
+  readOnly?: boolean;
 }
 
 export function NotesSection({
-  notes: initialNotes = '',
+  notes = '',
   onNotesChange,
   label = 'Summary',
   placeholder = 'Add a summary of your interaction...',
+  showGenerateButton = false,
+  onGenerate,
+  readOnly = false,
 }: NotesSectionProps) {
-  const [notes, setNotes] = useState(initialNotes);
-
-  // Sync local state with prop changes (e.g., when meeting data loads)
-  useEffect(() => {
-    setNotes(initialNotes);
-  }, [initialNotes]);
-
   const handleNotesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newNotes = e.target.value;
-    setNotes(newNotes);
-    onNotesChange?.(newNotes);
+    onNotesChange?.(e.target.value);
   };
 
   return (
@@ -37,38 +34,77 @@ export function NotesSection({
       title={label}
       icon={<FileText size={18} />}
     >
-      <Box>
+      <Box sx={{ position: 'relative' }}>
         <TextField
           fullWidth
           multiline
-          minRows={12}
-          maxRows={20}
+          minRows={readOnly ? undefined : 12}
+          maxRows={readOnly ? undefined : 20}
           value={notes}
           onChange={handleNotesChange}
           placeholder={placeholder}
+          disabled={readOnly}
           sx={{
             '& .MuiInputBase-root': {
               fontSize: '0.875rem',
               fontFamily: 'inherit',
               lineHeight: 1.7,
-              backgroundColor: 'white',
+              backgroundColor: readOnly ? '#F9FAFB' : 'white',
+              paddingBottom: showGenerateButton && !readOnly ? '56px' : undefined,
+              ...(readOnly && {
+                height: '300px',
+                alignItems: 'flex-start',
+                overflow: 'auto',
+              }),
             },
             '& .MuiOutlinedInput-root': {
               '& fieldset': {
                 borderColor: Slate[200],
               },
               '&:hover fieldset': {
-                borderColor: Slate[300],
+                borderColor: readOnly ? Slate[200] : Slate[300],
               },
               '&.Mui-focused fieldset': {
                 borderColor: Slate[400],
               },
+              '&.Mui-disabled': {
+                '& fieldset': {
+                  borderColor: Slate[200],
+                },
+              },
             },
             '& .MuiInputBase-input': {
               whiteSpace: 'pre-wrap',
+              WebkitTextFillColor: readOnly ? '#374151' : undefined,
             },
           }}
         />
+        {showGenerateButton && !readOnly && (
+          <Box sx={{ position: 'absolute', bottom: 12, left: 12 }}>
+            <Button
+              variant="outlined"
+              startIcon={<Alma size={16} color="#12B76A" />}
+              onClick={onGenerate}
+              sx={{
+                textTransform: 'none',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#374151',
+                borderColor: '#E5E7EB',
+                borderRadius: '8px',
+                backgroundColor: 'white',
+                px: 2,
+                py: 0.75,
+                '&:hover': {
+                  borderColor: '#D1D5DB',
+                  backgroundColor: '#F9FAFB',
+                },
+              }}
+            >
+              Generate talking points
+            </Button>
+          </Box>
+        )}
       </Box>
     </SectionCard>
   );

@@ -646,7 +646,7 @@ NEXT STEPS
     title: 'FAFSA Follow-up',
     interactionDate: '2025-01-25',
     status: 'planned',
-    summary: 'Topics to discuss:\n- FAFSA submission status\n- Financial aid award letters\n- Scholarship applications',
+    summary: '',
     createdAt: '2025-01-15T14:00:00Z',
     updatedAt: '2025-01-15T14:00:00Z',
   },

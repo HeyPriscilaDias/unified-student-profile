@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Typography, Chip } from '@mui/material';
-import { Calendar, User } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import type { Interaction, InteractionStatus } from '@/types/student';
 
@@ -10,7 +10,7 @@ interface InteractionHeaderProps {
 }
 
 const statusConfig: Record<InteractionStatus, { label: string; color: 'default' | 'primary' | 'success' }> = {
-  planned: { label: 'Planned', color: 'primary' },
+  planned: { label: 'Upcoming', color: 'primary' },
   completed: { label: 'Completed', color: 'success' },
 };
 
@@ -26,32 +26,21 @@ export function InteractionHeader({ interaction }: InteractionHeaderProps) {
         p: 3,
       }}
     >
-      <Box className="flex items-start justify-between mb-4">
-        <Typography variant="h5" className="font-semibold text-neutral-900">
-          {interaction.title}
+      <Typography variant="h5" className="font-semibold text-neutral-900 mb-4">
+        {interaction.title}
+      </Typography>
+
+      <Box className="flex items-center gap-3 text-neutral-600">
+        <Calendar size={16} className="text-neutral-400" />
+        <Typography className="text-sm">
+          {formatDate(interaction.interactionDate)}
         </Typography>
         <Chip
           label={status.label}
           color={status.color}
           size="small"
-          sx={{ fontWeight: 500 }}
+          sx={{ fontWeight: 500, ml: 1 }}
         />
-      </Box>
-
-      <Box className="flex items-center gap-6 text-neutral-600">
-        <Box className="flex items-center gap-2">
-          <Calendar size={16} className="text-neutral-400" />
-          <Typography className="text-sm">
-            {formatDate(interaction.interactionDate)}
-          </Typography>
-        </Box>
-
-        <Box className="flex items-center gap-2">
-          <User size={16} className="text-neutral-400" />
-          <Typography className="text-sm">
-            {interaction.counselorName}
-          </Typography>
-        </Box>
       </Box>
     </Box>
   );

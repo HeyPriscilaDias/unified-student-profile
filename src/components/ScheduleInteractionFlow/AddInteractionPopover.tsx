@@ -1,17 +1,16 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Popover, Box, Typography, Button, TextField } from '@mui/material';
+import { Dialog, Box, Typography, Button, TextField } from '@mui/material';
 
 interface AddInteractionPopoverProps {
-  anchorEl: HTMLElement | null;
+  anchorEl?: HTMLElement | null;
   open: boolean;
   onClose: () => void;
   onCreateInteraction: (interactionDate: string) => void;
 }
 
 export function AddInteractionPopover({
-  anchorEl,
   open,
   onClose,
   onCreateInteraction,
@@ -40,26 +39,22 @@ export function AddInteractionPopover({
   const isDateValid = !!interactionDate;
 
   return (
-    <Popover
+    <Dialog
       open={open}
-      anchorEl={anchorEl}
       onClose={handleClose}
-      anchorOrigin={{
-        vertical: 'bottom',
-        horizontal: 'left',
-      }}
-      transformOrigin={{
-        vertical: 'top',
-        horizontal: 'left',
-      }}
       slotProps={{
+        backdrop: {
+          sx: {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          },
+        },
         paper: {
           sx: {
             borderRadius: '12px',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-            mt: 1,
             p: 2.5,
-            width: 300,
+            width: 340,
+            maxWidth: '90vw',
           },
         },
       }}
@@ -126,7 +121,7 @@ export function AddInteractionPopover({
           Create interaction
         </Button>
       </Box>
-    </Popover>
+    </Dialog>
   );
 }
 

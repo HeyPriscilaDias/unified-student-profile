@@ -23,6 +23,7 @@ interface InteractionsContextType {
   getInteractionsForStudent: (studentId: string) => Interaction[];
   addInteraction: (data: NewInteractionData) => Interaction;
   updateInteraction: (data: UpdateInteractionData) => Interaction | null;
+  updateInteractionTalkingPoints: (studentId: string, interactionId: string, talkingPoints: string) => void;
   updateInteractionSummary: (studentId: string, interactionId: string, summary: string) => void;
   markInteractionComplete: (studentId: string, interactionId: string) => void;
   deleteInteraction: (studentId: string, interactionId: string) => void;
@@ -103,6 +104,29 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
     return updatedInteraction;
   }, []);
 
+  const updateInteractionTalkingPoints = useCallback((studentId: string, interactionId: string, talkingPoints: string) => {
+    setInteractions(prev => {
+      const newMap = new Map(prev);
+      const studentInteractions = newMap.get(studentId) || [];
+      const interactionIndex = studentInteractions.findIndex(m => m.id === interactionId);
+
+      if (interactionIndex === -1) return prev;
+
+      const existingInteraction = studentInteractions[interactionIndex];
+      const updatedInteraction = {
+        ...existingInteraction,
+        talkingPoints,
+        updatedAt: new Date().toISOString(),
+      };
+
+      const newStudentInteractions = [...studentInteractions];
+      newStudentInteractions[interactionIndex] = updatedInteraction;
+      newMap.set(studentId, newStudentInteractions);
+
+      return newMap;
+    });
+  }, []);
+
   const updateInteractionSummary = useCallback((studentId: string, interactionId: string, summary: string) => {
     setInteractions(prev => {
       const newMap = new Map(prev);
@@ -165,6 +189,7 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
       getInteractionsForStudent,
       addInteraction,
       updateInteraction,
+      updateInteractionTalkingPoints,
       updateInteractionSummary,
       markInteractionComplete,
       deleteInteraction,
