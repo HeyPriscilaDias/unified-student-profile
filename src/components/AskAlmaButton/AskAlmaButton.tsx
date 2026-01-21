@@ -65,7 +65,7 @@ export function AskAlmaButton({ currentStudent }: AskAlmaButtonProps) {
           width: 350,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: 'flex-start',
           gap: 1.5,
           backgroundColor: '#ffffff',
           borderRadius: '12px 12px 0 0',
@@ -87,7 +87,8 @@ export function AskAlmaButton({ currentStudent }: AskAlmaButtonProps) {
         {/* Ask Alma Text */}
         <Typography
           sx={{
-            fontSize: '16px',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '14px',
             fontWeight: 600,
             color: '#1F2937',
           }}
@@ -111,7 +112,9 @@ export function AskAlmaButton({ currentStudent }: AskAlmaButtonProps) {
           >
             <Typography
               sx={{
+                fontFamily: 'Inter, sans-serif',
                 fontSize: '14px',
+                fontWeight: 400,
                 color: '#4B5563',
               }}
             >
@@ -154,7 +157,9 @@ export function AskAlmaButton({ currentStudent }: AskAlmaButtonProps) {
             <Plus size={14} color="#6B7280" />
             <Typography
               sx={{
+                fontFamily: 'Inter, sans-serif',
                 fontSize: '14px',
+                fontWeight: 400,
                 color: '#4B5563',
               }}
             >
