@@ -446,75 +446,78 @@ export function Sidebar({ currentStudentId }: SidebarProps) {
           </Box>
         )}
 
-        {/* View Mode Toggle */}
-        <Box>
-          <Typography
-            sx={{
-              fontSize: '11px',
-              color: neutral[500],
-              mb: 0.5,
-              fontWeight: 500,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              px: 0.5,
-            }}
-          >
-            View Mode
-          </Typography>
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={handleViewModeChange}
-            size="small"
-            fullWidth
-            sx={{
-              '& .MuiToggleButtonGroup-grouped': {
-                border: `1px solid ${neutral[200]}`,
-                '&:not(:first-of-type)': {
-                  borderLeft: `1px solid ${neutral[200]}`,
-                  marginLeft: 0,
-                },
-                '&.Mui-selected': {
-                  backgroundColor: Slate[700],
-                  color: essentials.white,
-                  '&:hover': {
-                    backgroundColor: Slate[600],
-                  },
-                },
-                '&:not(.Mui-selected)': {
-                  backgroundColor: neutral[50],
-                  color: neutral[700],
-                  '&:hover': {
-                    backgroundColor: neutral[100],
-                  },
-                },
-              },
-            }}
-          >
-            <ToggleButton
-              value="student"
+        {/* View Mode Toggle - Hidden for now, will be re-enabled later */}
+        {/* TODO: Set SHOW_VIEW_MODE_TOGGLE to true to re-enable */}
+        {false && (
+          <Box>
+            <Typography
               sx={{
-                fontSize: '12px',
+                fontSize: '11px',
+                color: neutral[500],
+                mb: 0.5,
                 fontWeight: 500,
-                textTransform: 'none',
-                py: 0.75,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                px: 0.5,
               }}
             >
-              Student
-            </ToggleButton>
-            <ToggleButton
-              value="staff"
+              View Mode
+            </Typography>
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={handleViewModeChange}
+              size="small"
+              fullWidth
               sx={{
-                fontSize: '12px',
-                fontWeight: 500,
-                textTransform: 'none',
-                py: 0.75,
+                '& .MuiToggleButtonGroup-grouped': {
+                  border: `1px solid ${neutral[200]}`,
+                  '&:not(:first-of-type)': {
+                    borderLeft: `1px solid ${neutral[200]}`,
+                    marginLeft: 0,
+                  },
+                  '&.Mui-selected': {
+                    backgroundColor: Slate[700],
+                    color: essentials.white,
+                    '&:hover': {
+                      backgroundColor: Slate[600],
+                    },
+                  },
+                  '&:not(.Mui-selected)': {
+                    backgroundColor: neutral[50],
+                    color: neutral[700],
+                    '&:hover': {
+                      backgroundColor: neutral[100],
+                    },
+                  },
+                },
               }}
             >
-              Staff
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
+              <ToggleButton
+                value="student"
+                sx={{
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  textTransform: 'none',
+                  py: 0.75,
+                }}
+              >
+                Student
+              </ToggleButton>
+              <ToggleButton
+                value="staff"
+                sx={{
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  textTransform: 'none',
+                  py: 0.75,
+                }}
+              >
+                Staff
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+        )}
       </TestingSection>
     </SidebarContainer>
   );
