@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { Box, Button, IconButton, Tooltip } from '@mui/material';
 import { FileText, Bold, Italic, List, ListOrdered, Heading2 } from 'lucide-react';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Alma } from '@/components/icons/AlmaIcon';
@@ -20,7 +20,7 @@ interface NotesSectionProps {
   readOnly?: boolean;
 }
 
-function MenuBar({ editor }: { editor: ReturnType<typeof useEditor> }) {
+function MenuBar({ editor }: { editor: Editor | null }) {
   if (!editor) return null;
 
   return (
@@ -148,7 +148,8 @@ export function NotesSection({
           border: `1px solid ${Slate[200]}`,
           borderRadius: '4px',
           backgroundColor: readOnly ? '#F9FAFB' : 'white',
-          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
           '&:hover': {
             borderColor: readOnly ? Slate[200] : Slate[300],
           },
@@ -160,32 +161,46 @@ export function NotesSection({
         {!readOnly && <MenuBar editor={editor} />}
         <Box
           sx={{
-            minHeight: readOnly ? '300px' : '250px',
-            maxHeight: readOnly ? '300px' : '400px',
+            minHeight: readOnly ? '300px' : '200px',
+            maxHeight: readOnly ? '300px' : '350px',
             overflow: 'auto',
             p: 2,
-            pb: showGenerateButton && !readOnly ? 7 : 2,
             '& .tiptap': {
               outline: 'none',
-              fontSize: '0.875rem',
+              fontSize: '14px',
               lineHeight: 1.7,
-              fontFamily: 'inherit',
+              fontFamily: 'Inter, sans-serif',
               '& p': {
                 margin: 0,
                 marginBottom: '0.5em',
+                fontSize: '14px',
               },
               '& h2': {
-                fontSize: '1.1rem',
+                fontSize: '14px',
                 fontWeight: 600,
                 marginTop: '1em',
+                marginBottom: '0.5em',
+              },
+              '& h3': {
+                fontSize: '14px',
+                fontWeight: 600,
+                marginTop: '0.75em',
                 marginBottom: '0.5em',
               },
               '& ul, & ol': {
                 paddingLeft: '1.5em',
                 marginBottom: '0.5em',
+                fontSize: '14px',
               },
               '& li': {
                 marginBottom: '0.25em',
+                fontSize: '14px',
+              },
+              '& strong': {
+                fontWeight: 600,
+              },
+              '& em': {
+                fontStyle: 'italic',
               },
               '& p.is-editor-empty:first-child::before': {
                 content: 'attr(data-placeholder)',
@@ -200,7 +215,15 @@ export function NotesSection({
           <EditorContent editor={editor} />
         </Box>
         {showGenerateButton && !readOnly && (
-          <Box sx={{ position: 'absolute', bottom: 12, left: 12 }}>
+          <Box
+            sx={{
+              borderTop: `1px solid ${Slate[200]}`,
+              p: 1.5,
+              backgroundColor: '#FAFAFA',
+              borderBottomLeftRadius: '4px',
+              borderBottomRightRadius: '4px',
+            }}
+          >
             <Button
               variant="outlined"
               startIcon={<Alma size={16} color="#12B76A" />}
@@ -221,7 +244,7 @@ export function NotesSection({
                 },
               }}
             >
-              Generate talking points
+              {notes && notes.replace(/<[^>]*>/g, '').trim() ? 'Re-generate talking points' : 'Generate talking points'}
             </Button>
           </Box>
         )}

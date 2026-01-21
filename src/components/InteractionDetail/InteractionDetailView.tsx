@@ -94,54 +94,48 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
     if (!studentData) return;
 
     const { student, profile, milestones, tasks, smartGoals, bookmarks } = studentData;
-    const talkingPoints: string[] = [];
-
-    // Add greeting/opener
-    talkingPoints.push(`## Meeting with ${student.firstName} ${student.lastName}`);
-    talkingPoints.push('');
+    const html: string[] = [];
 
     // Academic check-in
-    talkingPoints.push('### Academic Check-in');
+    const academicItems: string[] = [];
     if (student.gpa) {
-      talkingPoints.push(`- Current GPA: ${student.gpa} - How are classes going this semester?`);
+      academicItems.push(`<li>Current GPA: <strong>${student.gpa}</strong> - How are classes going this semester?</li>`);
     }
     if (student.satScore || student.actScore) {
       const scores = [];
       if (student.satScore) scores.push(`SAT: ${student.satScore}`);
       if (student.actScore) scores.push(`ACT: ${student.actScore}`);
-      talkingPoints.push(`- Test scores (${scores.join(', ')}) - Any plans to retake?`);
+      academicItems.push(`<li>Test scores (<strong>${scores.join(', ')}</strong>) - Any plans to retake?</li>`);
     }
-    talkingPoints.push('');
+    if (academicItems.length > 0) {
+      html.push(`<h3>Academic Check-in</h3>`);
+      html.push(`<ul>${academicItems.join('')}</ul>`);
+    }
 
     // Milestones progress
     const pendingMilestones = milestones.filter(m => m.status === 'not_done');
     if (pendingMilestones.length > 0) {
-      talkingPoints.push('### Upcoming Milestones');
-      pendingMilestones.slice(0, 3).forEach(m => {
-        talkingPoints.push(`- ${m.title} (${m.progress}% complete)`);
-      });
-      talkingPoints.push('');
+      html.push(`<h3>Upcoming Milestones</h3>`);
+      html.push(`<ul>${pendingMilestones.slice(0, 3).map(m =>
+        `<li>${m.title} (<strong>${m.progress}%</strong> complete)</li>`
+      ).join('')}</ul>`);
     }
 
     // Open tasks
     const openTasks = tasks.filter(t => t.status === 'open');
     if (openTasks.length > 0) {
-      talkingPoints.push('### Tasks to Follow Up On');
-      openTasks.slice(0, 3).forEach(t => {
-        talkingPoints.push(`- ${t.title}`);
-      });
-      talkingPoints.push('');
+      html.push(`<h3>Tasks to Follow Up On</h3>`);
+      html.push(`<ul>${openTasks.slice(0, 3).map(t => `<li>${t.title}</li>`).join('')}</ul>`);
     }
 
     // Goals discussion
     const activeGoals = smartGoals.filter(g => g.status === 'active');
     if (activeGoals.length > 0) {
-      talkingPoints.push('### Goals Progress');
-      activeGoals.slice(0, 2).forEach(g => {
+      html.push(`<h3>Goals Progress</h3>`);
+      html.push(`<ul>${activeGoals.slice(0, 2).map(g => {
         const completedSubtasks = g.subtasks.filter(s => s.completed).length;
-        talkingPoints.push(`- ${g.title} (${completedSubtasks}/${g.subtasks.length} steps completed)`);
-      });
-      talkingPoints.push('');
+        return `<li>${g.title} (<strong>${completedSubtasks}/${g.subtasks.length}</strong> steps completed)</li>`;
+      }).join('')}</ul>`);
     }
 
     // Career/postsecondary interests
@@ -149,33 +143,31 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
     const schoolBookmarks = bookmarks.filter(b => b.type === 'school' && b.isBookmarked);
 
     if (careerBookmarks.length > 0 || schoolBookmarks.length > 0 || profile.careerVision) {
-      talkingPoints.push('### Postsecondary Planning');
+      html.push(`<h3>Postsecondary Planning</h3>`);
+      const planningItems: string[] = [];
       if (profile.careerVision) {
-        talkingPoints.push(`- Career vision: ${profile.careerVision}`);
+        planningItems.push(`<li><strong>Career vision:</strong> ${profile.careerVision}</li>`);
       }
       if (careerBookmarks.length > 0) {
-        talkingPoints.push(`- Interested careers: ${careerBookmarks.slice(0, 3).map(c => c.title).join(', ')}`);
+        planningItems.push(`<li><strong>Interested careers:</strong> ${careerBookmarks.slice(0, 3).map(c => c.title).join(', ')}</li>`);
       }
       if (schoolBookmarks.length > 0) {
-        talkingPoints.push(`- Schools of interest: ${schoolBookmarks.slice(0, 3).map(s => s.title).join(', ')}`);
+        planningItems.push(`<li><strong>Schools of interest:</strong> ${schoolBookmarks.slice(0, 3).map(s => s.title).join(', ')}</li>`);
       }
-      talkingPoints.push('');
+      html.push(`<ul>${planningItems.join('')}</ul>`);
     }
 
     // Strengths to highlight
     if (profile.strengths && profile.strengths.length > 0) {
-      talkingPoints.push('### Strengths to Encourage');
-      talkingPoints.push(`- ${profile.strengths.slice(0, 3).join(', ')}`);
-      talkingPoints.push('');
+      html.push(`<h3>Strengths to Encourage</h3>`);
+      html.push(`<ul><li>${profile.strengths.slice(0, 3).join(', ')}</li></ul>`);
     }
 
     // Next steps placeholder
-    talkingPoints.push('### Next Steps');
-    talkingPoints.push('- ');
-    talkingPoints.push('');
+    html.push(`<h3>Next Steps</h3>`);
+    html.push(`<ul><li></li></ul>`);
 
-    const generatedContent = talkingPoints.join('\n');
-    handleTalkingPointsChange(generatedContent);
+    handleTalkingPointsChange(html.join(''));
   }, [studentData, handleTalkingPointsChange]);
 
   // Loading state
@@ -324,7 +316,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
                 notes={interaction.summary || ''}
                 onNotesChange={handleSummaryChange}
                 label="Summary"
-                placeholder="Add a summary of your interaction..."
+                placeholder="Record this interaction for an auto-generated summary."
               />
             </Box>
           )}
@@ -345,15 +337,17 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
             <Box sx={{ mt: 4 }}>
               <TranscriptSection transcript={interaction.transcript} />
             </Box>
-          ) : isCompleted && !hasRecording ? (
+          ) : (
             <Box sx={{ mt: 4 }}>
               <SectionCard title="Transcript" icon={<Mic size={18} />}>
                 <Typography sx={{ fontSize: '14px', color: '#6B7280', fontStyle: 'italic' }}>
-                  No recording was made for this interaction.
+                  {isCompleted
+                    ? 'No recording was made for this interaction.'
+                    : 'Record this interaction to see the transcript here.'}
                 </Typography>
               </SectionCard>
             </Box>
-          ) : null}
+          )}
 
           {/* Delete interaction */}
           {!isInInteractionMode && (
