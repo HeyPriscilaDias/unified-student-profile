@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Box, Button, IconButton, Tooltip } from '@mui/material';
+import { Box, Button, IconButton, Tooltip, CircularProgress } from '@mui/material';
 import { FileText, Bold, Italic, List, ListOrdered, Heading2 } from 'lucide-react';
 import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -18,6 +18,8 @@ interface NotesSectionProps {
   showGenerateButton?: boolean;
   onGenerate?: () => void;
   readOnly?: boolean;
+  isGenerating?: boolean;
+  icon?: React.ReactNode;
 }
 
 function MenuBar({ editor }: { editor: Editor | null }) {
@@ -108,6 +110,8 @@ export function NotesSection({
   showGenerateButton = false,
   onGenerate,
   readOnly = false,
+  isGenerating = false,
+  icon,
 }: NotesSectionProps) {
   const editor = useEditor({
     extensions: [
@@ -141,7 +145,7 @@ export function NotesSection({
   return (
     <SectionCard
       title={label}
-      icon={<FileText size={18} />}
+      icon={icon || <FileText size={18} />}
     >
       <Box
         sx={{
@@ -161,8 +165,8 @@ export function NotesSection({
         {!readOnly && <MenuBar editor={editor} />}
         <Box
           sx={{
-            minHeight: readOnly ? '300px' : '200px',
-            maxHeight: readOnly ? '300px' : '350px',
+            minHeight: readOnly ? 'auto' : '200px',
+            maxHeight: readOnly ? '400px' : '350px',
             overflow: 'auto',
             p: 2,
             '& .tiptap': {
@@ -226,8 +230,15 @@ export function NotesSection({
           >
             <Button
               variant="outlined"
-              startIcon={<Alma size={16} color="#12B76A" />}
+              startIcon={
+                isGenerating ? (
+                  <CircularProgress size={16} sx={{ color: '#12B76A' }} />
+                ) : (
+                  <Alma size={16} color="#12B76A" />
+                )
+              }
               onClick={onGenerate}
+              disabled={isGenerating}
               sx={{
                 textTransform: 'none',
                 fontSize: '14px',
@@ -242,9 +253,18 @@ export function NotesSection({
                   borderColor: '#D1D5DB',
                   backgroundColor: '#F9FAFB',
                 },
+                '&:disabled': {
+                  borderColor: '#E5E7EB',
+                  backgroundColor: '#F9FAFB',
+                  color: '#9CA3AF',
+                },
               }}
             >
-              {notes && notes.replace(/<[^>]*>/g, '').trim() ? 'Re-generate talking points' : 'Generate talking points'}
+              {isGenerating
+                ? 'Generating...'
+                : notes && notes.replace(/<[^>]*>/g, '').trim()
+                  ? 'Re-generate talking points'
+                  : 'Generate talking points'}
             </Button>
           </Box>
         )}

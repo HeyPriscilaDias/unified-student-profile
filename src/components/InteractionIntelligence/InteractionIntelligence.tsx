@@ -21,36 +21,49 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-
-// Types
-interface ActionItem {
-  id: string;
-  text: string;
-  completed: boolean;
-  assignee: 'student' | 'counselor';
-}
+import type { ExtractedActionItem } from '@/lib/geminiService';
+import { ActionItemsPanel } from './ActionItemsPanel';
 
 interface InteractionIntelligenceProps {
   studentName?: string;
   onClose?: () => void;
   autoStart?: boolean;
-  onInteractionCompleted?: (notes: string) => void;
+  onInteractionCompleted?: (data: {
+    summary: string;
+    transcript: string;
+    actionItems: ExtractedActionItem[];
+  }) => void;
+  onAddCounselorTask?: (title: string) => void;
+  onAddStudentTask?: (title: string) => void;
 }
 
 // Mock data for the FAFSA meeting
-const MOCK_SUMMARY = `This meeting covered the student's FAFSA application process and financial aid options. The counselor reviewed key deadlines for the upcoming academic year and discussed the student's family financial situation to determine eligibility for various aid programs. Several action items were identified to ensure timely completion of the application, including gathering required tax documents and creating an FSA ID.`;
+const MOCK_SUMMARY = `<h3>Meeting Overview</h3>
+<ul>
+<li>Discussed the <strong>FAFSA application process</strong> and financial aid options for the upcoming academic year</li>
+<li>Reviewed <strong>key deadlines</strong> including the <strong>March 2nd</strong> state priority deadline</li>
+<li>Assessed family financial situation to determine eligibility for various aid programs</li>
+</ul>
 
-const MOCK_ACTION_ITEMS: ActionItem[] = [
-  { id: '1', text: 'Student needs to create FSA ID at studentaid.gov', completed: false, assignee: 'student' },
-  { id: '2', text: 'Gather 2024 tax returns and W-2 forms from parents', completed: false, assignee: 'student' },
-  { id: '3', text: 'Counselor to send list of scholarship opportunities', completed: false, assignee: 'counselor' },
-  { id: '4', text: 'Schedule parent meeting to review dependency status', completed: false, assignee: 'counselor' },
-];
+<h3>Key Discussion Points</h3>
+<ul>
+<li><strong>FSA ID creation</strong> - Both student and one parent need to create accounts at studentaid.gov</li>
+<li><strong>Required documents</strong> - 2024 tax returns, W-2 forms, and records of untaxed income</li>
+<li><strong>Housing plans</strong> - Student plans to live in dorms, affecting cost of attendance calculation</li>
+<li><strong>Dependency status</strong> - Filing as dependent student (parents' income will be considered)</li>
+</ul>
 
-const MOCK_KEY_DECISIONS = [
-  'Will apply as dependent student based on current living situation',
-  'Targeting state priority deadline of March 2nd for maximum aid consideration',
-  'Will focus on federal work-study as preferred employment option',
+<h3>Student Interests</h3>
+<ul>
+<li>Expressed interest in <strong>federal work-study</strong> as preferred employment option</li>
+<li>Interested in receiving list of <strong>local scholarship opportunities</strong></li>
+</ul>`;
+
+const MOCK_ACTION_ITEMS: ExtractedActionItem[] = [
+  { id: 'action-1', text: 'Send list of scholarship opportunities to student', assignee: 'counselor', status: 'pending' },
+  { id: 'action-2', text: 'Schedule parent meeting to review dependency status', assignee: 'counselor', status: 'pending' },
+  { id: 'action-3', text: 'Create FSA ID at studentaid.gov', assignee: 'student', status: 'pending' },
+  { id: 'action-4', text: 'Gather 2024 tax returns and W-2 forms from parents', assignee: 'student', status: 'pending' },
 ];
 
 const MOCK_TRANSCRIPT = `Counselor: Good morning! Thanks for coming in today. I wanted to go over the FAFSA process with you since the application window is now open.
@@ -254,28 +267,9 @@ const InteractionIntelligence: React.FC<InteractionIntelligenceProps> = ({
   onClose,
   autoStart = false,
   onInteractionCompleted,
+  onAddCounselorTask,
+  onAddStudentTask,
 }) => {
-  // Generate combined summary as HTML
-  const generateSummary = () => {
-    const actionItemsHtml = MOCK_ACTION_ITEMS.map(item =>
-      `<li>${item.text} (${item.assignee === 'student' ? 'Student' : 'Counselor'})</li>`
-    ).join('');
-
-    const keyDecisionsHtml = MOCK_KEY_DECISIONS.map(d => `<li>${d}</li>`).join('');
-
-    return `<div><b>SUMMARY</b></div>
-<div>${MOCK_SUMMARY}</div>
-<br>
-<div><b>ACTION ITEMS</b></div>
-<ul>${actionItemsHtml}</ul>
-<br>
-<div><b>KEY DECISIONS</b></div>
-<ul>${keyDecisionsHtml}</ul>
-<br>
-<div><b>NEXT STEPS</b></div>
-<div>Schedule follow-up for March 15th to review Student Aid Report and discuss award letters.</div>`;
-  };
-
   // State
   const [phase, setPhase] = useState<'idle' | 'recording' | 'processing' | 'results'>('idle');
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -283,6 +277,8 @@ const InteractionIntelligence: React.FC<InteractionIntelligenceProps> = ({
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [meetingNotes, setMeetingNotes] = useState('');
+  const [transcript, setTranscript] = useState('');
+  const [actionItems, setActionItems] = useState<ExtractedActionItem[]>([]);
   const [showTranscript, setShowTranscript] = useState(false);
 
   // Refs
@@ -349,7 +345,7 @@ const InteractionIntelligence: React.FC<InteractionIntelligenceProps> = ({
     }
   };
 
-  // Stop recording and process
+  // Stop recording and process with mock data
   const stopRecording = useCallback(() => {
     // Stop media recorder
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -374,14 +370,20 @@ const InteractionIntelligence: React.FC<InteractionIntelligenceProps> = ({
     // Transition to processing
     setPhase('processing');
 
-    // Simulate AI processing (3-4 seconds)
+    // Simulate AI processing with mock data
     setTimeout(() => {
-      const summary = generateSummary();
+      setMeetingNotes(MOCK_SUMMARY);
+      setTranscript(MOCK_TRANSCRIPT);
+      setActionItems(MOCK_ACTION_ITEMS.map(item => ({ ...item, status: 'pending' as const })));
       setPhase('results');
-      setMeetingNotes(summary);
-      // Notify parent that meeting is completed with generated summary
-      onInteractionCompleted?.(summary);
-    }, 3500);
+
+      // Notify parent
+      onInteractionCompleted?.({
+        summary: MOCK_SUMMARY,
+        transcript: MOCK_TRANSCRIPT,
+        actionItems: MOCK_ACTION_ITEMS,
+      });
+    }, 1500);
   }, [onInteractionCompleted]);
 
   // Reset to initial state
@@ -389,6 +391,8 @@ const InteractionIntelligence: React.FC<InteractionIntelligenceProps> = ({
     setPhase('idle');
     setRecordingTime(0);
     setMeetingNotes('');
+    setTranscript('');
+    setActionItems([]);
   };
 
   // Cleanup on unmount
@@ -410,6 +414,16 @@ const InteractionIntelligence: React.FC<InteractionIntelligenceProps> = ({
       startRecording();
     }
   }, [autoStart]);
+
+  // Handle counselor task creation
+  const handleAddCounselorTask = useCallback((text: string) => {
+    onAddCounselorTask?.(text);
+  }, [onAddCounselorTask]);
+
+  // Handle student task creation (mock)
+  const handleAddStudentTask = useCallback((text: string) => {
+    onAddStudentTask?.(text);
+  }, [onAddStudentTask]);
 
   // Content renderer
   const renderContent = () => {
@@ -579,7 +593,7 @@ const InteractionIntelligence: React.FC<InteractionIntelligenceProps> = ({
               <Typography
                 sx={{ fontSize: '16px', fontWeight: 600, color: '#111827', mb: 0.25 }}
               >
-                FAFSA Review - {getCurrentDate()}
+                Meeting Summary - {getCurrentDate()}
               </Typography>
               <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
                 Meeting with {studentName}
@@ -588,56 +602,68 @@ const InteractionIntelligence: React.FC<InteractionIntelligenceProps> = ({
 
             {/* Scrollable content area */}
             <Box sx={{ flex: 1, overflow: 'auto', px: 2, pb: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {/* Editable text area */}
+              {/* Editable summary */}
               <SimpleTextEditor
                 value={meetingNotes}
                 onChange={setMeetingNotes}
-                minRows={8}
+                minRows={6}
               />
 
-              {/* Transcript Toggle */}
-              <Box>
-                <Button
-                  fullWidth
-                  onClick={() => setShowTranscript(!showTranscript)}
-                  endIcon={showTranscript ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                  sx={{
-                    justifyContent: 'space-between',
-                    textTransform: 'none',
-                    color: '#374151',
-                    fontWeight: 600,
-                    fontSize: '13px',
-                    py: 1.5,
-                    px: 2,
-                    backgroundColor: '#F9FAFB',
-                    borderRadius: '8px',
-                    border: '1px solid #E5E7EB',
-                    '&:hover': {
-                      backgroundColor: '#F3F4F6',
-                    },
-                  }}
-                >
-                  View Full Transcript
-                </Button>
+              {/* Action Items Panel */}
+              {actionItems.length > 0 && (
+                <ActionItemsPanel
+                  actionItems={actionItems}
+                  onActionItemsChange={setActionItems}
+                  onAddCounselorTask={handleAddCounselorTask}
+                  onAddStudentTask={handleAddStudentTask}
+                />
+              )}
 
-                <Collapse in={showTranscript}>
-                  <Box
+              {/* Transcript Toggle */}
+              {transcript && (
+                <Box>
+                  <Button
+                    fullWidth
+                    onClick={() => setShowTranscript(!showTranscript)}
+                    endIcon={showTranscript ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     sx={{
-                      mt: 2,
-                      p: 2,
+                      justifyContent: 'space-between',
+                      textTransform: 'none',
+                      color: '#374151',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      py: 1.5,
+                      px: 2,
+                      backgroundColor: '#F9FAFB',
                       borderRadius: '8px',
                       border: '1px solid #E5E7EB',
-                      backgroundColor: '#FAFAFA',
-                      maxHeight: '400px',
-                      overflow: 'auto',
+                      '&:hover': {
+                        backgroundColor: '#F3F4F6',
+                      },
                     }}
                   >
-                    {parseTranscript(MOCK_TRANSCRIPT).map((message, index) => (
-                      <ChatBubble key={index} message={message} />
-                    ))}
-                  </Box>
-                </Collapse>
-              </Box>
+                    View Full Transcript
+                  </Button>
+
+                  <Collapse in={showTranscript}>
+                    <Box
+                      sx={{
+                        mt: 2,
+                        p: 2,
+                        borderRadius: '8px',
+                        border: '1px solid #E5E7EB',
+                        backgroundColor: '#FAFAFA',
+                        maxHeight: '400px',
+                        overflow: 'auto',
+                      }}
+                    >
+                      {parseTranscript(transcript).map((message, index) => (
+                        <ChatBubble key={index} message={message} />
+                      ))}
+                    </Box>
+                  </Collapse>
+                </Box>
+              )}
             </Box>
           </Box>
         );

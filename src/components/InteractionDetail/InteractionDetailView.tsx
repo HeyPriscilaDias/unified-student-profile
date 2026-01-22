@@ -3,16 +3,18 @@
 import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Box, Typography, Button } from '@mui/material';
-import { ArrowLeft, Trash2, Mic, CheckCircle, FileText } from 'lucide-react';
-import { InteractionIntelligence } from '@/components/InteractionIntelligence';
+import { ArrowLeft, Trash2, Mic, FileText } from 'lucide-react';
+import { Alma } from '@/components/icons/AlmaIcon';
+import { InteractionIntelligence, ActionItemsPanel } from '@/components/InteractionIntelligence';
 import { AppLayout } from '@/components/AppLayout';
 import { LoadingSection, SectionCard } from '@/components/shared';
 import { useStudentData } from '@/hooks/useStudentData';
 import { useInteractions, useInteractionsContext } from '@/contexts/InteractionsContext';
+import { useTasksContext } from '@/contexts/TasksContext';
 import { InteractionHeader } from './InteractionHeader';
 import { NotesSection } from './NotesSection';
 import { TranscriptSection } from './TranscriptSection';
-import { RecommendedActionsSection } from './RecommendedActionsSection';
+import type { ExtractedActionItem } from '@/lib/geminiService';
 
 interface InteractionDetailViewProps {
   studentId: string;
@@ -26,7 +28,9 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const startInteractionParam = searchParams.get('startInteraction') === 'true';
   const summaryModeParam = searchParams.get('mode') === 'summary';
   const [isInInteractionMode, setIsInInteractionMode] = useState(startInteractionParam);
-  const { updateInteractionSummary, updateInteractionTalkingPoints, markInteractionComplete, deleteInteraction } = useInteractionsContext();
+  const [isGeneratingTalkingPoints, setIsGeneratingTalkingPoints] = useState(false);
+  const { updateInteractionSummary, updateInteractionTalkingPoints, updateInteractionWithRecording, updateInteractionActionItems, markInteractionComplete, deleteInteraction } = useInteractionsContext();
+  const { addTask } = useTasksContext();
 
   // Clean up the URL after reading the params
   useEffect(() => {
@@ -50,12 +54,44 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
     updateInteractionSummary(studentId, interactionId, summary);
   }, [studentId, interactionId, updateInteractionSummary]);
 
-  const handleRecordingCompleted = useCallback((summary: string) => {
-    // When recording is completed, mark the interaction as complete
-    updateInteractionSummary(studentId, interactionId, summary);
-    markInteractionComplete(studentId, interactionId);
+  const handleRecordingCompleted = useCallback((data: {
+    summary: string;
+    transcript: string;
+    actionItems: ExtractedActionItem[];
+  }) => {
+    // Convert ExtractedActionItem[] to InteractionRecommendedAction[]
+    const recommendedActions = data.actionItems.map(item => ({
+      id: item.id,
+      title: item.text,
+      priority: 'medium' as const,
+      status: item.status === 'added' ? 'converted_to_task' as const : item.status as 'pending' | 'dismissed',
+      assignee: item.assignee === 'counselor' ? 'staff' as const : 'student' as const,
+    }));
+
+    // Save everything to the interaction
+    updateInteractionWithRecording(studentId, interactionId, {
+      summary: data.summary,
+      transcript: data.transcript,
+      actionItems: recommendedActions,
+    });
     setIsInInteractionMode(false);
-  }, [studentId, interactionId, updateInteractionSummary, markInteractionComplete]);
+  }, [studentId, interactionId, updateInteractionWithRecording]);
+
+  // Handle adding counselor tasks - creates a real task
+  const handleAddCounselorTask = useCallback((title: string) => {
+    addTask({
+      studentId,
+      title,
+      taskType: 'staff',
+      source: 'interaction',
+    });
+  }, [studentId, addTask]);
+
+  // Handle adding student tasks - mock behavior (just logs)
+  const handleAddStudentTask = useCallback((title: string) => {
+    console.log('Added to student tasks:', title);
+    // In a real app, this would create a task assigned to the student
+  }, []);
 
   const handleMarkComplete = useCallback(() => {
     markInteractionComplete(studentId, interactionId);
@@ -80,25 +116,43 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
     }
   };
 
-  const handleAddToTasks = (actionId: string) => {
-    console.log('Add to tasks:', actionId);
-    // TODO: Convert action to task
-  };
+  // Convert stored InteractionRecommendedAction to ExtractedActionItem for ActionItemsPanel
+  const actionItemsForPanel = useMemo((): ExtractedActionItem[] => {
+    const storedActions = interaction?.aiSummary?.recommendedActions || [];
+    return storedActions.map(action => ({
+      id: action.id,
+      text: action.title,
+      assignee: action.assignee === 'staff' ? 'counselor' as const : 'student' as const,
+      status: action.status === 'converted_to_task' ? 'added' as const : action.status as 'pending' | 'dismissed',
+    }));
+  }, [interaction?.aiSummary?.recommendedActions]);
 
-  const handleDismissAction = (actionId: string) => {
-    console.log('Dismiss action:', actionId);
-    // TODO: Dismiss action
-  };
+  // Handle action items changes from ActionItemsPanel
+  const handleActionItemsChange = useCallback((items: ExtractedActionItem[]) => {
+    // Convert back to InteractionRecommendedAction format
+    const recommendedActions = items.map(item => ({
+      id: item.id,
+      title: item.text,
+      priority: 'medium' as const,
+      status: item.status === 'added' ? 'converted_to_task' as const : item.status as 'pending' | 'dismissed',
+      assignee: item.assignee === 'counselor' ? 'staff' as const : 'student' as const,
+    }));
+    updateInteractionActionItems(studentId, interactionId, recommendedActions);
+  }, [studentId, interactionId, updateInteractionActionItems]);
 
   const handleGenerateTalkingPoints = useCallback(() => {
-    if (!studentData) return;
+    if (!studentData || isGeneratingTalkingPoints) return;
 
     const { student, profile, milestones, tasks, smartGoals, bookmarks } = studentData;
     const html: string[] = [];
 
+    // Always start with a check-in section
+    html.push(`<h3>Check-in</h3>`);
+    html.push(`<ul><li>How have things been going since we last met?</li><li>Any challenges or concerns to discuss?</li></ul>`);
+
     // Academic check-in
     const academicItems: string[] = [];
-    if (student.gpa) {
+    if (student.gpa && student.gpa > 0) {
       academicItems.push(`<li>Current GPA: <strong>${student.gpa}</strong> - How are classes going this semester?</li>`);
     }
     if (student.satScore || student.actScore) {
@@ -108,7 +162,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
       academicItems.push(`<li>Test scores (<strong>${scores.join(', ')}</strong>) - Any plans to retake?</li>`);
     }
     if (academicItems.length > 0) {
-      html.push(`<h3>Academic Check-in</h3>`);
+      html.push(`<h3>Academic Progress</h3>`);
       html.push(`<ul>${academicItems.join('')}</ul>`);
     }
 
@@ -165,10 +219,20 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
 
     // Next steps placeholder
     html.push(`<h3>Next Steps</h3>`);
-    html.push(`<ul><li></li></ul>`);
+    html.push(`<ul><li>Action items from this meeting</li><li>Schedule follow-up if needed</li></ul>`);
 
-    handleTalkingPointsChange(html.join(''));
-  }, [studentData, handleTalkingPointsChange]);
+    const generatedContent = html.join('');
+
+    // Start the generation process with delay
+    setIsGeneratingTalkingPoints(true);
+
+    // 1.5 second fake delay to simulate AI processing
+    setTimeout(() => {
+      setIsGeneratingTalkingPoints(false);
+      // Directly set the talking points
+      handleTalkingPointsChange(generatedContent);
+    }, 1500);
+  }, [studentData, isGeneratingTalkingPoints, handleTalkingPointsChange]);
 
   // Loading state
   if (!studentData) {
@@ -207,6 +271,16 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const showStartRecordingButton = !isInInteractionMode && !hasRecording && !isCompleted;
   const showMarkCompleteButton = isPlanned && !isInInteractionMode;
 
+  // Helper to check if HTML content is actually empty (not just empty tags)
+  const isContentEmpty = (content: string | undefined | null): boolean => {
+    if (!content) return true;
+    const textContent = content.replace(/<[^>]*>/g, '').trim();
+    return textContent.length === 0;
+  };
+
+  const hasTalkingPoints = !isContentEmpty(interaction.talkingPoints);
+  const hasSummary = !isContentEmpty(interaction.summary);
+
   return (
     <AppLayout currentStudentId={studentId}>
       <Box sx={{ backgroundColor: '#FBFBFB', minHeight: '100vh' }}>
@@ -228,49 +302,19 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
               Back to {studentData.student.firstName} {studentData.student.lastName}
             </Button>
 
-            <Box className="flex items-center gap-2">
-              {showMarkCompleteButton && (
-                <Button
-                  variant="outlined"
-                  startIcon={<CheckCircle size={16} />}
-                  onClick={handleMarkComplete}
-                  sx={{
-                    textTransform: 'none',
-                    borderColor: '#E5E7EB', color: '#374151',
-                    '&:hover': {
-                      borderColor: '#D1D5DB', backgroundColor: '#F9FAFB',
-                    },
-                  }}
-                >
-                  Mark as complete
-                </Button>
-              )}
-              {showStartRecordingButton && (
-                <Button
-                  variant="outlined"
-                  startIcon={<Mic size={16} />}
-                  onClick={handleStartInteraction}
-                  sx={{
-                    textTransform: 'none',
-                    borderColor: '#E5E7EB',
-                    color: '#374151',
-                    '&:hover': {
-                      borderColor: '#D1D5DB',
-                      backgroundColor: '#F9FAFB',
-                    },
-                  }}
-                >
-                  Start recording
-                </Button>
-              )}
-            </Box>
           </Box>
         </Box>
 
         {/* Content */}
         <Box sx={{ maxWidth: 900, mx: 'auto', p: 4 }}>
           {/* Interaction Header */}
-          <InteractionHeader interaction={interaction} />
+          <InteractionHeader
+            interaction={interaction}
+            showStartRecordingButton={showStartRecordingButton}
+            showMarkCompleteButton={showMarkCompleteButton}
+            onStartRecording={handleStartInteraction}
+            onMarkComplete={handleMarkComplete}
+          />
 
           {/* Interaction Intelligence - shown inline when in interaction mode */}
           {isInInteractionMode && (
@@ -280,6 +324,8 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
                   studentName={`${studentData.student.firstName} ${studentData.student.lastName}`}
                   onClose={handleCancelInteraction}
                   onInteractionCompleted={handleRecordingCompleted}
+                  onAddCounselorTask={handleAddCounselorTask}
+                  onAddStudentTask={handleAddStudentTask}
                   autoStart
                 />
               </SectionCard>
@@ -289,10 +335,10 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
           {/* Talking points - show when not in interaction mode */}
           {!isInInteractionMode && (
             <Box sx={{ mt: 4 }}>
-              {isCompleted && !interaction.talkingPoints ? (
+              {isCompleted && !hasTalkingPoints ? (
                 <SectionCard title="Talking points" icon={<FileText size={18} />}>
                   <Typography sx={{ fontSize: '14px', color: '#6B7280', fontStyle: 'italic' }}>
-                    No talking points added to this interaction.
+                    No talking points were added to this interaction.
                   </Typography>
                 </SectionCard>
               ) : (
@@ -304,6 +350,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
                   showGenerateButton={isPlanned}
                   onGenerate={handleGenerateTalkingPoints}
                   readOnly={isCompleted}
+                  isGenerating={isGeneratingTalkingPoints}
                 />
               )}
             </Box>
@@ -316,18 +363,20 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
                 notes={interaction.summary || ''}
                 onNotesChange={handleSummaryChange}
                 label="Summary"
-                placeholder="Record this interaction for an auto-generated summary."
+                placeholder="Enter your notes on this interaction..."
+                icon={<Alma size={18} color="#12B76A" />}
               />
             </Box>
           )}
 
-          {/* Suggested Tasks (if AI summary has recommended actions) */}
-          {interaction.aiSummary?.recommendedActions && interaction.aiSummary.recommendedActions.length > 0 && (
+          {/* Action Items (if AI summary has recommended actions) */}
+          {!isInInteractionMode && actionItemsForPanel.length > 0 && (
             <Box sx={{ mt: 4 }}>
-              <RecommendedActionsSection
-                actions={interaction.aiSummary.recommendedActions}
-                onAddToTasks={handleAddToTasks}
-                onDismiss={handleDismissAction}
+              <ActionItemsPanel
+                actionItems={actionItemsForPanel}
+                onActionItemsChange={handleActionItemsChange}
+                onAddCounselorTask={handleAddCounselorTask}
+                onAddStudentTask={handleAddStudentTask}
               />
             </Box>
           )}

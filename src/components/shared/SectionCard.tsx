@@ -25,8 +25,8 @@ export function SectionCard({
       className={className}
       sx={{
         backgroundColor: 'white',
-        borderRadius: '8px',
-        border: '1px solid #D5D7DA',
+        borderRadius: '12px',
+        border: '1px solid #E5E7EB',
         overflow: 'hidden',
       }}
     >

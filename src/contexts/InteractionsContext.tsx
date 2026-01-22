@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import type { Interaction } from '@/types/student';
+import type { Interaction, InteractionRecommendedAction } from '@/types/student';
 
 interface NewInteractionData {
   studentId: string;
@@ -18,6 +18,12 @@ interface UpdateInteractionData {
   summary?: string;
 }
 
+interface RecordingData {
+  summary: string;
+  transcript: string;
+  actionItems: InteractionRecommendedAction[];
+}
+
 interface InteractionsContextType {
   interactions: Map<string, Interaction[]>; // studentId -> interactions
   getInteractionsForStudent: (studentId: string) => Interaction[];
@@ -25,6 +31,8 @@ interface InteractionsContextType {
   updateInteraction: (data: UpdateInteractionData) => Interaction | null;
   updateInteractionTalkingPoints: (studentId: string, interactionId: string, talkingPoints: string) => void;
   updateInteractionSummary: (studentId: string, interactionId: string, summary: string) => void;
+  updateInteractionWithRecording: (studentId: string, interactionId: string, data: RecordingData) => void;
+  updateInteractionActionItems: (studentId: string, interactionId: string, actionItems: InteractionRecommendedAction[]) => void;
   markInteractionComplete: (studentId: string, interactionId: string) => void;
   deleteInteraction: (studentId: string, interactionId: string) => void;
   initializeInteractions: (studentId: string, interactions: Interaction[]) => void;
@@ -150,6 +158,66 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const updateInteractionWithRecording = useCallback((studentId: string, interactionId: string, data: RecordingData) => {
+    setInteractions(prev => {
+      const newMap = new Map(prev);
+      const studentInteractions = newMap.get(studentId) || [];
+      const interactionIndex = studentInteractions.findIndex(m => m.id === interactionId);
+
+      if (interactionIndex === -1) return prev;
+
+      const existingInteraction = studentInteractions[interactionIndex];
+      const updatedInteraction: Interaction = {
+        ...existingInteraction,
+        summary: data.summary,
+        transcript: data.transcript,
+        aiSummary: {
+          overview: data.summary,
+          keyPoints: [],
+          recommendedActions: data.actionItems,
+          generatedAt: new Date().toISOString(),
+        },
+        status: 'completed',
+        updatedAt: new Date().toISOString(),
+      };
+
+      const newStudentInteractions = [...studentInteractions];
+      newStudentInteractions[interactionIndex] = updatedInteraction;
+      newMap.set(studentId, newStudentInteractions);
+
+      return newMap;
+    });
+  }, []);
+
+  const updateInteractionActionItems = useCallback((studentId: string, interactionId: string, actionItems: InteractionRecommendedAction[]) => {
+    setInteractions(prev => {
+      const newMap = new Map(prev);
+      const studentInteractions = newMap.get(studentId) || [];
+      const interactionIndex = studentInteractions.findIndex(m => m.id === interactionId);
+
+      if (interactionIndex === -1) return prev;
+
+      const existingInteraction = studentInteractions[interactionIndex];
+      const updatedInteraction: Interaction = {
+        ...existingInteraction,
+        aiSummary: {
+          ...existingInteraction.aiSummary,
+          overview: existingInteraction.aiSummary?.overview || existingInteraction.summary || '',
+          keyPoints: existingInteraction.aiSummary?.keyPoints || [],
+          recommendedActions: actionItems,
+          generatedAt: existingInteraction.aiSummary?.generatedAt || new Date().toISOString(),
+        },
+        updatedAt: new Date().toISOString(),
+      };
+
+      const newStudentInteractions = [...studentInteractions];
+      newStudentInteractions[interactionIndex] = updatedInteraction;
+      newMap.set(studentId, newStudentInteractions);
+
+      return newMap;
+    });
+  }, []);
+
   const markInteractionComplete = useCallback((studentId: string, interactionId: string) => {
     setInteractions(prev => {
       const newMap = new Map(prev);
@@ -191,6 +259,8 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
       updateInteraction,
       updateInteractionTalkingPoints,
       updateInteractionSummary,
+      updateInteractionWithRecording,
+      updateInteractionActionItems,
       markInteractionComplete,
       deleteInteraction,
       initializeInteractions

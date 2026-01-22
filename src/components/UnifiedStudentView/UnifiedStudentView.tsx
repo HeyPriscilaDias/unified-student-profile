@@ -16,6 +16,7 @@ import { SidePanel, SidePanelTabType } from '@/components/SidePanel';
 import { AddInteractionPopover } from '@/components/ScheduleInteractionFlow';
 import { useStudentData } from '@/hooks/useStudentData';
 import { useInteractions, useInteractionsContext } from '@/contexts/InteractionsContext';
+import { useTasks, useTasksContext } from '@/contexts/TasksContext';
 import type { TabType, Task, SuggestedAction, Interaction } from '@/types/student';
 
 interface UnifiedStudentViewProps {
@@ -27,7 +28,6 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isGeneratingSnapshot, setIsGeneratingSnapshot] = useState(false);
-  const [localTasks, setLocalTasks] = useState<Task[]>([]);
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
   const [interactionPopoverAnchor, setInteractionPopoverAnchor] = useState<HTMLElement | null>(null);
   const [sidePanelTab, setSidePanelTab] = useState<SidePanelTabType>('tasks');
@@ -35,10 +35,14 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
 
   const studentData = useStudentData(studentId);
   const { addInteraction } = useInteractionsContext();
+  const { addTask, updateTask, toggleTask, deleteTask } = useTasksContext();
 
   // Use interactions from context (allows adding new interactions)
   // Must be called before any conditional returns to follow rules of hooks
   const interactions = useInteractions(studentId, studentData?.interactions ?? []);
+
+  // Use tasks from context (allows real-time updates from interaction recordings)
+  const tasks = useTasks(studentId, studentData?.tasks ?? []);
 
   // Handle tab query parameter
   useEffect(() => {
@@ -48,10 +52,9 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     }
   }, [searchParams]);
 
-  // Initialize local state from student data
+  // Initialize suggested actions from student data
   useEffect(() => {
     if (studentData) {
-      setLocalTasks(studentData.tasks);
       setLocalSuggestedActions(studentData.suggestedActions);
     }
   }, [studentData]);
@@ -121,48 +124,34 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
 
   // Toggle task between open and completed
   const handleTaskToggle = (task: Task) => {
-    setLocalTasks((prev) =>
-      prev.map((t) =>
-        t.id === task.id
-          ? { ...t, status: t.status === 'open' ? 'completed' : 'open' }
-          : t
-      )
-    );
+    toggleTask(studentId, task.id);
   };
 
   const handleNewTask = (title: string) => {
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
+    addTask({
+      studentId,
       title,
-      dueDate: null,
-      status: 'open',
-      source: 'manual',
       taskType: 'staff',
-    };
-    setLocalTasks((prev) => [newTask, ...prev]);
+      source: 'manual',
+    });
   };
 
   const handleTaskEdit = (taskId: string, newTitle: string) => {
-    setLocalTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, title: newTitle } : t))
-    );
+    updateTask(studentId, taskId, { title: newTitle });
   };
 
   const handleTaskDelete = (taskId: string) => {
-    setLocalTasks((prev) => prev.filter((t) => t.id !== taskId));
+    deleteTask(studentId, taskId);
   };
 
   // Accept suggested action: convert to task and mark action as accepted
   const handleActionAccept = (action: SuggestedAction) => {
-    const newTask: Task = {
-      id: `task-from-action-${action.id}`,
+    addTask({
+      studentId,
       title: action.title,
-      dueDate: null,
-      status: 'open',
-      source: 'suggested_action',
       taskType: 'staff',
-    };
-    setLocalTasks((prev) => [newTask, ...prev]);
+      source: 'suggested_action',
+    });
     setLocalSuggestedActions((prev) =>
       prev.map((a) =>
         a.id === action.id ? { ...a, status: 'accepted' } : a
@@ -219,7 +208,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
       rightPanel={
         <SidePanel
           studentFirstName={student.firstName}
-          tasks={localTasks}
+          tasks={tasks}
           suggestedActions={localSuggestedActions}
           interactions={interactions}
           studentId={studentId}

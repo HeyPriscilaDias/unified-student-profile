@@ -640,3 +640,170 @@ function getGradeTopicForText(grade: number): { topic: string; description: stri
  * Export the grade level guidance for use in other components
  */
 export { GRADE_LEVEL_GUIDANCE };
+
+// =============================================================================
+// Audio Processing with Gemini Multimodal
+// =============================================================================
+
+/**
+ * Types for audio processing results
+ */
+export interface AudioProcessingResult {
+  transcript: string;
+  summary: string;
+  actionItems: ExtractedActionItem[];
+}
+
+export interface ExtractedActionItem {
+  id: string;
+  text: string;
+  assignee: 'student' | 'counselor';
+  status: 'pending' | 'added' | 'dismissed';
+}
+
+/**
+ * Convert audio blob to base64 for Gemini API
+ */
+async function audioToBase64(audioBlob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = (reader.result as string).split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(audioBlob);
+  });
+}
+
+/**
+ * Process audio recording with Gemini 2.0 Flash multimodal
+ * Transcribes the audio, generates a summary, and extracts action items
+ */
+export async function processAudioWithGemini(
+  audioBlob: Blob
+): Promise<AudioProcessingResult> {
+  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('Gemini API key not configured. Please add NEXT_PUBLIC_GEMINI_API_KEY to your .env.local file.');
+  }
+
+  const audioBase64 = await audioToBase64(audioBlob);
+  const mimeType = audioBlob.type || 'audio/webm';
+
+  const prompt = `You are an expert at analyzing counselor-student meeting recordings.
+Please analyze this audio recording and provide:
+
+1. **TRANSCRIPT**: A detailed transcript of the conversation, formatted as:
+   Counselor: [text]
+   Student: [text]
+   (alternating based on speakers - use your best judgment to identify who is speaking)
+
+2. **SUMMARY**: A concise 2-3 paragraph summary of the meeting covering:
+   - Main topics discussed
+   - Key decisions made
+   - Student's current situation/concerns
+   - Next steps identified
+
+3. **ACTION ITEMS**: Extract specific, actionable tasks from the conversation. Categorize each as either:
+   - "counselor": Tasks for the counselor to complete (e.g., send resources, schedule meetings, follow up)
+   - "student": Tasks for the student to complete (e.g., submit applications, create accounts, gather documents)
+
+Be specific with action items - they should be clear, actionable tasks that came up during the conversation.
+
+Format your response as JSON:
+{
+  "transcript": "Counselor: ... \\n\\nStudent: ...",
+  "summary": "The meeting covered...",
+  "actionItems": [
+    { "text": "Send scholarship list to student", "assignee": "counselor" },
+    { "text": "Create FSA ID at studentaid.gov", "assignee": "student" }
+  ]
+}
+
+Return ONLY the JSON, no additional text or markdown formatting.`;
+
+  try {
+    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            {
+              inline_data: {
+                mime_type: mimeType,
+                data: audioBase64,
+              }
+            },
+            {
+              text: prompt
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 8192,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API error:', response.status, errorText);
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!responseText) {
+      throw new Error('No response from Gemini');
+    }
+
+    return parseAudioProcessingResponse(responseText);
+  } catch (error) {
+    console.error('Failed to process audio with Gemini:', error);
+    throw error;
+  }
+}
+
+/**
+ * Parse Gemini audio processing response into structured data
+ */
+function parseAudioProcessingResponse(responseText: string): AudioProcessingResult {
+  try {
+    // Extract JSON from response (handle markdown code blocks)
+    let jsonStr = responseText;
+    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1].trim();
+    }
+
+    const parsed = JSON.parse(jsonStr);
+
+    return {
+      transcript: parsed.transcript || '',
+      summary: parsed.summary || '',
+      actionItems: (parsed.actionItems || []).map((item: { text: string; assignee: string }, index: number) => ({
+        id: `action-${Date.now()}-${index}`,
+        text: item.text,
+        assignee: item.assignee === 'student' ? 'student' : 'counselor',
+        status: 'pending' as const,
+      })),
+    };
+  } catch (error) {
+    console.error('Failed to parse Gemini audio response:', error, responseText);
+    // Return a basic result with the raw text as transcript
+    return {
+      transcript: responseText,
+      summary: 'Unable to generate summary from recording.',
+      actionItems: [],
+    };
+  }
+}

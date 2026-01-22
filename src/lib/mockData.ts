@@ -524,22 +524,19 @@ export const jessicaInteractions: Interaction[] = [
     title: 'College Planning Check-in',
     interactionDate: '2024-12-28',
     status: 'completed',
-    summary: `COLLEGE PLANNING CHECK-IN
+    summary: `<h3>Application Status</h3>
+<ul>
+<li><strong>Texas A&M:</strong> Submitted</li>
+<li><strong>Baylor:</strong> Supplemental essay in progress, target by New Year's</li>
+<li><strong>UH:</strong> Not started, using Common App</li>
+</ul>
 
-APPLICATION STATUS
-- Texas A&M: Submitted
-- Baylor: Supplemental essay in progress, target by New Year's
-- UH: Not started, using Common App
-
-FINANCIAL AID
-- FAFSA mostly complete
-- Waiting on parent tax documents
-- Priority deadline: January 15th
-
-ACTION ITEMS
-- Complete Baylor supplemental essay
-- Submit University of Houston application
-- Follow up on FAFSA submission`,
+<h3>Financial Aid</h3>
+<ul>
+<li>FAFSA mostly complete</li>
+<li>Waiting on parent tax documents</li>
+<li>Priority deadline: <strong>January 15th</strong></li>
+</ul>`,
     recordingUrl: 'https://example.com/recording-1',
     transcript: `Counselor: Hi Jessica, thanks for coming in today. How are you feeling about everything?
 
@@ -579,8 +576,7 @@ Counselor: Great. The FAFSA deadline for priority consideration is January 15th,
           description: 'Finish the supplemental essay for Baylor application',
           priority: 'high',
           dueDate: '2025-01-01',
-          status: 'converted_to_task',
-          convertedTaskId: 'task-from-interaction-1',
+          status: 'pending',
           assignee: 'student',
         },
         {
@@ -615,25 +611,28 @@ Counselor: Great. The FAFSA deadline for priority consideration is January 15th,
     title: 'Senior Year Kickoff',
     interactionDate: '2024-09-05',
     status: 'completed',
-    summary: `SENIOR YEAR KICKOFF
+    summary: `<h3>College List (Finalized)</h3>
+<ul>
+<li><strong>UT Austin</strong> (reach)</li>
+<li><strong>Texas A&M</strong></li>
+<li><strong>Baylor</strong></li>
+<li><strong>Texas State</strong> (early action Nov 1)</li>
+<li><strong>University of Houston</strong></li>
+</ul>
+<p>All schools have nursing/pre-nursing programs</p>
 
-COLLEGE LIST (finalized)
-- UT Austin (reach)
-- Texas A&M
-- Baylor
-- Texas State (early action Nov 1)
-- University of Houston
+<h3>Recommendation Letters</h3>
+<ul>
+<li>Mrs. Johnson (AP Bio)</li>
+<li>Mr. Chen (AP Calc)</li>
+</ul>
 
-All schools have nursing/pre-nursing programs
-
-RECOMMENDATION LETTERS
-- Mrs. Johnson (AP Bio)
-- Mr. Chen (AP Calc)
-
-NEXT STEPS
-- Request recommendation letters by Sept 15
-- Start Common App essay brainstorming
-- Research Texas State early action requirements`,
+<h3>Next Steps</h3>
+<ul>
+<li>Request recommendation letters by Sept 15</li>
+<li>Start Common App essay brainstorming</li>
+<li>Research Texas State early action requirements</li>
+</ul>`,
     createdAt: '2024-09-05T09:00:00Z',
     updatedAt: '2024-09-05T10:20:00Z',
   },

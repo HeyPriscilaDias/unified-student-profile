@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { InteractionsProvider } from "../contexts/InteractionsContext";
+import { TasksProvider } from "../contexts/TasksContext";
 import { AlmaChatProvider } from "../contexts/AlmaChatContext";
 
 export const metadata: Metadata = {
@@ -19,9 +20,11 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <InteractionsProvider>
-            <AlmaChatProvider>
-              {children}
-            </AlmaChatProvider>
+            <TasksProvider>
+              <AlmaChatProvider>
+                {children}
+              </AlmaChatProvider>
+            </TasksProvider>
           </InteractionsProvider>
         </ThemeProvider>
       </body>
