@@ -157,16 +157,20 @@ export function AlmaChatPanel({
   onDismissContext,
   onAddContext
 }: AlmaChatPanelProps) {
-  // Determine if we can show add context option (student exists but context is dismissed)
-  const canAddContext = Boolean(onAddContext) && !showStudentContext && Boolean(studentFirstName);
   const [message, setMessage] = useState('');
   const [showMoreSuggestions, setShowMoreSuggestions] = useState(false);
+  const [activeContextTab, setActiveContextTab] = useState<'student' | 'general'>(
+    studentFirstName ? 'student' : 'general'
+  );
 
-  // Only use student name for suggestions/welcome when context is active
-  const activeStudentName = showStudentContext ? studentFirstName : '';
+  // Determine if context is active based on tab selection
+  const isStudentContextActive = activeContextTab === 'student';
 
-  // Generate context-aware suggestions based on student data (only when context is shown)
-  const contextSuggestions = generateContextAwareSuggestions(activeStudentName, showStudentContext ? studentContext : undefined);
+  // Only use student name for suggestions/welcome when student tab is active
+  const activeStudentName = isStudentContextActive ? studentFirstName : '';
+
+  // Generate context-aware suggestions based on student data (only when student tab is active)
+  const contextSuggestions = generateContextAwareSuggestions(activeStudentName, isStudentContextActive ? studentContext : undefined);
 
   const handleSend = () => {
     if (message.trim()) {
@@ -230,80 +234,6 @@ export function AlmaChatPanel({
           Ask Alma
         </Typography>
 
-        {/* Student Context Tag */}
-        {showStudentContext && studentFirstName && (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.75,
-              backgroundColor: '#F3F4F6',
-              borderRadius: '20px',
-              pl: 1.5,
-              pr: 0.75,
-              py: 0.5,
-            }}
-          >
-            <Typography
-              sx={{
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '13px',
-                fontWeight: 400,
-                color: '#4B5563',
-              }}
-            >
-              about {studentFirstName}
-            </Typography>
-            {onDismissContext && (
-              <IconButton
-                size="small"
-                onClick={onDismissContext}
-                sx={{
-                  p: 0.25,
-                  color: '#6B7280',
-                  '&:hover': {
-                    backgroundColor: '#E5E7EB',
-                  },
-                }}
-              >
-                <X size={14} />
-              </IconButton>
-            )}
-          </Box>
-        )}
-
-        {/* Add Student Context Tag */}
-        {canAddContext && (
-          <Box
-            onClick={onAddContext}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.5,
-              backgroundColor: '#F3F4F6',
-              borderRadius: '20px',
-              px: 1.5,
-              py: 0.5,
-              cursor: 'pointer',
-              '&:hover': {
-                backgroundColor: '#E5E7EB',
-              },
-            }}
-          >
-            <Plus size={14} color="#6B7280" />
-            <Typography
-              sx={{
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '13px',
-                fontWeight: 400,
-                color: '#4B5563',
-              }}
-            >
-              add student context
-            </Typography>
-          </Box>
-        )}
-
         {/* Spacer */}
         <Box sx={{ flex: 1 }} />
 
@@ -335,6 +265,66 @@ export function AlmaChatPanel({
           </IconButton>
         )}
       </Box>
+
+      {/* Context Tabs */}
+      {studentFirstName && (
+        <Box
+          sx={{
+            display: 'flex',
+            borderBottom: '1px solid #E5E7EB',
+            px: 2,
+          }}
+        >
+          <Box
+            onClick={() => setActiveContextTab('student')}
+            sx={{
+              flex: 1,
+              py: 1.25,
+              textAlign: 'center',
+              cursor: 'pointer',
+              borderBottom: activeContextTab === 'student' ? '2px solid #062F29' : '2px solid transparent',
+              transition: 'all 0.2s',
+              '&:hover': {
+                backgroundColor: activeContextTab === 'student' ? 'transparent' : '#F9FAFB',
+              },
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: '13px',
+                fontWeight: activeContextTab === 'student' ? 600 : 400,
+                color: activeContextTab === 'student' ? '#062F29' : '#6B7280',
+              }}
+            >
+              About {studentFirstName}
+            </Typography>
+          </Box>
+          <Box
+            onClick={() => setActiveContextTab('general')}
+            sx={{
+              flex: 1,
+              py: 1.25,
+              textAlign: 'center',
+              cursor: 'pointer',
+              borderBottom: activeContextTab === 'general' ? '2px solid #062F29' : '2px solid transparent',
+              transition: 'all 0.2s',
+              '&:hover': {
+                backgroundColor: activeContextTab === 'general' ? 'transparent' : '#F9FAFB',
+              },
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: '13px',
+                fontWeight: activeContextTab === 'general' ? 600 : 400,
+                color: activeContextTab === 'general' ? '#062F29' : '#6B7280',
+              }}
+            >
+              General chat
+            </Typography>
+          </Box>
+        </Box>
+      )}
 
       {/* Chat Area */}
       <Box

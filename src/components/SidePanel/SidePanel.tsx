@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { Box, Typography, IconButton, TextField, Checkbox, Button, FormControlLabel, Avatar, Fab, useMediaQuery, useTheme } from '@mui/material';
-import { Sparkles, Plus, Check, X, Lock, Globe, MessageSquare, Mic, ChevronRight } from 'lucide-react';
+import { Sparkles, Plus, Check, X, Lock, Globe, MessageSquare, Mic, ChevronRight, CheckSquare, StickyNote } from 'lucide-react';
 import { SubTabNavigation, AIReviewBadge } from '@/components/shared';
+import { AlmaChatPanel } from '@/components/AlmaChatPanel';
+import { Alma } from '@/components/icons/AlmaIcon';
 import type { Task, SuggestedAction, Interaction } from '@/types/student';
 
-export type SidePanelTabType = 'tasks' | 'notes' | 'interactions';
+export type SidePanelTabType = 'alma' | 'tasks' | 'notes' | 'interactions';
 type TabType = SidePanelTabType;
 
 interface Note {
@@ -264,12 +266,12 @@ function ActionItem({
   );
 }
 
-function TabButton({
-  label,
+function VerticalTabButton({
+  icon,
   isActive,
   onClick
 }: {
-  label: string;
+  icon: React.ReactNode;
   isActive: boolean;
   onClick: () => void;
 }) {
@@ -277,26 +279,30 @@ function TabButton({
     <Box
       onClick={onClick}
       sx={{
-        flex: 1,
-        py: 1,
-        textAlign: 'center',
+        width: 48,
+        height: 48,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         cursor: 'pointer',
-        borderBottom: isActive ? '2px solid #062F29' : '2px solid transparent',
+        backgroundColor: isActive ? '#062F29' : 'transparent',
+        borderLeft: isActive ? '3px solid #12B76A' : '3px solid transparent',
         transition: 'all 0.2s',
         '&:hover': {
-          backgroundColor: isActive ? 'transparent' : '#F9FAFB',
+          backgroundColor: isActive ? '#062F29' : '#F3F4F6',
         },
       }}
     >
-      <Typography
+      <Box
         sx={{
-          fontSize: '14px',
-          fontWeight: isActive ? 600 : 400,
-          color: isActive ? '#062F29' : '#6B7280',
+          color: isActive ? '#fff' : '#6B7280',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        {label}
-      </Typography>
+        {icon}
+      </Box>
     </Box>
   );
 }
@@ -457,11 +463,11 @@ function NoteItem({ note }: { note: Note }) {
 }
 
 export function SidePanel({
-  studentFirstName: _studentFirstName,
+  studentFirstName,
   tasks,
   suggestedActions,
   interactions = [],
-  studentId: _studentId,
+  studentId,
   activeTab: controlledActiveTab,
   onTabChange,
   onTaskToggle,
@@ -475,7 +481,7 @@ export function SidePanel({
 }: SidePanelProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [internalActiveTab, setInternalActiveTab] = useState<TabType>('tasks');
+  const [internalActiveTab, setInternalActiveTab] = useState<TabType>('alma');
 
   // Support both controlled and uncontrolled modes
   const activeTab = controlledActiveTab ?? internalActiveTab;
@@ -534,7 +540,7 @@ export function SidePanel({
   return (
     <Box
       sx={{
-        width: '350px',
+        width: '398px', // 350px content + 48px tabs
         height: '100vh',
         position: 'fixed',
         right: 0,
@@ -542,33 +548,27 @@ export function SidePanel({
         backgroundColor: '#fff',
         borderLeft: '1px solid #E5E7EB',
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: 'row',
         zIndex: 1000,
       }}
     >
-      {/* Tab Navigation */}
+      {/* Content Area */}
       <Box
         sx={{
+          flex: 1,
           display: 'flex',
-          borderBottom: '1px solid #E5E7EB',
+          flexDirection: 'column',
+          width: '350px',
         }}
       >
-        <TabButton
-          label="Tasks"
-          isActive={activeTab === 'tasks'}
-          onClick={() => setActiveTab('tasks')}
+      {/* Alma Tab Content */}
+      {activeTab === 'alma' && (
+        <AlmaChatPanel
+          studentFirstName={studentFirstName}
+          studentId={studentId}
+          showStudentContext={true}
         />
-        <TabButton
-          label="Interactions"
-          isActive={activeTab === 'interactions'}
-          onClick={() => setActiveTab('interactions')}
-        />
-        <TabButton
-          label="Notes"
-          isActive={activeTab === 'notes'}
-          onClick={() => setActiveTab('notes')}
-        />
-      </Box>
+      )}
 
       {/* Tasks Tab Content */}
       {activeTab === 'tasks' && (
@@ -1103,6 +1103,39 @@ export function SidePanel({
           </Box>
         </Box>
       )}
+      </Box>
+
+      {/* Vertical Tabs */}
+      <Box
+        sx={{
+          width: '48px',
+          display: 'flex',
+          flexDirection: 'column',
+          borderLeft: '1px solid #E5E7EB',
+          backgroundColor: '#FAFAFA',
+        }}
+      >
+        <VerticalTabButton
+          icon={<Alma size={20} />}
+          isActive={activeTab === 'alma'}
+          onClick={() => setActiveTab('alma')}
+        />
+        <VerticalTabButton
+          icon={<CheckSquare size={20} />}
+          isActive={activeTab === 'tasks'}
+          onClick={() => setActiveTab('tasks')}
+        />
+        <VerticalTabButton
+          icon={<MessageSquare size={20} />}
+          isActive={activeTab === 'interactions'}
+          onClick={() => setActiveTab('interactions')}
+        />
+        <VerticalTabButton
+          icon={<StickyNote size={20} />}
+          isActive={activeTab === 'notes'}
+          onClick={() => setActiveTab('notes')}
+        />
+      </Box>
     </Box>
   );
 }

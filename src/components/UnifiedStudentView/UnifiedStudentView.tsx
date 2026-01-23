@@ -30,7 +30,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   const [isGeneratingSnapshot, setIsGeneratingSnapshot] = useState(false);
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
   const [interactionPopoverAnchor, setInteractionPopoverAnchor] = useState<HTMLElement | null>(null);
-  const [sidePanelTab, setSidePanelTab] = useState<SidePanelTabType>('tasks');
+  const [sidePanelTab, setSidePanelTab] = useState<SidePanelTabType>('alma');
   const [showInteractionToast, setShowInteractionToast] = useState(false);
 
   const studentData = useStudentData(studentId);

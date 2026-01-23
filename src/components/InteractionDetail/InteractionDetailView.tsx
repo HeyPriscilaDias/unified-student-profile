@@ -8,13 +8,16 @@ import { Alma } from '@/components/icons/AlmaIcon';
 import { InteractionIntelligence, ActionItemsPanel } from '@/components/InteractionIntelligence';
 import { AppLayout } from '@/components/AppLayout';
 import { LoadingSection, SectionCard } from '@/components/shared';
+import { SidePanel, SidePanelTabType } from '@/components/SidePanel';
+import { AddInteractionPopover } from '@/components/ScheduleInteractionFlow';
 import { useStudentData } from '@/hooks/useStudentData';
 import { useInteractions, useInteractionsContext } from '@/contexts/InteractionsContext';
-import { useTasksContext } from '@/contexts/TasksContext';
+import { useTasks, useTasksContext } from '@/contexts/TasksContext';
 import { InteractionHeader } from './InteractionHeader';
 import { NotesSection } from './NotesSection';
 import { TranscriptSection } from './TranscriptSection';
 import type { ExtractedActionItem } from '@/lib/geminiService';
+import type { Task, SuggestedAction, Interaction } from '@/types/student';
 
 interface InteractionDetailViewProps {
   studentId: string;
@@ -29,8 +32,11 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const summaryModeParam = searchParams.get('mode') === 'summary';
   const [isInInteractionMode, setIsInInteractionMode] = useState(startInteractionParam);
   const [isGeneratingTalkingPoints, setIsGeneratingTalkingPoints] = useState(false);
-  const { updateInteractionSummary, updateInteractionTalkingPoints, updateInteractionWithRecording, updateInteractionActionItems, markInteractionComplete, deleteInteraction } = useInteractionsContext();
-  const { addTask } = useTasksContext();
+  const [sidePanelTab, setSidePanelTab] = useState<SidePanelTabType>('alma');
+  const [interactionPopoverAnchor, setInteractionPopoverAnchor] = useState<HTMLElement | null>(null);
+  const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
+  const { updateInteractionSummary, updateInteractionTalkingPoints, updateInteractionWithRecording, updateInteractionActionItems, markInteractionComplete, deleteInteraction, addInteraction } = useInteractionsContext();
+  const { addTask, updateTask, toggleTask, deleteTask } = useTasksContext();
 
   // Clean up the URL after reading the params
   useEffect(() => {
@@ -41,6 +47,16 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
 
   // Use interactions from context (allows real-time updates)
   const interactions = useInteractions(studentId, studentData?.interactions || []);
+
+  // Use tasks from context (allows real-time updates from interaction recordings)
+  const tasks = useTasks(studentId, studentData?.tasks ?? []);
+
+  // Initialize suggested actions from student data
+  useEffect(() => {
+    if (studentData) {
+      setLocalSuggestedActions(studentData.suggestedActions);
+    }
+  }, [studentData]);
 
   const interaction = useMemo(() => {
     return interactions.find((m) => m.id === interactionId) || null;
@@ -114,6 +130,73 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
       deleteInteraction(studentId, interactionId);
       router.push(`/students/${studentId}?tab=interactions`);
     }
+  };
+
+  // SidePanel handlers
+  const handleOpenAddInteractionPopover = (event: React.MouseEvent<HTMLElement>) => {
+    setInteractionPopoverAnchor(event.currentTarget);
+  };
+
+  const handleCloseAddInteractionPopover = () => {
+    setInteractionPopoverAnchor(null);
+  };
+
+  const handleCreateInteraction = (interactionDate: string) => {
+    const newInteraction = addInteraction({
+      studentId,
+      title: `Interaction with ${studentData?.student.firstName || 'Student'}`,
+      interactionDate,
+      summary: '',
+    });
+    setInteractionPopoverAnchor(null);
+    router.push(`/students/${studentId}/interactions/${newInteraction.id}`);
+  };
+
+  const handleInteractionClick = (clickedInteraction: Interaction) => {
+    router.push(`/students/${clickedInteraction.studentId}/interactions/${clickedInteraction.id}`);
+  };
+
+  const handleTaskToggle = (task: Task) => {
+    toggleTask(studentId, task.id);
+  };
+
+  const handleNewTask = (title: string) => {
+    addTask({
+      studentId,
+      title,
+      taskType: 'staff',
+      source: 'manual',
+    });
+  };
+
+  const handleTaskEdit = (taskId: string, newTitle: string) => {
+    updateTask(studentId, taskId, { title: newTitle });
+  };
+
+  const handleTaskDelete = (taskId: string) => {
+    deleteTask(studentId, taskId);
+  };
+
+  const handleActionAccept = (action: SuggestedAction) => {
+    addTask({
+      studentId,
+      title: action.title,
+      taskType: 'staff',
+      source: 'suggested_action',
+    });
+    setLocalSuggestedActions((prev) =>
+      prev.map((a) =>
+        a.id === action.id ? { ...a, status: 'accepted' } : a
+      )
+    );
+  };
+
+  const handleActionDismiss = (action: SuggestedAction) => {
+    setLocalSuggestedActions((prev) =>
+      prev.map((a) =>
+        a.id === action.id ? { ...a, status: 'dismissed' } : a
+      )
+    );
   };
 
   // Convert stored InteractionRecommendedAction to ExtractedActionItem for ActionItemsPanel
@@ -282,7 +365,30 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const hasSummary = !isContentEmpty(interaction.summary);
 
   return (
-    <AppLayout currentStudentId={studentId}>
+    <AppLayout
+      rightPanel={
+        studentData && (
+          <SidePanel
+            studentFirstName={studentData.student.firstName}
+            tasks={tasks}
+            suggestedActions={localSuggestedActions}
+            interactions={interactions}
+            studentId={studentId}
+            activeTab={sidePanelTab}
+            onTabChange={setSidePanelTab}
+            onTaskToggle={handleTaskToggle}
+            onNewTask={handleNewTask}
+            onTaskEdit={handleTaskEdit}
+            onTaskDelete={handleTaskDelete}
+            onActionAccept={handleActionAccept}
+            onActionDismiss={handleActionDismiss}
+            onInteractionClick={handleInteractionClick}
+            onScheduleInteraction={handleOpenAddInteractionPopover}
+          />
+        )
+      }
+      currentStudentId={studentId}
+    >
       <Box sx={{ backgroundColor: '#FBFBFB', minHeight: '100vh' }}>
         {/* Top Bar */}
         <Box
@@ -419,6 +525,14 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
           )}
         </Box>
       </Box>
+
+      {/* Add Interaction Popover */}
+      <AddInteractionPopover
+        anchorEl={interactionPopoverAnchor}
+        open={Boolean(interactionPopoverAnchor)}
+        onClose={handleCloseAddInteractionPopover}
+        onCreateInteraction={handleCreateInteraction}
+      />
     </AppLayout>
   );
 }

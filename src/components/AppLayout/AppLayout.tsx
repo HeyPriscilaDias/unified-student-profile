@@ -2,8 +2,6 @@
 
 import { Box } from '@mui/material';
 import { Sidebar } from '@/components/Sidebar';
-import { AskAlmaButton } from '@/components/AskAlmaButton';
-import { useStudentData } from '@/hooks/useStudentData';
 import type { ReactNode } from 'react';
 
 interface AppLayoutProps {
@@ -13,18 +11,6 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children, rightPanel, currentStudentId }: AppLayoutProps) {
-  // Get student data if we have a current student ID
-  const studentData = useStudentData(currentStudentId || '');
-
-  // Prepare student info for the Alma button
-  const currentStudent = currentStudentId && studentData?.student
-    ? {
-        id: currentStudentId,
-        firstName: studentData.student.firstName,
-        lastName: studentData.student.lastName,
-      }
-    : undefined;
-
   return (
     <Box
       sx={{
@@ -40,7 +26,7 @@ export function AppLayout({ children, rightPanel, currentStudentId }: AppLayoutP
       <Box
         sx={{
           marginLeft: '220px', // Sidebar width
-          marginRight: rightPanel ? '350px' : 0, // Right panel width
+          marginRight: rightPanel ? '398px' : 0, // Right panel width (350px content + 48px tabs)
           flex: 1,
           minWidth: 0, // Allow flex shrinking
           overflow: 'hidden', // Prevent children from pushing out
@@ -63,9 +49,6 @@ export function AppLayout({ children, rightPanel, currentStudentId }: AppLayoutP
 
       {/* Right Panel */}
       {rightPanel}
-
-      {/* Ask Alma Button */}
-      <AskAlmaButton currentStudent={currentStudent} />
     </Box>
   );
 }
