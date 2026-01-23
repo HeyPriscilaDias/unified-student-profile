@@ -13,6 +13,7 @@ import { AddInteractionPopover } from '@/components/ScheduleInteractionFlow';
 import { useStudentData } from '@/hooks/useStudentData';
 import { useInteractions, useInteractionsContext } from '@/contexts/InteractionsContext';
 import { useTasks, useTasksContext } from '@/contexts/TasksContext';
+import { usePersistentRightPanelTab } from '@/hooks/usePersistentRightPanelTab';
 import { InteractionHeader } from './InteractionHeader';
 import { NotesSection } from './NotesSection';
 import { TranscriptSection } from './TranscriptSection';
@@ -32,7 +33,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const summaryModeParam = searchParams.get('mode') === 'summary';
   const [isInInteractionMode, setIsInInteractionMode] = useState(startInteractionParam);
   const [isGeneratingTalkingPoints, setIsGeneratingTalkingPoints] = useState(false);
-  const [sidePanelTab, setSidePanelTab] = useState<SidePanelTabType>('alma');
+  const [sidePanelTab, setSidePanelTab] = usePersistentRightPanelTab('alma');
   const [interactionPopoverAnchor, setInteractionPopoverAnchor] = useState<HTMLElement | null>(null);
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
   const { updateInteractionSummary, updateInteractionTalkingPoints, updateInteractionWithRecording, updateInteractionActionItems, markInteractionComplete, deleteInteraction, addInteraction } = useInteractionsContext();

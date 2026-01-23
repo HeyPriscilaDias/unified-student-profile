@@ -17,6 +17,7 @@ import { AddInteractionPopover } from '@/components/ScheduleInteractionFlow';
 import { useStudentData } from '@/hooks/useStudentData';
 import { useInteractions, useInteractionsContext } from '@/contexts/InteractionsContext';
 import { useTasks, useTasksContext } from '@/contexts/TasksContext';
+import { usePersistentRightPanelTab } from '@/hooks/usePersistentRightPanelTab';
 import type { TabType, Task, SuggestedAction, Interaction } from '@/types/student';
 
 interface UnifiedStudentViewProps {
@@ -30,7 +31,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   const [isGeneratingSnapshot, setIsGeneratingSnapshot] = useState(false);
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
   const [interactionPopoverAnchor, setInteractionPopoverAnchor] = useState<HTMLElement | null>(null);
-  const [sidePanelTab, setSidePanelTab] = useState<SidePanelTabType>('alma');
+  const [sidePanelTab, setSidePanelTab] = usePersistentRightPanelTab('alma');
   const [showInteractionToast, setShowInteractionToast] = useState(false);
 
   const studentData = useStudentData(studentId);
