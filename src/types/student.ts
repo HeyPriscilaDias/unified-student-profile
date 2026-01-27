@@ -200,7 +200,7 @@ export interface ActivityItem {
 }
 
 // Interaction types
-export type InteractionStatus = 'planned' | 'completed';
+export type InteractionStatus = 'draft' | 'completed';
 
 export interface InteractionRecommendedAction {
   id: string;
@@ -228,8 +228,8 @@ export interface Interaction {
   counselorName: string;
   title: string;
 
-  // Date and status (NOT scheduling)
-  interactionDate: string; // YYYY-MM-DD format, date only
+  // Date (optional, can be set later)
+  interactionDate?: string; // YYYY-MM-DD format, date only
   status: InteractionStatus;
 
   // Talking points (planning what to discuss)

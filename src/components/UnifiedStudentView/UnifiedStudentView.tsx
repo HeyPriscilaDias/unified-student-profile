@@ -105,12 +105,11 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     setInteractionPopoverAnchor(null);
   };
 
-  const handleCreateInteraction = (interactionDate: string) => {
+  const handleCreateInteraction = () => {
     // Create a new interaction and navigate to detail view
     const newInteraction = addInteraction({
       studentId,
-      title: `Interaction with ${student?.firstName || 'Student'}`,
-      interactionDate,
+      title: `Meeting with ${student?.firstName || 'Student'}`,
       summary: '',
     });
     setInteractionPopoverAnchor(null);

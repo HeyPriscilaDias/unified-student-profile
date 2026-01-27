@@ -33,8 +33,8 @@ const emptyStateConfigs: Record<EmptyStateType, EmptyStateConfig> = {
   },
   no_interactions: {
     icon: <Calendar size={40} style={iconStyle} />,
-    message: 'No interactions scheduled yet',
-    cta: 'Schedule interaction',
+    message: 'No meetings yet',
+    cta: 'Add meeting',
   },
   no_bookmarks: {
     icon: <Bookmark size={40} style={iconStyle} />,

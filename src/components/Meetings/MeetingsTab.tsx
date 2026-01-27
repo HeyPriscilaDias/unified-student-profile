@@ -37,7 +37,7 @@ function MeetingCard({
   onClick: () => void;
 }) {
   const hasRecording = !!interaction.recordingUrl || !!interaction.transcript;
-  const isPlanned = interaction.status === 'planned';
+  const isDraft = interaction.status === 'draft';
 
   return (
     <Box
@@ -49,12 +49,12 @@ function MeetingCard({
         p: 2.5,
         borderRadius: '12px',
         cursor: 'pointer',
-        backgroundColor: isPlanned ? '#FFFBEB' : '#FFFFFF',
-        border: isPlanned ? '1px solid #FDE68A' : '1px solid #E5E7EB',
+        backgroundColor: '#FFFFFF',
+        border: '1px solid #E5E7EB',
         transition: 'all 0.2s ease',
         '&:hover': {
-          backgroundColor: isPlanned ? '#FEF3C7' : '#F9FAFB',
-          borderColor: isPlanned ? '#FCD34D' : '#D1D5DB',
+          backgroundColor: '#F9FAFB',
+          borderColor: '#D1D5DB',
           transform: 'translateY(-1px)',
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
         },
@@ -66,7 +66,7 @@ function MeetingCard({
           width: 44,
           height: 44,
           borderRadius: '10px',
-          backgroundColor: isPlanned ? '#F59E0B' : hasRecording ? '#062F29' : '#6B7280',
+          backgroundColor: hasRecording ? '#062F29' : '#6B7280',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -95,31 +95,37 @@ function MeetingCard({
           >
             {interaction.title}
           </Typography>
-          {isPlanned && (
+          {isDraft && (
             <Box
               sx={{
                 px: 1,
                 py: 0.25,
                 borderRadius: '6px',
-                backgroundColor: '#FEF3C7',
+                backgroundColor: '#F3F4F6',
                 fontSize: '11px',
                 fontWeight: 600,
-                color: '#B45309',
+                color: '#6B7280',
                 textTransform: 'uppercase',
                 letterSpacing: '0.025em',
                 flexShrink: 0,
               }}
             >
-              Upcoming
+              Draft
             </Box>
           )}
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Typography sx={{ fontSize: '13px', color: '#6B7280' }}>
-            {formatMeetingDate(interaction.interactionDate)}
-          </Typography>
-          {hasRecording && !isPlanned && (
+          {interaction.interactionDate ? (
+            <Typography sx={{ fontSize: '13px', color: '#6B7280' }}>
+              {formatMeetingDate(interaction.interactionDate)}
+            </Typography>
+          ) : (
+            <Typography sx={{ fontSize: '13px', color: '#9CA3AF', fontStyle: 'italic' }}>
+              No date set
+            </Typography>
+          )}
+          {hasRecording && (
             <>
               <Box
                 sx={{
@@ -219,7 +225,7 @@ function MeetingsEmptyState({
           maxWidth: 320,
         }}
       >
-        Track conversations, check-ins, and follow-ups with this student by scheduling your first meeting.
+        Track conversations, check-ins, and follow-ups with this student by creating your first meeting.
       </Typography>
       <Button
         variant="contained"
@@ -238,7 +244,7 @@ function MeetingsEmptyState({
           },
         }}
       >
-        Schedule a meeting
+        Add meeting
       </Button>
     </Box>
   );
@@ -246,8 +252,8 @@ function MeetingsEmptyState({
 
 /**
  * MeetingsTab component displays a list of meetings (interactions) for a student.
- * Meetings are sorted with planned meetings first (by date ascending),
- * followed by completed meetings (by date descending).
+ * Meetings are sorted by date ascending (oldest first).
+ * Meetings without dates are shown at the end.
  */
 export function MeetingsTab({
   studentId,
@@ -255,16 +261,16 @@ export function MeetingsTab({
   onInteractionClick,
   onScheduleInteraction,
 }: MeetingsTabProps) {
-  // Sort interactions: planned first (by date ascending), then completed (by date descending)
-  const plannedMeetings = interactions
-    .filter((i) => i.status === 'planned')
-    .sort((a, b) => a.interactionDate.localeCompare(b.interactionDate));
+  // Sort interactions by date ascending, meetings without dates at the end
+  const sortedMeetings = [...interactions].sort((a, b) => {
+    if (!a.interactionDate && !b.interactionDate) return 0;
+    if (!a.interactionDate) return 1;
+    if (!b.interactionDate) return -1;
+    return a.interactionDate.localeCompare(b.interactionDate);
+  });
 
-  const completedMeetings = interactions
-    .filter((i) => i.status === 'completed')
-    .sort((a, b) => b.interactionDate.localeCompare(a.interactionDate));
-
-  const sortedMeetings = [...plannedMeetings, ...completedMeetings];
+  const draftCount = interactions.filter((i) => i.status === 'draft').length;
+  const completedCount = interactions.filter((i) => i.status === 'completed').length;
 
   const AddMeetingButton = (
     <Button
@@ -343,15 +349,15 @@ export function MeetingsTab({
                 }}
               >
                 <Typography sx={{ fontSize: '13px', color: '#6B7280' }}>
-                  {plannedMeetings.length > 0 && (
-                    <Box component="span" sx={{ fontWeight: 500, color: '#B45309' }}>
-                      {plannedMeetings.length} upcoming
+                  {draftCount > 0 && (
+                    <Box component="span" sx={{ fontWeight: 500, color: '#6B7280' }}>
+                      {draftCount} draft
                     </Box>
                   )}
-                  {plannedMeetings.length > 0 && completedMeetings.length > 0 && ' · '}
-                  {completedMeetings.length > 0 && (
+                  {draftCount > 0 && completedCount > 0 && ' · '}
+                  {completedCount > 0 && (
                     <Box component="span">
-                      {completedMeetings.length} completed
+                      {completedCount} completed
                     </Box>
                   )}
                 </Typography>

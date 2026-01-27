@@ -636,7 +636,7 @@ Counselor: Great. The FAFSA deadline for priority consideration is January 15th,
     createdAt: '2024-09-05T09:00:00Z',
     updatedAt: '2024-09-05T10:20:00Z',
   },
-  // Planned interaction (upcoming)
+  // Draft interaction
   {
     id: 'interaction-3',
     studentId: 'jessica-santiago',
@@ -644,7 +644,7 @@ Counselor: Great. The FAFSA deadline for priority consideration is January 15th,
     counselorName: 'Mr. Rodriguez',
     title: 'FAFSA Follow-up',
     interactionDate: '2025-01-25',
-    status: 'planned',
+    status: 'draft',
     summary: '',
     createdAt: '2025-01-15T14:00:00Z',
     updatedAt: '2025-01-15T14:00:00Z',

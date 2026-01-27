@@ -36,7 +36,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const [sidePanelTab, setSidePanelTab] = usePersistentRightPanelTab('alma');
   const [interactionPopoverAnchor, setInteractionPopoverAnchor] = useState<HTMLElement | null>(null);
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
-  const { updateInteractionSummary, updateInteractionTalkingPoints, updateInteractionWithRecording, updateInteractionActionItems, markInteractionComplete, deleteInteraction, addInteraction } = useInteractionsContext();
+  const { updateInteraction, updateInteractionSummary, updateInteractionTalkingPoints, updateInteractionWithRecording, updateInteractionActionItems, markInteractionComplete, deleteInteraction, addInteraction } = useInteractionsContext();
   const { addTask, updateTask, toggleTask, deleteTask } = useTasksContext();
 
   // Clean up the URL after reading the params
@@ -114,6 +114,14 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
     markInteractionComplete(studentId, interactionId);
   }, [studentId, interactionId, markInteractionComplete]);
 
+  const handleDateChange = useCallback((date: string | undefined) => {
+    updateInteraction({
+      id: interactionId,
+      studentId,
+      interactionDate: date,
+    });
+  }, [studentId, interactionId, updateInteraction]);
+
   const handleStartInteraction = useCallback(() => {
     setIsInInteractionMode(true);
   }, []);
@@ -142,11 +150,10 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
     setInteractionPopoverAnchor(null);
   };
 
-  const handleCreateInteraction = (interactionDate: string) => {
+  const handleCreateInteraction = () => {
     const newInteraction = addInteraction({
       studentId,
-      title: `Interaction with ${studentData?.student.firstName || 'Student'}`,
-      interactionDate,
+      title: `Meeting with ${studentData?.student.firstName || 'Student'}`,
       summary: '',
     });
     setInteractionPopoverAnchor(null);
@@ -349,11 +356,11 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
     );
   }
 
-  const isPlanned = interaction.status === 'planned';
+  const isDraft = interaction.status === 'draft';
   const isCompleted = interaction.status === 'completed';
   const hasRecording = !!interaction.recordingUrl || !!interaction.transcript;
   const showStartRecordingButton = !isInInteractionMode && !hasRecording && !isCompleted;
-  const showMarkCompleteButton = isPlanned && !isInInteractionMode;
+  const showMarkCompleteButton = isDraft && !isInInteractionMode;
 
   // Helper to check if HTML content is actually empty (not just empty tags)
   const isContentEmpty = (content: string | undefined | null): boolean => {
@@ -418,6 +425,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
             showMarkCompleteButton={showMarkCompleteButton}
             onStartRecording={handleStartInteraction}
             onMarkComplete={handleMarkComplete}
+            onDateChange={handleDateChange}
           />
 
           {/* Interaction Intelligence - shown inline when in interaction mode */}
@@ -451,7 +459,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
                   onNotesChange={handleTalkingPointsChange}
                   label="Talking points"
                   placeholder="Plan what you want to talk about..."
-                  showGenerateButton={isPlanned}
+                  showGenerateButton={isDraft}
                   onGenerate={handleGenerateTalkingPoints}
                   readOnly={isCompleted}
                   isGenerating={isGeneratingTalkingPoints}

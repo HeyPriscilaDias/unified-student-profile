@@ -6,7 +6,7 @@ import type { Interaction, InteractionRecommendedAction } from '@/types/student'
 interface NewInteractionData {
   studentId: string;
   title: string;
-  interactionDate: string; // YYYY-MM-DD format
+  interactionDate?: string; // YYYY-MM-DD format (optional)
   summary?: string;
 }
 
@@ -67,7 +67,7 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
       counselorName: 'Ms. Rodriguez',
       title: data.title,
       interactionDate: data.interactionDate,
-      status: 'planned',
+      status: 'draft',
       summary: data.summary,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -177,7 +177,6 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
           recommendedActions: data.actionItems,
           generatedAt: new Date().toISOString(),
         },
-        status: 'completed',
         updatedAt: new Date().toISOString(),
       };
 

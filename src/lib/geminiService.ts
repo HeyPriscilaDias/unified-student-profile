@@ -148,15 +148,15 @@ function buildTopicRecommendationPrompt(studentData: StudentData): string {
     .join('\n');
 
   // Get last interaction summary if available
-  const completedInteractions = interactions.filter(m => m.status === 'completed');
+  const completedInteractions = interactions.filter(m => m.status === 'completed' && m.interactionDate);
   const lastInteraction = completedInteractions.length > 0
     ? completedInteractions.sort((a, b) =>
-        new Date(b.interactionDate).getTime() - new Date(a.interactionDate).getTime()
+        new Date(b.interactionDate!).getTime() - new Date(a.interactionDate!).getTime()
       )[0]
     : null;
 
   const lastInteractionSummary = lastInteraction?.summary || lastInteraction?.aiSummary
-    ? `Last interaction "${lastInteraction.title}" on ${new Date(lastInteraction.interactionDate).toLocaleDateString()}:
+    ? `Last interaction "${lastInteraction.title}"${lastInteraction.interactionDate ? ` on ${new Date(lastInteraction.interactionDate).toLocaleDateString()}` : ''}:
 - Summary: ${lastInteraction.aiSummary?.overview || lastInteraction.summary || 'No summary'}
 - Key points: ${lastInteraction.aiSummary?.keyPoints?.join(', ') || 'None'}
 - Pending actions: ${lastInteraction.aiSummary?.recommendedActions?.filter(a => a.status === 'pending').map(a => a.title).join(', ') || 'None'}`
@@ -391,15 +391,15 @@ function buildTextAgendaPrompt(studentData: StudentData, interactionDate?: strin
     .join('\n');
 
   // Get last interaction summary if available
-  const completedInteractions = interactions.filter(m => m.status === 'completed');
+  const completedInteractions = interactions.filter(m => m.status === 'completed' && m.interactionDate);
   const lastInteraction = completedInteractions.length > 0
     ? completedInteractions.sort((a, b) =>
-        new Date(b.interactionDate).getTime() - new Date(a.interactionDate).getTime()
+        new Date(b.interactionDate!).getTime() - new Date(a.interactionDate!).getTime()
       )[0]
     : null;
 
   const lastInteractionContext = lastInteraction?.summary || lastInteraction?.aiSummary
-    ? `Last interaction "${lastInteraction.title}" on ${new Date(lastInteraction.interactionDate).toLocaleDateString()}:
+    ? `Last interaction "${lastInteraction.title}"${lastInteraction.interactionDate ? ` on ${new Date(lastInteraction.interactionDate).toLocaleDateString()}` : ''}:
 - Summary: ${lastInteraction.aiSummary?.overview || lastInteraction.summary || 'No summary'}
 - Pending actions: ${lastInteraction.aiSummary?.recommendedActions?.filter(a => a.status === 'pending').map(a => a.title).join(', ') || 'None'}`
     : 'No previous interaction data available.';
@@ -596,11 +596,12 @@ export function generateFallbackTextAgenda(
   }
 
   // Add follow-up from previous interaction
-  const lastInteraction = interactions
-    .filter(m => m.status === 'completed')
-    .sort((a, b) => new Date(b.interactionDate).getTime() - new Date(a.interactionDate).getTime())[0];
+  const completedWithDates = interactions.filter(m => m.status === 'completed' && m.interactionDate);
+  const lastInteraction = completedWithDates.length > 0
+    ? completedWithDates.sort((a, b) => new Date(b.interactionDate!).getTime() - new Date(a.interactionDate!).getTime())[0]
+    : null;
 
-  if (lastInteraction?.aiSummary?.recommendedActions?.some(a => a.status === 'pending')) {
+  if (lastInteraction?.aiSummary?.recommendedActions?.some(a => a.status === 'pending') && lastInteraction.interactionDate) {
     discussionItems.push(`<li><b>Follow Up from Previous Interaction</b><br>Review pending action items from ${new Date(lastInteraction.interactionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.</li>`);
   }
 

@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { Dialog, Box, Typography, Button, TextField } from '@mui/material';
+import { Dialog, Box, Typography, Button } from '@mui/material';
 
 interface AddInteractionPopoverProps {
   anchorEl?: HTMLElement | null;
   open: boolean;
   onClose: () => void;
-  onCreateInteraction: (interactionDate: string) => void;
+  onCreateInteraction: () => void;
 }
 
 export function AddInteractionPopover({
@@ -15,33 +14,15 @@ export function AddInteractionPopover({
   onClose,
   onCreateInteraction,
 }: AddInteractionPopoverProps) {
-  const [interactionDate, setInteractionDate] = useState<string>(
-    new Date().toISOString().split('T')[0] // Default to today YYYY-MM-DD
-  );
-  const dateInputRef = useRef<HTMLInputElement>(null);
-
-  const handleDateFieldClick = () => {
-    dateInputRef.current?.showPicker();
-  };
-
-  const handleClose = () => {
-    // Reset date when closing
-    setInteractionDate(new Date().toISOString().split('T')[0]);
+  const handleCreate = () => {
+    onCreateInteraction();
     onClose();
   };
-
-  const handleCreate = () => {
-    if (!interactionDate) return;
-    onCreateInteraction(interactionDate);
-    handleClose();
-  };
-
-  const isDateValid = !!interactionDate;
 
   return (
     <Dialog
       open={open}
-      onClose={handleClose}
+      onClose={onClose}
       slotProps={{
         backdrop: {
           sx: {
@@ -68,58 +49,48 @@ export function AddInteractionPopover({
             color: '#374151',
           }}
         >
-          When is this interaction expected to happen?
+          Create a new meeting to track conversations with this student.
         </Typography>
 
-        {/* Date Input */}
-        <Box onClick={handleDateFieldClick} sx={{ cursor: 'pointer' }}>
-          <TextField
-            fullWidth
-            type="date"
-            value={interactionDate}
-            onChange={(e) => setInteractionDate(e.target.value)}
-            inputRef={dateInputRef}
-            size="small"
+        {/* Buttons */}
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Button
+            variant="outlined"
+            onClick={onClose}
             sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '8px',
+              flex: 1,
+              textTransform: 'none',
+              borderColor: '#E5E7EB',
+              color: '#374151',
+              borderRadius: '8px',
+              py: 1,
+              fontWeight: 500,
+              '&:hover': {
+                borderColor: '#D1D5DB',
                 backgroundColor: '#F9FAFB',
-                '& fieldset': {
-                  borderColor: '#E5E7EB',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#D1D5DB',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#062F29',
-                },
               },
             }}
-          />
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleCreate}
+            sx={{
+              flex: 1,
+              textTransform: 'none',
+              backgroundColor: '#062F29',
+              borderRadius: '8px',
+              py: 1,
+              fontWeight: 500,
+              '&:hover': {
+                backgroundColor: '#0a4a40',
+              },
+            }}
+          >
+            Create meeting
+          </Button>
         </Box>
-
-        {/* Create Button */}
-        <Button
-          variant="contained"
-          onClick={handleCreate}
-          disabled={!isDateValid}
-          sx={{
-            textTransform: 'none',
-            backgroundColor: '#062F29',
-            borderRadius: '8px',
-            py: 1,
-            fontWeight: 500,
-            '&:hover': {
-              backgroundColor: '#0a4a40',
-            },
-            '&.Mui-disabled': {
-              backgroundColor: '#E5E7EB',
-              color: '#9CA3AF',
-            },
-          }}
-        >
-          Create interaction
-        </Button>
       </Box>
     </Dialog>
   );
