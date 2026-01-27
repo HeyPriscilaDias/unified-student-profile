@@ -361,8 +361,6 @@ export function SidePanel({
         {activeTab === 'alma' && (
           <AlmaChatPanel
             studentFirstName={studentFirstName}
-            studentId={studentId}
-            showStudentContext={true}
           />
         )}
 

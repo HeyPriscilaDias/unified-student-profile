@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Box, Typography, IconButton, TextField, InputAdornment } from '@mui/material';
-import { ChevronDown, ChevronUp, Send, X, Maximize2, Minimize2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Send } from 'lucide-react';
 import { Alma } from '@/components/icons/AlmaIcon';
 import type { Milestone, SmartGoal, Bookmark, StudentProfile } from '@/types/student';
 
@@ -20,14 +20,6 @@ interface StudentContext {
 interface AlmaChatPanelProps {
   studentFirstName: string;
   studentContext?: StudentContext;
-  studentId?: string;
-  isFloating?: boolean;
-  isExpanded?: boolean;
-  showStudentContext?: boolean;
-  onClose?: () => void;
-  onToggleExpand?: () => void;
-  onDismissContext?: () => void;
-  onAddContext?: () => void;
 }
 
 function generateContextAwareSuggestions(studentFirstName?: string, context?: StudentContext): { initial: string[]; more: string[] } {
@@ -149,13 +141,6 @@ function generateContextAwareSuggestions(studentFirstName?: string, context?: St
 export function AlmaChatPanel({
   studentFirstName,
   studentContext,
-  isFloating = false,
-  isExpanded = false,
-  showStudentContext = false,
-  onClose,
-  onToggleExpand,
-  onDismissContext,
-  onAddContext
 }: AlmaChatPanelProps) {
   const [message, setMessage] = useState('');
   const [showMoreSuggestions, setShowMoreSuggestions] = useState(false);
@@ -191,74 +176,6 @@ export function AlmaChatPanel({
         flexDirection: 'column',
       }}
     >
-      {/* Header - only show for floating panel */}
-      {isFloating && (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            px: 2,
-            py: 1.5,
-            borderBottom: '1px solid #E5E7EB',
-          }}
-        >
-          <Box
-            sx={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              backgroundColor: '#12B76A',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Alma size={18} color="#fff" />
-          </Box>
-          <Typography
-            sx={{
-              fontSize: '14px',
-              fontWeight: 600,
-              color: '#111827',
-            }}
-          >
-            Ask Alma
-          </Typography>
-
-          {/* Spacer */}
-          <Box sx={{ flex: 1 }} />
-
-          {/* Expand/Collapse Button */}
-          {onToggleExpand && (
-            <IconButton
-              size="small"
-              onClick={onToggleExpand}
-              sx={{
-                color: '#6B7280',
-                '&:hover': { backgroundColor: '#F3F4F6' },
-              }}
-            >
-              {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-            </IconButton>
-          )}
-
-          {/* Close Button */}
-          {onClose && (
-            <IconButton
-              size="small"
-              onClick={onClose}
-              sx={{
-                color: '#6B7280',
-                '&:hover': { backgroundColor: '#F3F4F6' },
-              }}
-            >
-              <X size={18} />
-            </IconButton>
-          )}
-        </Box>
-      )}
-
       {/* Student context indicator */}
       {studentFirstName && (
         <Box
