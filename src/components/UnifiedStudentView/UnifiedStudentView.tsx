@@ -14,7 +14,6 @@ import { NotesTab } from '@/components/Notes';
 import { MeetingsTab } from '@/components/Meetings';
 import { LoadingSection } from '@/components/shared';
 import { SidePanel, SidePanelTabType } from '@/components/SidePanel';
-import { AddInteractionPopover } from '@/components/ScheduleInteractionFlow';
 import { useStudentData } from '@/hooks/useStudentData';
 import { useInteractions, useInteractionsContext } from '@/contexts/InteractionsContext';
 import { useTasks, useTasksContext } from '@/contexts/TasksContext';
@@ -31,7 +30,6 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isGeneratingSnapshot, setIsGeneratingSnapshot] = useState(false);
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
-  const [interactionPopoverAnchor, setInteractionPopoverAnchor] = useState<HTMLElement | null>(null);
   const [sidePanelTab, setSidePanelTab] = usePersistentRightPanelTab('alma');
   const [showInteractionToast, setShowInteractionToast] = useState(false);
 
@@ -97,14 +95,6 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     }, 2000);
   };
 
-  const handleOpenAddInteractionPopover = (event: React.MouseEvent<HTMLElement>) => {
-    setInteractionPopoverAnchor(event.currentTarget);
-  };
-
-  const handleCloseAddInteractionPopover = () => {
-    setInteractionPopoverAnchor(null);
-  };
-
   const handleCreateInteraction = () => {
     // Create a new interaction and navigate to detail view
     const newInteraction = addInteraction({
@@ -112,7 +102,6 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
       title: `Meeting with ${student?.firstName || 'Student'}`,
       summary: '',
     });
-    setInteractionPopoverAnchor(null);
     // Navigate to interaction detail page
     router.push(`/students/${studentId}/interactions/${newInteraction.id}`);
   };
@@ -209,7 +198,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
             studentId={studentId}
             interactions={interactions}
             onInteractionClick={handleInteractionClick}
-            onScheduleInteraction={handleOpenAddInteractionPopover}
+            onScheduleInteraction={handleCreateInteraction}
           />
         );
       default:
@@ -260,14 +249,6 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
           {renderTabContent()}
         </Box>
       </Box>
-
-      {/* Add Interaction Popover */}
-      <AddInteractionPopover
-        anchorEl={interactionPopoverAnchor}
-        open={Boolean(interactionPopoverAnchor)}
-        onClose={handleCloseAddInteractionPopover}
-        onCreateInteraction={handleCreateInteraction}
-      />
 
       {/* Interaction Created Toast */}
       <Snackbar

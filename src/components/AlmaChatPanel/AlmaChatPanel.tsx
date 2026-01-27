@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Box, Typography, IconButton, TextField, InputAdornment } from '@mui/material';
-import { ChevronDown, ChevronUp, Send, X, Maximize2, Minimize2, Plus } from 'lucide-react';
+import { ChevronDown, ChevronUp, Send, X, Maximize2, Minimize2 } from 'lucide-react';
 import { Alma } from '@/components/icons/AlmaIcon';
 import type { Milestone, SmartGoal, Bookmark, StudentProfile } from '@/types/student';
 
@@ -159,18 +159,9 @@ export function AlmaChatPanel({
 }: AlmaChatPanelProps) {
   const [message, setMessage] = useState('');
   const [showMoreSuggestions, setShowMoreSuggestions] = useState(false);
-  const [activeContextTab, setActiveContextTab] = useState<'student' | 'general'>(
-    studentFirstName ? 'student' : 'general'
-  );
 
-  // Determine if context is active based on tab selection
-  const isStudentContextActive = activeContextTab === 'student';
-
-  // Only use student name for suggestions/welcome when student tab is active
-  const activeStudentName = isStudentContextActive ? studentFirstName : '';
-
-  // Generate context-aware suggestions based on student data (only when student tab is active)
-  const contextSuggestions = generateContextAwareSuggestions(activeStudentName, isStudentContextActive ? studentContext : undefined);
+  // Generate context-aware suggestions based on current location (student page or not)
+  const contextSuggestions = generateContextAwareSuggestions(studentFirstName, studentContext);
 
   const handleSend = () => {
     if (message.trim()) {
@@ -266,63 +257,24 @@ export function AlmaChatPanel({
         )}
       </Box>
 
-      {/* Context Tabs */}
+      {/* Student context indicator */}
       {studentFirstName && (
         <Box
           sx={{
-            display: 'flex',
-            borderBottom: '1px solid #E5E7EB',
             px: 2,
+            py: 1,
+            borderBottom: '1px solid #E5E7EB',
+            backgroundColor: '#F9FAFB',
           }}
         >
-          <Box
-            onClick={() => setActiveContextTab('student')}
+          <Typography
             sx={{
-              flex: 1,
-              py: 1.25,
-              textAlign: 'center',
-              cursor: 'pointer',
-              borderBottom: activeContextTab === 'student' ? '2px solid #062F29' : '2px solid transparent',
-              transition: 'all 0.2s',
-              '&:hover': {
-                backgroundColor: activeContextTab === 'student' ? 'transparent' : '#F9FAFB',
-              },
+              fontSize: '12px',
+              color: '#6B7280',
             }}
           >
-            <Typography
-              sx={{
-                fontSize: '13px',
-                fontWeight: activeContextTab === 'student' ? 600 : 400,
-                color: activeContextTab === 'student' ? '#062F29' : '#6B7280',
-              }}
-            >
-              About {studentFirstName}
-            </Typography>
-          </Box>
-          <Box
-            onClick={() => setActiveContextTab('general')}
-            sx={{
-              flex: 1,
-              py: 1.25,
-              textAlign: 'center',
-              cursor: 'pointer',
-              borderBottom: activeContextTab === 'general' ? '2px solid #062F29' : '2px solid transparent',
-              transition: 'all 0.2s',
-              '&:hover': {
-                backgroundColor: activeContextTab === 'general' ? 'transparent' : '#F9FAFB',
-              },
-            }}
-          >
-            <Typography
-              sx={{
-                fontSize: '13px',
-                fontWeight: activeContextTab === 'general' ? 600 : 400,
-                color: activeContextTab === 'general' ? '#062F29' : '#6B7280',
-              }}
-            >
-              General chat
-            </Typography>
-          </Box>
+            Chatting about <span style={{ fontWeight: 600, color: '#062F29' }}>{studentFirstName}</span>
+          </Typography>
         </Box>
       )}
 
@@ -343,8 +295,8 @@ export function AlmaChatPanel({
             lineHeight: 1.5,
           }}
         >
-          {activeStudentName
-            ? `Hey Sarah, how can I help you support ${activeStudentName} today?`
+          {studentFirstName
+            ? `Hey Sarah, how can I help you support ${studentFirstName} today?`
             : 'Hey Sarah, how can I help you today?'}
         </Typography>
       </Box>

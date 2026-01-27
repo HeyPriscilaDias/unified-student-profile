@@ -24,8 +24,6 @@ interface AlmaChatContextType {
   // Context State
   currentStudent: StudentContextInfo | null;
   setCurrentStudent: (student: StudentContextInfo | null) => void;
-  isContextEnabled: boolean;
-  setIsContextEnabled: (enabled: boolean) => void;
 
   // Thread Management
   threads: Map<string, ChatMessage[]>;
@@ -44,11 +42,10 @@ const GENERAL_THREAD_ID = 'general';
 export function AlmaChatProvider({ children }: { children: ReactNode }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentStudent, setCurrentStudent] = useState<StudentContextInfo | null>(null);
-  const [isContextEnabled, setIsContextEnabled] = useState(true);
   const [threads, setThreads] = useState<Map<string, ChatMessage[]>>(new Map());
 
-  // Determine active thread based on context state
-  const activeThreadId = isContextEnabled && currentStudent ? currentStudent.id : GENERAL_THREAD_ID;
+  // Determine active thread based on current student (location-based)
+  const activeThreadId = currentStudent ? currentStudent.id : GENERAL_THREAD_ID;
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded(prev => !prev);
@@ -103,8 +100,6 @@ export function AlmaChatProvider({ children }: { children: ReactNode }) {
         toggleExpanded,
         currentStudent,
         setCurrentStudent,
-        isContextEnabled,
-        setIsContextEnabled,
         threads,
         getActiveThread,
         addMessage,

@@ -9,7 +9,6 @@ import { InteractionIntelligence, ActionItemsPanel } from '@/components/Interact
 import { AppLayout } from '@/components/AppLayout';
 import { LoadingSection, SectionCard } from '@/components/shared';
 import { SidePanel, SidePanelTabType } from '@/components/SidePanel';
-import { AddInteractionPopover } from '@/components/ScheduleInteractionFlow';
 import { useStudentData } from '@/hooks/useStudentData';
 import { useInteractions, useInteractionsContext } from '@/contexts/InteractionsContext';
 import { useTasks, useTasksContext } from '@/contexts/TasksContext';
@@ -34,7 +33,6 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const [isInInteractionMode, setIsInInteractionMode] = useState(startInteractionParam);
   const [isGeneratingTalkingPoints, setIsGeneratingTalkingPoints] = useState(false);
   const [sidePanelTab, setSidePanelTab] = usePersistentRightPanelTab('alma');
-  const [interactionPopoverAnchor, setInteractionPopoverAnchor] = useState<HTMLElement | null>(null);
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
   const { updateInteraction, updateInteractionSummary, updateInteractionTalkingPoints, updateInteractionWithRecording, updateInteractionActionItems, markInteractionComplete, deleteInteraction, addInteraction } = useInteractionsContext();
   const { addTask, updateTask, toggleTask, deleteTask } = useTasksContext();
@@ -142,21 +140,12 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   };
 
   // SidePanel handlers
-  const handleOpenAddInteractionPopover = (event: React.MouseEvent<HTMLElement>) => {
-    setInteractionPopoverAnchor(event.currentTarget);
-  };
-
-  const handleCloseAddInteractionPopover = () => {
-    setInteractionPopoverAnchor(null);
-  };
-
   const handleCreateInteraction = () => {
     const newInteraction = addInteraction({
       studentId,
       title: `Meeting with ${studentData?.student.firstName || 'Student'}`,
       summary: '',
     });
-    setInteractionPopoverAnchor(null);
     router.push(`/students/${studentId}/interactions/${newInteraction.id}`);
   };
 
@@ -532,13 +521,6 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
         </Box>
       </Box>
 
-      {/* Add Interaction Popover */}
-      <AddInteractionPopover
-        anchorEl={interactionPopoverAnchor}
-        open={Boolean(interactionPopoverAnchor)}
-        onClose={handleCloseAddInteractionPopover}
-        onCreateInteraction={handleCreateInteraction}
-      />
     </AppLayout>
   );
 }
