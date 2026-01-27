@@ -191,71 +191,73 @@ export function AlmaChatPanel({
         flexDirection: 'column',
       }}
     >
-      {/* Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          px: 2,
-          py: 1.5,
-          borderBottom: '1px solid #E5E7EB',
-        }}
-      >
+      {/* Header - only show for floating panel */}
+      {isFloating && (
         <Box
           sx={{
-            width: 32,
-            height: 32,
-            borderRadius: '50%',
-            backgroundColor: '#12B76A',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            gap: 1,
+            px: 2,
+            py: 1.5,
+            borderBottom: '1px solid #E5E7EB',
           }}
         >
-          <Alma size={18} color="#fff" />
+          <Box
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              backgroundColor: '#12B76A',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Alma size={18} color="#fff" />
+          </Box>
+          <Typography
+            sx={{
+              fontSize: '14px',
+              fontWeight: 600,
+              color: '#111827',
+            }}
+          >
+            Ask Alma
+          </Typography>
+
+          {/* Spacer */}
+          <Box sx={{ flex: 1 }} />
+
+          {/* Expand/Collapse Button */}
+          {onToggleExpand && (
+            <IconButton
+              size="small"
+              onClick={onToggleExpand}
+              sx={{
+                color: '#6B7280',
+                '&:hover': { backgroundColor: '#F3F4F6' },
+              }}
+            >
+              {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+            </IconButton>
+          )}
+
+          {/* Close Button */}
+          {onClose && (
+            <IconButton
+              size="small"
+              onClick={onClose}
+              sx={{
+                color: '#6B7280',
+                '&:hover': { backgroundColor: '#F3F4F6' },
+              }}
+            >
+              <X size={18} />
+            </IconButton>
+          )}
         </Box>
-        <Typography
-          sx={{
-            fontSize: '14px',
-            fontWeight: 600,
-            color: '#111827',
-          }}
-        >
-          Ask Alma
-        </Typography>
-
-        {/* Spacer */}
-        <Box sx={{ flex: 1 }} />
-
-        {/* Expand/Collapse Button */}
-        {isFloating && onToggleExpand && (
-          <IconButton
-            size="small"
-            onClick={onToggleExpand}
-            sx={{
-              color: '#6B7280',
-              '&:hover': { backgroundColor: '#F3F4F6' },
-            }}
-          >
-            {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-          </IconButton>
-        )}
-
-        {/* Close Button */}
-        {isFloating && onClose && (
-          <IconButton
-            size="small"
-            onClick={onClose}
-            sx={{
-              color: '#6B7280',
-              '&:hover': { backgroundColor: '#F3F4F6' },
-            }}
-          >
-            <X size={18} />
-          </IconButton>
-        )}
-      </Box>
+      )}
 
       {/* Student context indicator */}
       {studentFirstName && (
