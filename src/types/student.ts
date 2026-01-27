@@ -275,7 +275,7 @@ export interface QualityFlag {
 }
 
 // Tab types
-export type TabType = 'overview' | 'profile' | 'postsecondary' | 'student-work' | 'activity';
+export type TabType = 'overview' | 'profile' | 'postsecondary' | 'student-work' | 'notes' | 'meetings';
 
 // Empty state types
 export type EmptyStateType =

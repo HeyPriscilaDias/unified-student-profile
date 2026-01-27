@@ -373,7 +373,6 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
             studentFirstName={studentData.student.firstName}
             tasks={tasks}
             suggestedActions={localSuggestedActions}
-            interactions={interactions}
             studentId={studentId}
             activeTab={sidePanelTab}
             onTabChange={setSidePanelTab}
@@ -383,8 +382,6 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
             onTaskDelete={handleTaskDelete}
             onActionAccept={handleActionAccept}
             onActionDismiss={handleActionDismiss}
-            onInteractionClick={handleInteractionClick}
-            onScheduleInteraction={handleOpenAddInteractionPopover}
           />
         )
       }

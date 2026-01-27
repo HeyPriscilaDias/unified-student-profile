@@ -13,7 +13,8 @@ const tabs: { value: TabType; label: string }[] = [
   { value: 'profile', label: 'Profile' },
   { value: 'postsecondary', label: 'Postsecondary Planning' },
   { value: 'student-work', label: 'Student Work' },
-  { value: 'activity', label: 'Activity' },
+  { value: 'notes', label: 'Notes' },
+  { value: 'meetings', label: 'Meetings' },
 ];
 
 export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {

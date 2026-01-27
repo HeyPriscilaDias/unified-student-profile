@@ -1,30 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Typography, IconButton, TextField, Checkbox, Button, FormControlLabel, Avatar, Fab, useMediaQuery, useTheme } from '@mui/material';
-import { Sparkles, Plus, Check, X, Lock, Globe, MessageSquare, Mic, ChevronRight, CheckSquare, StickyNote } from 'lucide-react';
+import { Box, Typography, IconButton, TextField, Checkbox, Button, Tab, Tabs } from '@mui/material';
+import { Sparkles, Plus, Check, X } from 'lucide-react';
 import { SubTabNavigation, AIReviewBadge } from '@/components/shared';
 import { AlmaChatPanel } from '@/components/AlmaChatPanel';
-import { Alma } from '@/components/icons/AlmaIcon';
-import type { Task, SuggestedAction, Interaction } from '@/types/student';
+import type { Task, SuggestedAction } from '@/types/student';
 
-export type SidePanelTabType = 'alma' | 'tasks' | 'notes' | 'interactions';
+export type SidePanelTabType = 'alma' | 'tasks';
 type TabType = SidePanelTabType;
-
-interface Note {
-  id: string;
-  content: string;
-  visibility: 'public' | 'private';
-  authorName: string;
-  authorAvatar?: string;
-  createdAt: string;
-}
 
 interface SidePanelProps {
   studentFirstName: string;
   tasks: Task[];
   suggestedActions: SuggestedAction[];
-  interactions?: Interaction[];
   studentId?: string;
   activeTab?: TabType;
   onTabChange?: (tab: TabType) => void;
@@ -34,8 +23,6 @@ interface SidePanelProps {
   onTaskDelete?: (taskId: string) => void;
   onActionAccept?: (action: SuggestedAction) => void;
   onActionDismiss?: (action: SuggestedAction) => void;
-  onInteractionClick?: (interaction: Interaction) => void;
-  onScheduleInteraction?: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
 function TaskItem({
@@ -266,207 +253,10 @@ function ActionItem({
   );
 }
 
-function VerticalTabButton({
-  icon,
-  isActive,
-  onClick
-}: {
-  icon: React.ReactNode;
-  isActive: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <Box
-      onClick={onClick}
-      sx={{
-        width: 48,
-        height: 48,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-        backgroundColor: isActive ? '#062F29' : 'transparent',
-        borderLeft: isActive ? '3px solid #12B76A' : '3px solid transparent',
-        transition: 'all 0.2s',
-        '&:hover': {
-          backgroundColor: isActive ? '#062F29' : '#F3F4F6',
-        },
-      }}
-    >
-      <Box
-        sx={{
-          color: isActive ? '#fff' : '#6B7280',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {icon}
-      </Box>
-    </Box>
-  );
-}
-
-function formatInteractionDate(dateStr: string) {
-  // Handle YYYY-MM-DD format
-  const [year, month, day] = dateStr.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-function InteractionItem({
-  interaction,
-  onClick,
-}: {
-  interaction: Interaction;
-  onClick?: () => void;
-}) {
-  const hasRecording = !!interaction.recordingUrl || !!interaction.transcript;
-  const isPlanned = interaction.status === 'planned';
-
-  return (
-    <Box
-      onClick={onClick}
-      sx={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 1.5,
-        py: 1.5,
-        px: 1.5,
-        borderRadius: '8px',
-        cursor: onClick ? 'pointer' : 'default',
-        backgroundColor: isPlanned ? '#FFFBEB' : '#F9FAFB',
-        border: isPlanned ? '1px solid #FDE68A' : '1px solid #E5E7EB',
-        '&:hover': onClick ? {
-          backgroundColor: isPlanned ? '#FEF3C7' : '#F3F4F6',
-        } : {},
-      }}
-    >
-      <Box
-        sx={{
-          width: 32,
-          height: 32,
-          borderRadius: '6px',
-          backgroundColor: isPlanned ? '#F59E0B' : hasRecording ? '#062F29' : '#6B7280',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        {hasRecording ? <Mic size={16} color="#fff" /> : <MessageSquare size={16} color="#fff" />}
-      </Box>
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
-          <Typography
-            sx={{
-              fontSize: '14px',
-              fontWeight: 500,
-              color: '#111827',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {interaction.title}
-          </Typography>
-          {isPlanned && (
-            <Box
-              sx={{
-                px: 1,
-                py: 0.25,
-                borderRadius: '4px',
-                backgroundColor: '#FEF3C7',
-                fontSize: '10px',
-                fontWeight: 600,
-                color: '#B45309',
-                textTransform: 'uppercase',
-              }}
-            >
-              Upcoming
-            </Box>
-          )}
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
-            {formatInteractionDate(interaction.interactionDate)}
-          </Typography>
-          {hasRecording && !isPlanned && (
-            <>
-              <Typography sx={{ fontSize: '12px', color: '#9CA3AF' }}>•</Typography>
-              <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
-                Recorded
-              </Typography>
-            </>
-          )}
-        </Box>
-      </Box>
-      {onClick && (
-        <ChevronRight size={16} color="#9CA3AF" style={{ marginTop: 8 }} />
-      )}
-    </Box>
-  );
-}
-
-function NoteItem({ note }: { note: Note }) {
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  return (
-    <Box
-      sx={{
-        py: 2,
-        borderBottom: '1px solid #E5E7EB',
-        '&:last-child': {
-          borderBottom: 'none',
-        },
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-        <Avatar
-          src={note.authorAvatar}
-          sx={{ width: 28, height: 28, fontSize: '12px', bgcolor: '#062F29' }}
-        >
-          {note.authorName.split(' ').map(n => n[0]).join('')}
-        </Avatar>
-        <Box sx={{ flex: 1 }}>
-          <Typography sx={{ fontSize: '13px', fontWeight: 500, color: '#111827' }}>
-            {note.authorName}
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
-              {formatDate(note.createdAt)}
-            </Typography>
-            {note.visibility === 'private' ? (
-              <Lock size={12} style={{ color: '#6B7280' }} />
-            ) : (
-              <Globe size={12} style={{ color: '#6B7280' }} />
-            )}
-          </Box>
-        </Box>
-      </Box>
-      <Typography sx={{ fontSize: '14px', color: '#374151', lineHeight: 1.5, pl: 5.5 }}>
-        {note.content}
-      </Typography>
-    </Box>
-  );
-}
-
 export function SidePanel({
   studentFirstName,
   tasks,
   suggestedActions,
-  interactions = [],
   studentId,
   activeTab: controlledActiveTab,
   onTabChange,
@@ -476,11 +266,7 @@ export function SidePanel({
   onTaskDelete,
   onActionAccept,
   onActionDismiss,
-  onInteractionClick,
-  onScheduleInteraction,
 }: SidePanelProps) {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [internalActiveTab, setInternalActiveTab] = useState<TabType>('alma');
 
   // Support both controlled and uncontrolled modes
@@ -495,9 +281,6 @@ export function SidePanel({
   const [taskFilter, setTaskFilter] = useState<'open' | 'completed'>('open');
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [noteText, setNoteText] = useState('');
-  const [noteVisibility, setNoteVisibility] = useState<'private' | 'public'>('private');
-  const [notes, setNotes] = useState<Note[]>([]);
 
   const filteredTasks = tasks.filter((t) => t.status === taskFilter);
   const staffTasks = filteredTasks.filter((t) => t.taskType === 'staff');
@@ -505,20 +288,6 @@ export function SidePanel({
   const openCount = tasks.filter((t) => t.status === 'open').length;
   const completedCount = tasks.filter((t) => t.status === 'completed').length;
   const pendingActions = suggestedActions.filter((a) => a.status === 'pending');
-
-  const handleSubmitNote = () => {
-    if (noteText.trim()) {
-      const newNote: Note = {
-        id: `note-${Date.now()}`,
-        content: noteText.trim(),
-        visibility: noteVisibility,
-        authorName: 'Ms. Rodriguez',
-        createdAt: new Date().toISOString(),
-      };
-      setNotes((prev) => [newNote, ...prev]);
-      setNoteText('');
-    }
-  };
 
   const handleSubmitNewTask = () => {
     if (newTaskTitle.trim()) {
@@ -540,7 +309,7 @@ export function SidePanel({
   return (
     <Box
       sx={{
-        width: '398px', // 350px content + 48px tabs
+        width: '350px',
         height: '100vh',
         position: 'fixed',
         right: 0,
@@ -548,105 +317,113 @@ export function SidePanel({
         backgroundColor: '#fff',
         borderLeft: '1px solid #E5E7EB',
         display: 'flex',
-        flexDirection: 'row',
+        flexDirection: 'column',
         zIndex: 1000,
       }}
     >
+      {/* Horizontal Tabs */}
+      <Tabs
+        value={activeTab}
+        onChange={(_, newValue) => setActiveTab(newValue)}
+        sx={{
+          minHeight: 'auto',
+          borderBottom: '1px solid #E5E7EB',
+          '& .MuiTabs-indicator': {
+            backgroundColor: '#062F29',
+          },
+          '& .MuiTab-root': {
+            textTransform: 'none',
+            fontSize: '14px',
+            fontWeight: 500,
+            minHeight: 44,
+            flex: 1,
+            color: '#6B7280',
+            '&.Mui-selected': {
+              color: '#062F29',
+            },
+          },
+        }}
+      >
+        <Tab value="alma" label="Alma" />
+        <Tab value="tasks" label="Tasks" />
+      </Tabs>
+
       {/* Content Area */}
       <Box
         sx={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          width: '350px',
+          overflow: 'hidden',
         }}
       >
-      {/* Alma Tab Content */}
-      {activeTab === 'alma' && (
-        <AlmaChatPanel
-          studentFirstName={studentFirstName}
-          studentId={studentId}
-          showStudentContext={true}
-        />
-      )}
+        {/* Alma Tab Content */}
+        {activeTab === 'alma' && (
+          <AlmaChatPanel
+            studentFirstName={studentFirstName}
+            studentId={studentId}
+            showStudentContext={true}
+          />
+        )}
 
-      {/* Tasks Tab Content */}
-      {activeTab === 'tasks' && (
-        <Box
-          sx={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            overflowY: 'auto',
-          }}
-        >
-          {/* Suggested Actions Section - Hidden for prototype testing */}
-          {false && pendingActions.length > 0 && (
-            <>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  px: 2,
-                  py: 1.5,
-                  borderBottom: '1px solid #E5E7EB',
-                }}
-              >
-                <Sparkles size={18} style={{ color: '#F59E0B' }} />
-                <Typography
-                  sx={{
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#111827',
-                  }}
-                >
-                  Suggested Actions
-                </Typography>
-                <AIReviewBadge />
-              </Box>
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 1.5,
-                  borderBottom: '1px solid #E5E7EB',
-                }}
-              >
-                {pendingActions.map((action) => (
-                  <ActionItem
-                    key={action.id}
-                    action={action}
-                    onAccept={() => onActionAccept?.(action)}
-                    onDismiss={() => onActionDismiss?.(action)}
-                  />
-                ))}
-              </Box>
-            </>
-          )}
-
-          {/* Tasks Description */}
+        {/* Tasks Tab Content */}
+        {activeTab === 'tasks' && (
           <Box
             sx={{
-              px: 2,
-              py: 1.5,
-              borderBottom: '1px solid #E5E7EB',
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              overflowY: 'auto',
             }}
           >
-            <Typography
-              sx={{
-                fontSize: '13px',
-                color: '#6B7280',
-              }}
-            >
-              Next steps and follow-ups for this student.
-            </Typography>
-          </Box>
+            {/* Suggested Actions Section - Hidden for prototype testing */}
+            {false && pendingActions.length > 0 && (
+              <>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: '1px solid #E5E7EB',
+                  }}
+                >
+                  <Sparkles size={18} style={{ color: '#F59E0B' }} />
+                  <Typography
+                    sx={{
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: '#111827',
+                    }}
+                  >
+                    Suggested Actions
+                  </Typography>
+                  <AIReviewBadge />
+                </Box>
+                <Box
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1.5,
+                    borderBottom: '1px solid #E5E7EB',
+                  }}
+                >
+                  {pendingActions.map((action) => (
+                    <ActionItem
+                      key={action.id}
+                      action={action}
+                      onAccept={() => onActionAccept?.(action)}
+                      onDismiss={() => onActionDismiss?.(action)}
+                    />
+                  ))}
+                </Box>
+              </>
+            )}
 
-          {/* Tasks Filter - only show when there are tasks */}
-          {tasks.length > 0 && (
+            {/* Tasks Description */}
             <Box
               sx={{
                 px: 2,
@@ -654,487 +431,219 @@ export function SidePanel({
                 borderBottom: '1px solid #E5E7EB',
               }}
             >
-              <SubTabNavigation
-                options={[
-                  { value: 'open', label: `Open (${openCount})` },
-                  { value: 'completed', label: `Completed (${completedCount})` },
-                ]}
-                value={taskFilter}
-                onChange={(v) => setTaskFilter(v as 'open' | 'completed')}
-              />
+              <Typography
+                sx={{
+                  fontSize: '13px',
+                  color: '#6B7280',
+                }}
+              >
+                Next steps and follow-ups for this student.
+              </Typography>
             </Box>
-          )}
 
-          {/* Tasks list */}
-          <Box sx={{ flex: 1, px: 2, py: 1, overflowY: 'auto' }}>
-            {isAddingTask && taskFilter === 'open' && (
+            {/* Tasks Filter - only show when there are tasks */}
+            {tasks.length > 0 && (
               <Box
                 sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
+                  px: 2,
                   py: 1.5,
                   borderBottom: '1px solid #E5E7EB',
                 }}
               >
-                <Checkbox disabled size="small" sx={{ padding: 0, marginTop: '2px' }} />
-                <TextField
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  onKeyDown={handleNewTaskKeyDown}
-                  onBlur={() => {
-                    if (!newTaskTitle.trim()) {
-                      setIsAddingTask(false);
-                    }
-                  }}
-                  placeholder="Enter task title..."
-                  autoFocus
-                  size="small"
-                  fullWidth
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      fontSize: '14px',
-                      '& fieldset': {
-                        borderColor: '#E5E7EB',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#062F29',
-                      },
-                    },
-                  }}
+                <SubTabNavigation
+                  options={[
+                    { value: 'open', label: `Open (${openCount})` },
+                    { value: 'completed', label: `Completed (${completedCount})` },
+                  ]}
+                  value={taskFilter}
+                  onChange={(v) => setTaskFilter(v as 'open' | 'completed')}
                 />
-                <IconButton
-                  size="small"
-                  onClick={handleSubmitNewTask}
-                  disabled={!newTaskTitle.trim()}
-                  sx={{
-                    color: newTaskTitle.trim() ? '#16A34A' : '#9CA3AF',
-                    padding: '4px',
-                    '&:hover': {
-                      backgroundColor: '#DCFCE7',
-                    },
-                  }}
-                >
-                  <Check size={16} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    setNewTaskTitle('');
-                    setIsAddingTask(false);
-                  }}
-                  sx={{
-                    color: '#9CA3AF',
-                    padding: '4px',
-                    '&:hover': {
-                      backgroundColor: '#F3F4F6',
-                    },
-                  }}
-                >
-                  <X size={16} />
-                </IconButton>
               </Box>
             )}
 
-            {filteredTasks.length === 0 && !isAddingTask ? (
-              <Box sx={{ textAlign: 'center', py: 4, px: 2, backgroundColor: '#F9FAFB', borderRadius: 2, mt: 1 }}>
-                <Typography
+            {/* Tasks list */}
+            <Box sx={{ flex: 1, px: 2, py: 1, overflowY: 'auto' }}>
+              {isAddingTask && taskFilter === 'open' && (
+                <Box
                   sx={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#374151',
-                    mb: 0.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    py: 1.5,
+                    borderBottom: '1px solid #E5E7EB',
                   }}
                 >
-                  {taskFilter === 'open' ? 'No tasks yet.' : 'No completed tasks.'}
-                </Typography>
-                <Typography
-                  sx={{
-                    fontSize: '13px',
-                    color: '#6B7280',
-                  }}
-                >
-                  {taskFilter === 'open' ? 'Next steps and follow-ups for this student will show up here.' : ''}
-                </Typography>
-              </Box>
-            ) : (
-              <>
-                {/* Staff Tasks */}
-                {staffTasks.length > 0 && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography
-                      sx={{
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        color: '#6B7280',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        mb: 1,
-                        mt: 1,
-                      }}
-                    >
-                      Counselor tasks
-                    </Typography>
-                    {staffTasks.map((task) => (
-                      <TaskItem
-                        key={task.id}
-                        task={task}
-                        onToggle={() => onTaskToggle?.(task)}
-                        onEdit={(newTitle) => onTaskEdit?.(task.id, newTitle)}
-                        onDelete={() => onTaskDelete?.(task.id)}
-                      />
-                    ))}
-                  </Box>
-                )}
-
-                {/* Student Tasks */}
-                {studentTasks.length > 0 && (
-                  <Box>
-                    <Typography
-                      sx={{
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        color: '#6B7280',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        mb: 1,
-                        mt: 1,
-                      }}
-                    >
-                      Student tasks
-                    </Typography>
-                    {studentTasks.map((task) => (
-                      <TaskItem
-                        key={task.id}
-                        task={task}
-                        onToggle={() => onTaskToggle?.(task)}
-                        onEdit={(newTitle) => onTaskEdit?.(task.id, newTitle)}
-                        onDelete={() => onTaskDelete?.(task.id)}
-                      />
-                    ))}
-                  </Box>
-                )}
-              </>
-            )}
-          </Box>
-
-          {/* Add task button */}
-          {taskFilter === 'open' && filteredTasks.length > 0 && !isAddingTask && (
-            <Box
-              sx={{
-                px: 2,
-                py: 1.5,
-                borderTop: '1px solid #E5E7EB',
-              }}
-            >
-              <Button
-                variant="text"
-                startIcon={<Plus size={16} />}
-                onClick={() => setIsAddingTask(true)}
-                sx={{
-                  textTransform: 'none',
-                  padding: 0,
-                  color: '#4B5563',
-                  fontSize: '14px',
-                  '&:hover': {
-                    color: '#062F29',
-                    backgroundColor: 'transparent',
-                  },
-                }}
-              >
-                Add task
-              </Button>
-            </Box>
-          )}
-        </Box>
-      )}
-
-      {/* Interactions Tab Content */}
-      {activeTab === 'interactions' && (
-        <Box
-          sx={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            overflowY: 'auto',
-            position: 'relative',
-          }}
-        >
-          {/* Interactions Header */}
-          <Box
-            sx={{
-              px: 2,
-              py: 1.5,
-              borderBottom: '1px solid #E5E7EB',
-            }}
-          >
-            <Typography
-              sx={{
-                fontSize: '13px',
-                color: '#6B7280',
-                mb: 1.5,
-              }}
-            >
-              Keep track of meaningful conversations and follow-ups with this student.
-            </Typography>
-            {!isMobile && (
-              <Button
-                variant="contained"
-                fullWidth
-                startIcon={<Plus size={16} />}
-                onClick={(e) => onScheduleInteraction?.(e)}
-                sx={{
-                  textTransform: 'none',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  backgroundColor: '#062F29',
-                  '&:hover': {
-                    backgroundColor: '#2B4C46',
-                  },
-                }}
-              >
-                Add interaction
-              </Button>
-            )}
-          </Box>
-
-          {/* Mobile: FAB for Add interaction */}
-          {isMobile && (
-            <Fab
-              color="primary"
-              aria-label="Add interaction"
-              onClick={(e) => onScheduleInteraction?.(e)}
-              sx={{
-                position: 'absolute',
-                bottom: 24,
-                right: 24,
-                backgroundColor: '#062F29',
-                '&:hover': {
-                  backgroundColor: '#2B4C46',
-                },
-              }}
-            >
-              <Plus size={24} />
-            </Fab>
-          )}
-
-          {/* Interactions list */}
-          <Box sx={{ flex: 1, px: 2, py: 2, overflowY: 'auto' }}>
-            {(() => {
-              // Sort interactions: planned first (by date ascending), then completed (by date descending)
-              const plannedInteractions = interactions
-                .filter(i => i.status === 'planned')
-                .sort((a, b) => a.interactionDate.localeCompare(b.interactionDate));
-              const completedInteractions = interactions
-                .filter(i => i.status === 'completed')
-                .sort((a, b) => b.interactionDate.localeCompare(a.interactionDate));
-              const sortedInteractions = [...plannedInteractions, ...completedInteractions];
-
-              if (interactions.length === 0) {
-                return (
-                  <Box sx={{ textAlign: 'center', py: 4, px: 2, backgroundColor: '#F9FAFB', borderRadius: 2 }}>
-                    <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#374151', mb: 0.5 }}>
-                      No interactions yet.
-                    </Typography>
-                    <Typography sx={{ fontSize: '13px', color: '#6B7280' }}>
-                      Track conversations, check-ins, and follow-ups with this student.
-                    </Typography>
-                  </Box>
-                );
-              }
-
-              return (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {sortedInteractions.slice(0, 10).map((interaction) => (
-                    <InteractionItem
-                      key={interaction.id}
-                      interaction={interaction}
-                      onClick={() => onInteractionClick?.(interaction)}
-                    />
-                  ))}
-                  {sortedInteractions.length > 10 && (
-                    <Typography
-                      sx={{
-                        fontSize: '13px',
-                        color: '#6B7280',
-                        textAlign: 'center',
-                        py: 1,
-                      }}
-                    >
-                      + {sortedInteractions.length - 10} more interactions
-                    </Typography>
-                  )}
+                  <Checkbox disabled size="small" sx={{ padding: 0, marginTop: '2px' }} />
+                  <TextField
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    onKeyDown={handleNewTaskKeyDown}
+                    onBlur={() => {
+                      if (!newTaskTitle.trim()) {
+                        setIsAddingTask(false);
+                      }
+                    }}
+                    placeholder="Enter task title..."
+                    autoFocus
+                    size="small"
+                    fullWidth
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        fontSize: '14px',
+                        '& fieldset': {
+                          borderColor: '#E5E7EB',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#062F29',
+                        },
+                      },
+                    }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={handleSubmitNewTask}
+                    disabled={!newTaskTitle.trim()}
+                    sx={{
+                      color: newTaskTitle.trim() ? '#16A34A' : '#9CA3AF',
+                      padding: '4px',
+                      '&:hover': {
+                        backgroundColor: '#DCFCE7',
+                      },
+                    }}
+                  >
+                    <Check size={16} />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setNewTaskTitle('');
+                      setIsAddingTask(false);
+                    }}
+                    sx={{
+                      color: '#9CA3AF',
+                      padding: '4px',
+                      '&:hover': {
+                        backgroundColor: '#F3F4F6',
+                      },
+                    }}
+                  >
+                    <X size={16} />
+                  </IconButton>
                 </Box>
-              );
-            })()}
-          </Box>
-        </Box>
-      )}
+              )}
 
-      {/* Notes Tab Content */}
-      {activeTab === 'notes' && (
-        <Box
-          sx={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            overflowY: 'auto',
-          }}
-        >
-          {/* Notepad Header */}
-          <Box
-            sx={{
-              px: 2,
-              py: 1.5,
-              borderBottom: '1px solid #E5E7EB',
-            }}
-          >
-            <Typography
-              sx={{
-                fontSize: '13px',
-                color: '#6B7280',
-              }}
-            >
-              Add notes to remember important context about this student.
-            </Typography>
-          </Box>
-
-          {/* Note Input Form */}
-          <Box
-            sx={{
-              px: 2,
-              py: 2,
-              borderBottom: '1px solid #E5E7EB',
-            }}
-          >
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              placeholder="Add a note..."
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              sx={{
-                mb: 2,
-                '& .MuiOutlinedInput-root': {
-                  fontSize: '14px',
-                  '& fieldset': {
-                    borderColor: '#E5E7EB',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#D1D5DB',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#062F29',
-                  },
-                },
-              }}
-            />
-
-            {/* Visibility controls */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={noteVisibility === 'private'}
-                    onChange={() => setNoteVisibility('private')}
-                    size="small"
-                  />
-                }
-                label={
-                  <Typography sx={{ fontSize: '13px', color: '#374151' }}>
-                    Only visible to me
+              {filteredTasks.length === 0 && !isAddingTask ? (
+                <Box sx={{ textAlign: 'center', py: 4, px: 2, backgroundColor: '#F9FAFB', borderRadius: 2, mt: 1 }}>
+                  <Typography
+                    sx={{
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: '#374151',
+                      mb: 0.5,
+                    }}
+                  >
+                    {taskFilter === 'open' ? 'No tasks yet.' : 'No completed tasks.'}
                   </Typography>
-                }
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={noteVisibility === 'public'}
-                    onChange={() => setNoteVisibility('public')}
-                    size="small"
-                  />
-                }
-                label={
-                  <Typography sx={{ fontSize: '13px', color: '#374151' }}>
-                    Visible to all staff
+                  <Typography
+                    sx={{
+                      fontSize: '13px',
+                      color: '#6B7280',
+                    }}
+                  >
+                    {taskFilter === 'open' ? 'Next steps and follow-ups for this student will show up here.' : ''}
                   </Typography>
-                }
-              />
+                </Box>
+              ) : (
+                <>
+                  {/* Staff Tasks */}
+                  {staffTasks.length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography
+                        sx={{
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: '#6B7280',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          mb: 1,
+                          mt: 1,
+                        }}
+                      >
+                        Counselor tasks
+                      </Typography>
+                      {staffTasks.map((task) => (
+                        <TaskItem
+                          key={task.id}
+                          task={task}
+                          onToggle={() => onTaskToggle?.(task)}
+                          onEdit={(newTitle) => onTaskEdit?.(task.id, newTitle)}
+                          onDelete={() => onTaskDelete?.(task.id)}
+                        />
+                      ))}
+                    </Box>
+                  )}
+
+                  {/* Student Tasks */}
+                  {studentTasks.length > 0 && (
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: '#6B7280',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          mb: 1,
+                          mt: 1,
+                        }}
+                      >
+                        Student tasks
+                      </Typography>
+                      {studentTasks.map((task) => (
+                        <TaskItem
+                          key={task.id}
+                          task={task}
+                          onToggle={() => onTaskToggle?.(task)}
+                          onEdit={(newTitle) => onTaskEdit?.(task.id, newTitle)}
+                          onDelete={() => onTaskDelete?.(task.id)}
+                        />
+                      ))}
+                    </Box>
+                  )}
+                </>
+              )}
             </Box>
 
-            {/* Submit button */}
-            <Button
-              variant="contained"
-              onClick={handleSubmitNote}
-              disabled={!noteText.trim()}
-              sx={{
-                textTransform: 'none',
-                backgroundColor: '#062F29',
-                fontSize: '14px',
-                fontWeight: 500,
-                '&:hover': {
-                  backgroundColor: '#2B4C46',
-                },
-                '&.Mui-disabled': {
-                  backgroundColor: '#E5E7EB',
-                  color: '#9CA3AF',
-                },
-              }}
-            >
-              Save
-            </Button>
-          </Box>
-
-          {/* Notepad list */}
-          <Box sx={{ flex: 1, px: 2, py: 2, overflowY: 'auto' }}>
-            {notes.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 4, px: 2, backgroundColor: '#F9FAFB', borderRadius: 2 }}>
-                <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#374151', mb: 0.5 }}>
-                  No notes yet.
-                </Typography>
-                <Typography sx={{ fontSize: '13px', color: '#6B7280' }}>
-                  Add context or reflections to help you and your team support this student.
-                </Typography>
+            {/* Add task button */}
+            {taskFilter === 'open' && filteredTasks.length > 0 && !isAddingTask && (
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  borderTop: '1px solid #E5E7EB',
+                }}
+              >
+                <Button
+                  variant="text"
+                  startIcon={<Plus size={16} />}
+                  onClick={() => setIsAddingTask(true)}
+                  sx={{
+                    textTransform: 'none',
+                    padding: 0,
+                    color: '#4B5563',
+                    fontSize: '14px',
+                    '&:hover': {
+                      color: '#062F29',
+                      backgroundColor: 'transparent',
+                    },
+                  }}
+                >
+                  Add task
+                </Button>
               </Box>
-            ) : (
-              notes.map((note) => <NoteItem key={note.id} note={note} />)
             )}
           </Box>
-        </Box>
-      )}
-      </Box>
-
-      {/* Vertical Tabs */}
-      <Box
-        sx={{
-          width: '48px',
-          display: 'flex',
-          flexDirection: 'column',
-          borderLeft: '1px solid #E5E7EB',
-          backgroundColor: '#FAFAFA',
-        }}
-      >
-        <VerticalTabButton
-          icon={<Alma size={20} />}
-          isActive={activeTab === 'alma'}
-          onClick={() => setActiveTab('alma')}
-        />
-        <VerticalTabButton
-          icon={<CheckSquare size={20} />}
-          isActive={activeTab === 'tasks'}
-          onClick={() => setActiveTab('tasks')}
-        />
-        <VerticalTabButton
-          icon={<MessageSquare size={20} />}
-          isActive={activeTab === 'interactions'}
-          onClick={() => setActiveTab('interactions')}
-        />
-        <VerticalTabButton
-          icon={<StickyNote size={20} />}
-          isActive={activeTab === 'notes'}
-          onClick={() => setActiveTab('notes')}
-        />
+        )}
       </Box>
     </Box>
   );

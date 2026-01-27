@@ -10,7 +10,8 @@ import { OverviewTab } from '@/components/Overview';
 import { ProfileTab } from '@/components/Profile';
 import { PostsecondaryTab } from '@/components/Postsecondary';
 import { StudentWorkTab } from '@/components/StudentWork';
-import { ActivityTab } from '@/components/Activity';
+import { NotesTab } from '@/components/Notes';
+import { MeetingsTab } from '@/components/Meetings';
 import { LoadingSection } from '@/components/shared';
 import { SidePanel, SidePanelTabType } from '@/components/SidePanel';
 import { AddInteractionPopover } from '@/components/ScheduleInteractionFlow';
@@ -48,7 +49,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   // Handle tab query parameter
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['overview', 'profile', 'postsecondary', 'student-work', 'activity'].includes(tabParam)) {
+    if (tabParam && ['overview', 'profile', 'postsecondary', 'student-work', 'notes', 'meetings'].includes(tabParam)) {
       setActiveTab(tabParam as TabType);
     }
   }, [searchParams]);
@@ -85,7 +86,6 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     bookmarks,
     recommendations,
     studentWork,
-    activityHistory,
     aiReflections,
   } = studentData;
 
@@ -197,8 +197,22 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
             works={studentWork}
           />
         );
-      case 'activity':
-        return <ActivityTab activities={activityHistory} />;
+      case 'notes':
+        return (
+          <NotesTab
+            studentId={studentId}
+            studentFirstName={student.firstName}
+          />
+        );
+      case 'meetings':
+        return (
+          <MeetingsTab
+            studentId={studentId}
+            interactions={interactions}
+            onInteractionClick={handleInteractionClick}
+            onScheduleInteraction={handleOpenAddInteractionPopover}
+          />
+        );
       default:
         return null;
     }
@@ -211,7 +225,6 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
           studentFirstName={student.firstName}
           tasks={tasks}
           suggestedActions={localSuggestedActions}
-          interactions={interactions}
           studentId={studentId}
           activeTab={sidePanelTab}
           onTabChange={setSidePanelTab}
@@ -221,8 +234,6 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
           onTaskDelete={handleTaskDelete}
           onActionAccept={handleActionAccept}
           onActionDismiss={handleActionDismiss}
-          onInteractionClick={handleInteractionClick}
-          onScheduleInteraction={handleOpenAddInteractionPopover}
         />
       }
       currentStudentId={studentId}
