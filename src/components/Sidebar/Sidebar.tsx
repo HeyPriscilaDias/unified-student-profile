@@ -392,59 +392,63 @@ export function Sidebar({ currentStudentId }: SidebarProps) {
         <TestingSectionHeader>Testing</TestingSectionHeader>
 
         {/* Student Picker */}
-        {currentStudentId && (
-          <Box sx={{ mb: 1.5 }}>
-            <Typography
+        <Box sx={{ mb: 1.5 }}>
+          <Typography
+            sx={{
+              fontSize: '11px',
+              color: neutral[500],
+              mb: 0.5,
+              fontWeight: 500,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              px: 0.5,
+            }}
+          >
+            Test Student
+          </Typography>
+          <FormControl size="small" fullWidth>
+            <Select
+              value={currentStudentId || ''}
+              onChange={(e) => handleStudentChange(e.target.value as string)}
+              displayEmpty
               sx={{
-                fontSize: '11px',
-                color: neutral[500],
-                mb: 0.5,
-                fontWeight: 500,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                px: 0.5,
+                fontSize: '13px',
+                backgroundColor: neutral[50],
+                '& .MuiSelect-select': {
+                  padding: '8px 12px',
+                },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: neutral[200],
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: neutral[300],
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: Slate[700],
+                },
               }}
             >
-              Test Student
-            </Typography>
-            <FormControl size="small" fullWidth>
-              <Select
-                value={currentStudentId}
-                onChange={(e) => handleStudentChange(e.target.value as string)}
-                sx={{
-                  fontSize: '13px',
-                  backgroundColor: neutral[50],
-                  '& .MuiSelect-select': {
-                    padding: '8px 12px',
-                  },
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: neutral[200],
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: neutral[300],
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: Slate[700],
-                  },
-                }}
-              >
-                {students.map((student) => (
-                  <MenuItem key={student.id} value={student.id} sx={{ py: 1 }}>
-                    <Box>
-                      <Typography sx={{ fontSize: '13px', fontWeight: 500 }}>
-                        {student.firstName} {student.lastName}
-                      </Typography>
-                      <Typography sx={{ fontSize: '11px', color: neutral[500] }}>
-                        Grade {student.grade} •{' '}
-                        {student.onTrackStatus === 'on_track' ? 'On Track' : 'Off Track'}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-        )}
+              <MenuItem value="" disabled>
+                <Typography sx={{ fontSize: '13px', color: neutral[500] }}>
+                  Select a student...
+                </Typography>
+              </MenuItem>
+              {students.map((student) => (
+                <MenuItem key={student.id} value={student.id} sx={{ py: 1 }}>
+                  <Box>
+                    <Typography sx={{ fontSize: '13px', fontWeight: 500 }}>
+                      {student.firstName} {student.lastName}
+                    </Typography>
+                    <Typography sx={{ fontSize: '11px', color: neutral[500] }}>
+                      Grade {student.grade} •{' '}
+                      {student.onTrackStatus === 'on_track' ? 'On Track' : 'Off Track'}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
 
         {/* View Mode Toggle - Hidden for now, will be re-enabled later */}
         {/* TODO: Set SHOW_VIEW_MODE_TOGGLE to true to re-enable */}
