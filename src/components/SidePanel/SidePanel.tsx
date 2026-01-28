@@ -359,7 +359,6 @@ export function SidePanel({
     }
 
     startMeeting(selectedStudentId, studentName, newInteraction.id, newInteraction.title, talkingPoints);
-    router.push(`/students/${selectedStudentId}/interactions/${newInteraction.id}`);
   };
 
   const handleMeetingClick = (meetingStudentId: string, interactionId: string) => {
@@ -367,6 +366,10 @@ export function SidePanel({
   };
 
   const handleStopRecording = () => {
+    if (activeMeeting) {
+      // Navigate to the meeting details page with showSummary param to trigger loading/reveal
+      router.push(`/students/${activeMeeting.studentId}/interactions/${activeMeeting.interactionId}?showSummary=true`);
+    }
     endMeeting();
   };
 
