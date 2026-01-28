@@ -32,6 +32,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const studentData = useStudentData(studentId);
   const startInteractionParam = searchParams.get('startInteraction') === 'true';
   const summaryModeParam = searchParams.get('mode') === 'summary';
+  const showSummaryParam = searchParams.get('showSummary') === 'true';
   const [isInInteractionMode, setIsInInteractionMode] = useState(startInteractionParam);
   const [isGeneratingTalkingPoints, setIsGeneratingTalkingPoints] = useState(false);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
@@ -43,10 +44,75 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
 
   // Clean up the URL after reading the params
   useEffect(() => {
-    if (startInteractionParam || summaryModeParam) {
+    if (startInteractionParam || summaryModeParam || showSummaryParam) {
       router.replace(`/students/${studentId}/interactions/${interactionId}`, { scroll: false });
     }
-  }, [startInteractionParam, summaryModeParam, router, studentId, interactionId]);
+  }, [startInteractionParam, summaryModeParam, showSummaryParam, router, studentId, interactionId]);
+
+  // Handle showSummary param - triggered when recording stops from SidePanel
+  useEffect(() => {
+    if (showSummaryParam && !isLoadingSummary && !isSummaryRevealed) {
+      // Mock data for the summary (same as InteractionIntelligence)
+      const MOCK_SUMMARY = `<h3>Meeting Overview</h3>
+<ul>
+<li>Discussed the <strong>FAFSA application process</strong> and financial aid options for the upcoming academic year</li>
+<li>Reviewed <strong>key deadlines</strong> including the <strong>March 2nd</strong> state priority deadline</li>
+<li>Assessed family financial situation to determine eligibility for various aid programs</li>
+</ul>
+
+<h3>Key Discussion Points</h3>
+<ul>
+<li><strong>FSA ID creation</strong> - Both student and one parent need to create accounts at studentaid.gov</li>
+<li><strong>Required documents</strong> - 2024 tax returns, W-2 forms, and records of untaxed income</li>
+<li><strong>Housing plans</strong> - Student plans to live in dorms, affecting cost of attendance calculation</li>
+<li><strong>Dependency status</strong> - Filing as dependent student (parents' income will be considered)</li>
+</ul>
+
+<h3>Student Interests</h3>
+<ul>
+<li>Expressed interest in <strong>federal work-study</strong> as preferred employment option</li>
+<li>Interested in receiving list of <strong>local scholarship opportunities</strong></li>
+</ul>`;
+
+      const MOCK_TRANSCRIPT = `Counselor: Good morning! Thanks for coming in today. I wanted to go over the FAFSA process with you since the application window is now open.
+
+Student: Hi! Yes, I've been meaning to ask about this. My parents keep asking me when we need to fill it out.
+
+Counselor: Great question. The FAFSA opened on December 31st, and I always recommend completing it as early as possible. Many states have priority deadlines, and some aid is distributed on a first-come, first-served basis.
+
+Student: Oh, I didn't know that. What's our state's deadline?
+
+Counselor: For us, the priority deadline is March 2nd. If you submit before then, you'll have the best chance at state grants and institutional aid. Have you or your parents created an FSA ID yet?
+
+Student: No, what's that?
+
+Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and one parent will need one. You create it at studentaid.gov. I'd suggest doing that this week since it can take a few days to process.`;
+
+      const MOCK_ACTION_ITEMS = [
+        { id: 'action-1', title: 'Send list of scholarship opportunities to student', priority: 'medium' as const, status: 'pending' as const, assignee: 'staff' as const },
+        { id: 'action-2', title: 'Schedule parent meeting to review dependency status', priority: 'medium' as const, status: 'pending' as const, assignee: 'staff' as const },
+        { id: 'action-3', title: 'Create FSA ID at studentaid.gov', priority: 'medium' as const, status: 'pending' as const, assignee: 'student' as const },
+        { id: 'action-4', title: 'Gather 2024 tax returns and W-2 forms from parents', priority: 'medium' as const, status: 'pending' as const, assignee: 'student' as const },
+      ];
+
+      // Save the mock data to the interaction
+      updateInteractionWithRecording(studentId, interactionId, {
+        summary: MOCK_SUMMARY,
+        transcript: MOCK_TRANSCRIPT,
+        actionItems: MOCK_ACTION_ITEMS,
+      });
+
+      // Show loading state then reveal
+      setIsInInteractionMode(false);
+      setIsLoadingSummary(true);
+      setIsSummaryRevealed(false);
+
+      setTimeout(() => {
+        setIsLoadingSummary(false);
+        setIsSummaryRevealed(true);
+      }, 2000);
+    }
+  }, [showSummaryParam, isLoadingSummary, isSummaryRevealed, studentId, interactionId, updateInteractionWithRecording]);
 
   // Use interactions from context (allows real-time updates)
   const interactions = useInteractions(studentId, studentData?.interactions || []);
@@ -190,7 +256,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   };
 
   const handleDelete = () => {
-    if (confirm('Are you sure you want to delete this interaction?')) {
+    if (confirm('Are you sure you want to delete this meeting?')) {
       deleteInteraction(studentId, interactionId);
       router.push(`/students/${studentId}?tab=interactions`);
     }
@@ -577,7 +643,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
             </Box>
           )}
 
-          {/* Delete interaction */}
+          {/* Delete meeting */}
           {!isInInteractionMode && (
             <Box sx={{ mt: 6, pt: 4, borderTop: '1px solid #E5E7EB' }}>
               <Button
@@ -592,7 +658,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
                   },
                 }}
               >
-                Delete interaction
+                Delete meeting
               </Button>
             </Box>
           )}
