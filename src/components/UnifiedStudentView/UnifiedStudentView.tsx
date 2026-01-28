@@ -120,7 +120,6 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     addTask({
       studentId,
       title,
-      taskType: 'staff',
       source: 'manual',
     });
   };
@@ -138,7 +137,6 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     addTask({
       studentId,
       title: action.title,
-      taskType: 'staff',
       source: 'suggested_action',
     });
     setLocalSuggestedActions((prev) =>

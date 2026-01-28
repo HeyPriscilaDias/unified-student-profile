@@ -41,7 +41,7 @@ interface InteractionsContextType {
   updateInteractionSummary: (studentId: string, interactionId: string, summary: string) => void;
   updateInteractionWithRecording: (studentId: string, interactionId: string, data: RecordingData) => void;
   updateInteractionActionItems: (studentId: string, interactionId: string, actionItems: InteractionRecommendedAction[]) => void;
-  markInteractionComplete: (studentId: string, interactionId: string) => void;
+  updateInteractionStatus: (studentId: string, interactionId: string, status: 'draft' | 'completed') => void;
   deleteInteraction: (studentId: string, interactionId: string) => void;
   initializeInteractions: (studentId: string, interactions: Interaction[]) => void;
 }
@@ -287,7 +287,7 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const markInteractionComplete = useCallback((studentId: string, interactionId: string) => {
+  const updateInteractionStatus = useCallback((studentId: string, interactionId: string, status: 'draft' | 'completed') => {
     setInteractions(prev => {
       const newMap = new Map(prev);
       const studentInteractions = newMap.get(studentId) || [];
@@ -298,7 +298,7 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
       const existingInteraction = studentInteractions[interactionIndex];
       const updatedInteraction = {
         ...existingInteraction,
-        status: 'completed' as const,
+        status,
         updatedAt: new Date().toISOString(),
       };
 
@@ -332,7 +332,7 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
       updateInteractionSummary,
       updateInteractionWithRecording,
       updateInteractionActionItems,
-      markInteractionComplete,
+      updateInteractionStatus,
       deleteInteraction,
       initializeInteractions
     }}>

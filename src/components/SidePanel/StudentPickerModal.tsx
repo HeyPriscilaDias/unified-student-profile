@@ -19,16 +19,24 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  ToggleButton,
+  ToggleButtonGroup,
+  CircularProgress,
 } from '@mui/material';
-import { Search, X, Mic } from 'lucide-react';
-import { getAllStudents } from '@/lib/mockData';
+import { Search, X, Mic, Sparkles } from 'lucide-react';
+import { getAllStudents, getStudentData } from '@/lib/mockData';
 import { MEETING_TEMPLATES } from '@/lib/meetingTemplates';
+import { generateCustomTalkingPoints } from '@/lib/geminiService';
 import type { Student } from '@/types/student';
 
 interface NewMeetingModalProps {
   open: boolean;
   onClose: () => void;
-  onStartMeeting: (studentId: string, studentName: string, templateId?: string) => void;
+  onStartMeeting: (
+    studentId: string,
+    studentName: string,
+    options?: { templateId?: string; customTalkingPoints?: string }
+  ) => void;
   preselectedStudentId?: string;
 }
 
@@ -43,6 +51,13 @@ export function NewMeetingModal({
     preselectedStudentId ?? null
   );
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+
+  // Custom talking points state
+  const [talkingPointsMode, setTalkingPointsMode] = useState<'template' | 'custom'>('template');
+  const [customPrompt, setCustomPrompt] = useState('');
+  const [generatedTalkingPoints, setGeneratedTalkingPoints] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const students = useMemo(() => getAllStudents(), []);
 
@@ -60,12 +75,42 @@ export function NewMeetingModal({
     [students, selectedStudentId]
   );
 
+  const handleGenerateCustom = async () => {
+    if (!customPrompt.trim() || !selectedStudentId) return;
+
+    setIsGenerating(true);
+    setGenerateError(null);
+
+    try {
+      const studentData = getStudentData(selectedStudentId);
+      if (!studentData) {
+        throw new Error('Student data not found');
+      }
+
+      const talkingPoints = await generateCustomTalkingPoints(customPrompt, studentData);
+      setGeneratedTalkingPoints(talkingPoints);
+    } catch (error) {
+      console.error('Failed to generate talking points:', error);
+      setGenerateError('Failed to generate talking points. Please try again or select a template.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleStart = () => {
-    if (selectedStudent) {
+    if (!selectedStudent) return;
+
+    if (talkingPointsMode === 'template' && selectedTemplateId) {
       onStartMeeting(
         selectedStudent.id,
         `${selectedStudent.firstName} ${selectedStudent.lastName}`,
-        selectedTemplateId || undefined
+        { templateId: selectedTemplateId }
+      );
+    } else if (talkingPointsMode === 'custom' && generatedTalkingPoints) {
+      onStartMeeting(
+        selectedStudent.id,
+        `${selectedStudent.firstName} ${selectedStudent.lastName}`,
+        { customTalkingPoints: generatedTalkingPoints }
       );
     }
   };
@@ -74,10 +119,36 @@ export function NewMeetingModal({
     setSearchQuery('');
     setSelectedStudentId(preselectedStudentId ?? null);
     setSelectedTemplateId('');
+    setTalkingPointsMode('template');
+    setCustomPrompt('');
+    setGeneratedTalkingPoints(null);
+    setGenerateError(null);
     onClose();
   };
 
-  const canStart = !!selectedStudentId && !!selectedTemplateId;
+  const handleModeChange = (
+    _event: React.MouseEvent<HTMLElement>,
+    newMode: 'template' | 'custom' | null
+  ) => {
+    if (newMode !== null) {
+      setTalkingPointsMode(newMode);
+      // Clear the other mode's state
+      if (newMode === 'template') {
+        setGeneratedTalkingPoints(null);
+        setCustomPrompt('');
+        setGenerateError(null);
+      } else {
+        setSelectedTemplateId('');
+      }
+    }
+  };
+
+  const canStart =
+    !!selectedStudentId &&
+    ((talkingPointsMode === 'template' && !!selectedTemplateId) ||
+      (talkingPointsMode === 'custom' && !!generatedTalkingPoints));
+
+  const canGenerate = !!selectedStudentId && customPrompt.trim().length >= 10;
 
   return (
     <Dialog
@@ -88,7 +159,7 @@ export function NewMeetingModal({
       PaperProps={{
         sx: {
           borderRadius: '12px',
-          maxHeight: '620px',
+          maxHeight: '720px',
         },
       }}
     >
@@ -133,51 +204,231 @@ export function NewMeetingModal({
       </DialogTitle>
 
       <DialogContent sx={{ px: 3, py: 0 }}>
-        {/* Template Selector */}
-        <FormControl fullWidth size="small" sx={{ mt: 1, mb: 2 }}>
-          <InputLabel
-            sx={{
-              fontSize: '14px',
-              color: '#6B7280',
-              '&.Mui-focused': {
-                color: '#062F29',
+        {/* Talking Points Mode Toggle */}
+        <Typography
+          sx={{
+            fontSize: '12px',
+            fontWeight: 600,
+            color: '#6B7280',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            mb: 1,
+            mt: 1,
+          }}
+        >
+          Talking Points
+        </Typography>
+        <ToggleButtonGroup
+          value={talkingPointsMode}
+          exclusive
+          onChange={handleModeChange}
+          size="small"
+          fullWidth
+          sx={{
+            mb: 2,
+            '& .MuiToggleButtonGroup-grouped': {
+              border: '1px solid #E5E7EB',
+              borderRadius: '8px !important',
+              textTransform: 'none',
+              fontSize: '13px',
+              fontWeight: 500,
+              py: 0.75,
+              '&:not(:first-of-type)': {
+                borderLeft: '1px solid #E5E7EB',
+                marginLeft: '-1px',
               },
-            }}
-          >
-            Meeting template
-          </InputLabel>
-          <Select
-            value={selectedTemplateId}
-            onChange={(e) => setSelectedTemplateId(e.target.value)}
-            label="Meeting template"
-            sx={{
-              fontSize: '14px',
-              borderRadius: '8px',
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: '#E5E7EB',
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: '#D1D5DB',
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              '&.Mui-selected': {
+                backgroundColor: '#062F29',
+                color: '#fff',
                 borderColor: '#062F29',
+                '&:hover': {
+                  backgroundColor: '#0A4A40',
+                },
               },
-            }}
-          >
-            {MEETING_TEMPLATES.map((template) => (
-              <MenuItem key={template.id} value={template.id}>
-                <Box>
-                  <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#111827' }}>
-                    {template.name}
-                  </Typography>
-                  <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
-                    {template.description}
-                  </Typography>
-                </Box>
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+              '&:not(.Mui-selected)': {
+                backgroundColor: '#fff',
+                color: '#374151',
+                '&:hover': {
+                  backgroundColor: '#F9FAFB',
+                },
+              },
+            },
+          }}
+        >
+          <ToggleButton value="template">Template</ToggleButton>
+          <ToggleButton value="custom">
+            <Sparkles size={14} style={{ marginRight: 6 }} />
+            Custom with AI
+          </ToggleButton>
+        </ToggleButtonGroup>
+
+        {/* Template Selector - only show in template mode */}
+        {talkingPointsMode === 'template' && (
+          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+            <InputLabel
+              sx={{
+                fontSize: '14px',
+                color: '#6B7280',
+                '&.Mui-focused': {
+                  color: '#062F29',
+                },
+              }}
+            >
+              Select template
+            </InputLabel>
+            <Select
+              value={selectedTemplateId}
+              onChange={(e) => setSelectedTemplateId(e.target.value)}
+              label="Select template"
+              sx={{
+                fontSize: '14px',
+                borderRadius: '8px',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#E5E7EB',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#D1D5DB',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#062F29',
+                },
+              }}
+            >
+              {MEETING_TEMPLATES.map((template) => (
+                <MenuItem key={template.id} value={template.id}>
+                  <Box>
+                    <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#111827' }}>
+                      {template.name}
+                    </Typography>
+                    <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
+                      {template.description}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+
+        {/* Custom Prompt - only show in custom mode */}
+        {talkingPointsMode === 'custom' && (
+          <Box sx={{ mb: 2 }}>
+            <TextField
+              placeholder="Describe what you want to discuss... (e.g., 'Focus on college application deadlines and financial aid options')"
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              fullWidth
+              multiline
+              rows={3}
+              size="small"
+              disabled={isGenerating}
+              sx={{
+                mb: 1,
+                '& .MuiOutlinedInput-root': {
+                  fontSize: '14px',
+                  borderRadius: '8px',
+                  backgroundColor: '#F9FAFB',
+                  '& fieldset': {
+                    borderColor: '#E5E7EB',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#D1D5DB',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#062F29',
+                  },
+                },
+              }}
+            />
+            {!selectedStudentId && (
+              <Typography sx={{ fontSize: '12px', color: '#9CA3AF', mb: 1 }}>
+                Select a student below to generate personalized talking points.
+              </Typography>
+            )}
+            <Button
+              variant="outlined"
+              onClick={handleGenerateCustom}
+              disabled={!canGenerate || isGenerating}
+              startIcon={
+                isGenerating ? (
+                  <CircularProgress size={14} color="inherit" />
+                ) : (
+                  <Sparkles size={14} />
+                )
+              }
+              fullWidth
+              sx={{
+                textTransform: 'none',
+                fontSize: '13px',
+                fontWeight: 500,
+                borderColor: '#D1D5DB',
+                color: '#374151',
+                borderRadius: '8px',
+                py: 0.75,
+                '&:hover': {
+                  borderColor: '#062F29',
+                  backgroundColor: '#F9FAFB',
+                },
+                '&.Mui-disabled': {
+                  borderColor: '#E5E7EB',
+                  color: '#9CA3AF',
+                },
+              }}
+            >
+              {isGenerating ? 'Generating...' : generatedTalkingPoints ? 'Regenerate' : 'Generate Talking Points'}
+            </Button>
+
+            {generateError && (
+              <Typography sx={{ fontSize: '12px', color: '#DC2626', mt: 1 }}>
+                {generateError}
+              </Typography>
+            )}
+
+            {/* Preview generated talking points */}
+            {generatedTalkingPoints && (
+              <Box
+                sx={{
+                  mt: 1.5,
+                  p: 1.5,
+                  backgroundColor: '#F0FDF4',
+                  border: '1px solid #86EFAC',
+                  borderRadius: '8px',
+                  maxHeight: '120px',
+                  overflowY: 'auto',
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: '#16A34A',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    mb: 0.5,
+                  }}
+                >
+                  Preview
+                </Typography>
+                <Box
+                  sx={{
+                    fontSize: '12px',
+                    color: '#374151',
+                    '& h3': {
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      margin: '8px 0 4px 0',
+                      '&:first-of-type': { marginTop: 0 },
+                    },
+                    '& ul': { margin: '4px 0', paddingLeft: '16px' },
+                    '& li': { marginBottom: '2px' },
+                    '& strong': { fontWeight: 600 },
+                  }}
+                  dangerouslySetInnerHTML={{ __html: generatedTalkingPoints }}
+                />
+              </Box>
+            )}
+          </Box>
+        )}
 
         {/* Student Search */}
         <Typography
@@ -229,7 +480,7 @@ export function NewMeetingModal({
         <List
           sx={{
             py: 0,
-            maxHeight: '240px',
+            maxHeight: '160px',
             overflowY: 'auto',
             mx: -1,
             '&::-webkit-scrollbar': {
@@ -404,7 +655,7 @@ export function NewMeetingModal({
             },
           }}
         >
-          Start Transcribing
+          Start Meeting
         </Button>
       </DialogActions>
     </Dialog>

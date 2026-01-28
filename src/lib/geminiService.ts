@@ -808,3 +808,159 @@ function parseAudioProcessingResponse(responseText: string): AudioProcessingResu
     };
   }
 }
+
+// =============================================================================
+// Custom Talking Points Generation
+// =============================================================================
+
+/**
+ * Build the prompt for custom talking points generation
+ */
+function buildCustomTalkingPointsPrompt(userPrompt: string, studentData: StudentData): string {
+  const { student, profile, milestones, smartGoals, bookmarks } = studentData;
+
+  // Build student context section
+  const incompleteMilestones = milestones
+    .filter(m => m.status !== 'done')
+    .slice(0, 5)
+    .map(m => `- ${m.title} (${m.progress}% complete${m.dueDate ? `, due ${m.dueDate}` : ''})`)
+    .join('\n');
+
+  const activeGoals = smartGoals
+    .filter(g => g.status === 'active')
+    .slice(0, 3)
+    .map(g => {
+      const completed = g.subtasks.filter(s => s.completed).length;
+      return `- ${g.title} (${completed}/${g.subtasks.length} subtasks done)`;
+    })
+    .join('\n');
+
+  const topBookmarks = bookmarks
+    .filter(b => b.isTopPick)
+    .slice(0, 5)
+    .map(b => `- ${b.title} (${b.type})`)
+    .join('\n');
+
+  return `You are an expert high school counselor assistant. Generate personalized meeting talking points based on the counselor's request and the student's data.
+
+## Counselor's Request
+${userPrompt}
+
+## Student Profile
+- Name: ${student.firstName} ${student.lastName}
+- Grade: ${student.grade}
+- GPA: ${student.gpa || 'Not available'}
+- On-Track Status: ${student.onTrackStatus === 'on_track' ? 'On Track' : 'Needs Attention'}
+${profile.careerVision ? `- Career Vision: ${profile.careerVision}` : ''}
+
+## Current Milestones
+${incompleteMilestones || 'No pending milestones'}
+
+## Active Goals
+${activeGoals || 'No active goals'}
+
+## Top Career/School Picks
+${topBookmarks || 'No bookmarks yet'}
+
+${GRADE_LEVEL_GUIDANCE}
+
+## Instructions
+Generate talking points that directly address the counselor's request while incorporating relevant student data. The talking points should be:
+1. Specific and actionable
+2. Personalized to this student's situation
+3. Appropriate for their grade level
+4. Organized into clear sections
+
+Format as HTML compatible with a rich text editor:
+<h3>Section Title</h3>
+<ul>
+<li><strong>Topic</strong> - Brief description or question to discuss</li>
+</ul>
+
+Return ONLY the HTML, no additional commentary or markdown formatting.`;
+}
+
+/**
+ * Generate custom talking points using Gemini API based on user prompt and student data
+ */
+export async function generateCustomTalkingPoints(
+  userPrompt: string,
+  studentData: StudentData
+): Promise<string> {
+  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
+  if (!apiKey) {
+    console.warn('Gemini API key not configured, using fallback talking points');
+    return generateFallbackCustomTalkingPoints(userPrompt, studentData);
+  }
+
+  const prompt = buildCustomTalkingPointsPrompt(userPrompt, studentData);
+
+  try {
+    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 2048,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API error:', response.status, errorText);
+      return generateFallbackCustomTalkingPoints(userPrompt, studentData);
+    }
+
+    const data = await response.json();
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!responseText) {
+      console.error('No response text from Gemini');
+      return generateFallbackCustomTalkingPoints(userPrompt, studentData);
+    }
+
+    // Clean up any markdown code blocks if present
+    let cleanedResponse = responseText.trim();
+    const htmlMatch = cleanedResponse.match(/```(?:html)?\s*([\s\S]*?)```/);
+    if (htmlMatch) {
+      cleanedResponse = htmlMatch[1].trim();
+    }
+
+    return cleanedResponse;
+  } catch (error) {
+    console.error('Failed to call Gemini API:', error);
+    return generateFallbackCustomTalkingPoints(userPrompt, studentData);
+  }
+}
+
+/**
+ * Generate fallback talking points when AI is unavailable
+ */
+function generateFallbackCustomTalkingPoints(
+  userPrompt: string,
+  studentData: StudentData
+): string {
+  const { student } = studentData;
+
+  return `<h3>Custom Meeting Topics</h3>
+<p><em>Based on your request: "${userPrompt}"</em></p>
+<ul>
+<li><strong>Discussion Point 1</strong> - Review with ${student.firstName}</li>
+<li><strong>Discussion Point 2</strong> - Follow up on recent progress</li>
+<li><strong>Discussion Point 3</strong> - Plan next steps</li>
+</ul>
+<h3>Notes</h3>
+<p></p>`;
+}

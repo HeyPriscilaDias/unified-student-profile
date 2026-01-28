@@ -2,37 +2,52 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import type { Task } from '@/types/student';
-import { getAllStudents } from '@/lib/mockData';
+import { getAllStudents, getAllStudentTasks } from '@/lib/mockData';
 
 export interface TaskWithStudent extends Task {
-  studentId: string;
-  studentName: string;
+  studentId?: string;
+  studentName?: string;
 }
 
 interface NewTaskData {
-  studentId: string;
+  studentId?: string;
   title: string;
+  description?: string;
   dueDate?: string | null;
   source?: Task['source'];
-  taskType: Task['taskType'];
+  taskType?: Task['taskType'];
 }
 
+const GLOBAL_TASKS_KEY = '__global__';
+
 interface TasksContextType {
-  tasks: Map<string, Task[]>; // studentId -> tasks
+  tasks: Map<string, Task[]>; // studentId -> tasks (GLOBAL_TASKS_KEY for student-independent)
   getTasksForStudent: (studentId: string) => Task[];
   getAllCounselorTasks: () => TaskWithStudent[];
   addTask: (data: NewTaskData) => Task;
-  updateTask: (studentId: string, taskId: string, updates: Partial<Task>) => void;
-  toggleTask: (studentId: string, taskId: string) => void;
-  deleteTask: (studentId: string, taskId: string) => void;
+  updateTask: (studentId: string | undefined, taskId: string, updates: Partial<Task>) => void;
+  toggleTask: (studentId: string | undefined, taskId: string) => void;
+  deleteTask: (studentId: string | undefined, taskId: string) => void;
   initializeTasks: (studentId: string, tasks: Task[]) => void;
 }
 
 const TasksContext = createContext<TasksContextType | null>(null);
 
 export function TasksProvider({ children }: { children: ReactNode }) {
-  const [tasks, setTasks] = useState<Map<string, Task[]>>(new Map());
-  const [initialized, setInitialized] = useState<Set<string>>(new Set());
+  const [tasks, setTasks] = useState<Map<string, Task[]>>(() => {
+    // Eagerly load all student tasks so the tasks tab is populated
+    const allTasks = getAllStudentTasks();
+    const map = new Map<string, Task[]>();
+    for (const [studentId, studentTasks] of Object.entries(allTasks)) {
+      map.set(studentId, studentTasks);
+    }
+    return map;
+  });
+  const [initialized, setInitialized] = useState<Set<string>>(() => {
+    // Mark all eagerly-loaded students as initialized
+    const allTasks = getAllStudentTasks();
+    return new Set(Object.keys(allTasks));
+  });
 
   const getTasksForStudent = useCallback((studentId: string): Task[] => {
     return tasks.get(studentId) || [];
@@ -43,12 +58,13 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     const studentNameMap = new Map(allStudents.map(s => [s.id, `${s.firstName} ${s.lastName}`]));
 
     const allTasks: TaskWithStudent[] = [];
-    tasks.forEach((studentTasks, studentId) => {
-      const studentName = studentNameMap.get(studentId) || 'Unknown Student';
+    tasks.forEach((studentTasks, key) => {
+      const isGlobal = key === GLOBAL_TASKS_KEY;
+      const studentName = isGlobal ? undefined : (studentNameMap.get(key) || 'Unknown Student');
       studentTasks.forEach((task) => {
         allTasks.push({
           ...task,
-          studentId,
+          studentId: isGlobal ? undefined : key,
           studentName,
         });
       });
@@ -72,73 +88,78 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     const newTask: Task = {
       id: `task-${Date.now()}`,
       title: data.title,
+      description: data.description,
       dueDate: data.dueDate || null,
       status: 'open',
-      source: data.source || 'interaction',
-      taskType: data.taskType,
+      source: data.source || 'manual',
+      taskType: data.taskType || 'staff',
     };
 
+    const key = data.studentId || GLOBAL_TASKS_KEY;
     setTasks(prev => {
       const newMap = new Map(prev);
-      const studentTasks = newMap.get(data.studentId) || [];
+      const existingTasks = newMap.get(key) || [];
       // Add new task at the beginning
-      newMap.set(data.studentId, [newTask, ...studentTasks]);
+      newMap.set(key, [newTask, ...existingTasks]);
       return newMap;
     });
 
     return newTask;
   }, []);
 
-  const updateTask = useCallback((studentId: string, taskId: string, updates: Partial<Task>) => {
+  const updateTask = useCallback((studentId: string | undefined, taskId: string, updates: Partial<Task>) => {
+    const key = studentId || GLOBAL_TASKS_KEY;
     setTasks(prev => {
       const newMap = new Map(prev);
-      const studentTasks = newMap.get(studentId) || [];
-      const taskIndex = studentTasks.findIndex(t => t.id === taskId);
+      const existingTasks = newMap.get(key) || [];
+      const taskIndex = existingTasks.findIndex(t => t.id === taskId);
 
       if (taskIndex === -1) return prev;
 
-      const existingTask = studentTasks[taskIndex];
+      const existingTask = existingTasks[taskIndex];
       const updatedTask = {
         ...existingTask,
         ...updates,
       };
 
-      const newStudentTasks = [...studentTasks];
-      newStudentTasks[taskIndex] = updatedTask;
-      newMap.set(studentId, newStudentTasks);
+      const newTasks = [...existingTasks];
+      newTasks[taskIndex] = updatedTask;
+      newMap.set(key, newTasks);
 
       return newMap;
     });
   }, []);
 
-  const toggleTask = useCallback((studentId: string, taskId: string) => {
+  const toggleTask = useCallback((studentId: string | undefined, taskId: string) => {
+    const key = studentId || GLOBAL_TASKS_KEY;
     setTasks(prev => {
       const newMap = new Map(prev);
-      const studentTasks = newMap.get(studentId) || [];
-      const taskIndex = studentTasks.findIndex(t => t.id === taskId);
+      const existingTasks = newMap.get(key) || [];
+      const taskIndex = existingTasks.findIndex(t => t.id === taskId);
 
       if (taskIndex === -1) return prev;
 
-      const existingTask = studentTasks[taskIndex];
+      const existingTask = existingTasks[taskIndex];
       const updatedTask = {
         ...existingTask,
         status: existingTask.status === 'open' ? 'completed' as const : 'open' as const,
       };
 
-      const newStudentTasks = [...studentTasks];
-      newStudentTasks[taskIndex] = updatedTask;
-      newMap.set(studentId, newStudentTasks);
+      const newTasks = [...existingTasks];
+      newTasks[taskIndex] = updatedTask;
+      newMap.set(key, newTasks);
 
       return newMap;
     });
   }, []);
 
-  const deleteTask = useCallback((studentId: string, taskId: string) => {
+  const deleteTask = useCallback((studentId: string | undefined, taskId: string) => {
+    const key = studentId || GLOBAL_TASKS_KEY;
     setTasks(prev => {
       const newMap = new Map(prev);
-      const studentTasks = newMap.get(studentId) || [];
-      const filteredTasks = studentTasks.filter(t => t.id !== taskId);
-      newMap.set(studentId, filteredTasks);
+      const existingTasks = newMap.get(key) || [];
+      const filteredTasks = existingTasks.filter(t => t.id !== taskId);
+      newMap.set(key, filteredTasks);
       return newMap;
     });
   }, []);

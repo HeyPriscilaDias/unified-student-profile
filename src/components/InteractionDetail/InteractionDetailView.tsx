@@ -18,8 +18,9 @@ import { TemplateSelector } from './TemplateSelector';
 import { NotesSection } from './NotesSection';
 import { TranscriptSection } from './TranscriptSection';
 import { MEETING_TEMPLATES, templateToHTML } from '@/lib/meetingTemplates';
+import { generateCustomTalkingPoints } from '@/lib/geminiService';
 import type { ExtractedActionItem } from '@/lib/geminiService';
-import type { Task, SuggestedAction, Interaction } from '@/types/student';
+import type { Task, SuggestedAction, Interaction, InteractionStatus } from '@/types/student';
 
 interface InteractionDetailViewProps {
   studentId: string;
@@ -36,7 +37,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const [isGeneratingTalkingPoints, setIsGeneratingTalkingPoints] = useState(false);
   const [sidePanelTab, setSidePanelTab] = usePersistentRightPanelTab('alma');
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
-  const { updateInteraction, updateInteractionSummary, updateInteractionTalkingPoints, updateInteractionTemplate, updateInteractionWithRecording, updateInteractionActionItems, markInteractionComplete, deleteInteraction, addInteraction } = useInteractionsContext();
+  const { updateInteraction, updateInteractionSummary, updateInteractionTalkingPoints, updateInteractionTemplate, updateInteractionWithRecording, updateInteractionActionItems, updateInteractionStatus, deleteInteraction, addInteraction } = useInteractionsContext();
   const { addTask, updateTask, toggleTask, deleteTask } = useTasksContext();
 
   // Clean up the URL after reading the params
@@ -88,6 +89,33 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
     updateInteractionTemplate(studentId, interactionId, template.id);
   }, [interaction?.talkingPoints, handleTalkingPointsChange, updateInteractionTemplate, studentId, interactionId]);
 
+  const handleGenerateCustomTalkingPoints = useCallback(async (prompt: string) => {
+    if (!studentData || isGeneratingTalkingPoints) return;
+
+    const currentTalkingPoints = interaction?.talkingPoints || '';
+    const isEmpty = !currentTalkingPoints || currentTalkingPoints.replace(/<[^>]*>/g, '').trim().length === 0;
+
+    if (!isEmpty) {
+      if (!confirm('This will replace your current talking points. Continue?')) {
+        return;
+      }
+    }
+
+    setIsGeneratingTalkingPoints(true);
+
+    try {
+      const talkingPoints = await generateCustomTalkingPoints(prompt, studentData);
+      handleTalkingPointsChange(talkingPoints);
+      // Clear template selection since we're using custom
+      updateInteractionTemplate(studentId, interactionId, '');
+    } catch (error) {
+      console.error('Failed to generate custom talking points:', error);
+      alert('Failed to generate talking points. Please try again.');
+    } finally {
+      setIsGeneratingTalkingPoints(false);
+    }
+  }, [studentData, isGeneratingTalkingPoints, interaction?.talkingPoints, handleTalkingPointsChange, updateInteractionTemplate, studentId, interactionId]);
+
   const handleRecordingCompleted = useCallback((data: {
     summary: string;
     transcript: string;
@@ -116,7 +144,6 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
     addTask({
       studentId,
       title,
-      taskType: 'staff',
       source: 'interaction',
     });
   }, [studentId, addTask]);
@@ -127,9 +154,9 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
     // In a real app, this would create a task assigned to the student
   }, []);
 
-  const handleMarkComplete = useCallback(() => {
-    markInteractionComplete(studentId, interactionId);
-  }, [studentId, interactionId, markInteractionComplete]);
+  const handleStatusChange = useCallback((status: InteractionStatus) => {
+    updateInteractionStatus(studentId, interactionId, status);
+  }, [studentId, interactionId, updateInteractionStatus]);
 
   const handleDateChange = useCallback((date: string | undefined) => {
     updateInteraction({
@@ -180,7 +207,6 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
     addTask({
       studentId,
       title,
-      taskType: 'staff',
       source: 'manual',
     });
   };
@@ -197,7 +223,6 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
     addTask({
       studentId,
       title: action.title,
-      taskType: 'staff',
       source: 'suggested_action',
     });
     setLocalSuggestedActions((prev) =>
@@ -368,7 +393,6 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const isCompleted = interaction.status === 'completed';
   const hasRecording = !!interaction.recordingUrl || !!interaction.transcript;
   const showStartRecordingButton = !isInInteractionMode && !hasRecording && !isCompleted;
-  const showMarkCompleteButton = isDraft && !isInInteractionMode;
 
   // Helper to check if HTML content is actually empty (not just empty tags)
   const isContentEmpty = (content: string | undefined | null): boolean => {
@@ -431,27 +455,28 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
           <InteractionHeader
             interaction={interaction}
             showStartRecordingButton={showStartRecordingButton}
-            showMarkCompleteButton={showMarkCompleteButton}
             onStartRecording={handleStartInteraction}
-            onMarkComplete={handleMarkComplete}
+            onStatusChange={handleStatusChange}
             onDateChange={handleDateChange}
           />
 
-          {/* Template Selector - hidden during recording */}
-          {!isInInteractionMode && (
+          {/* Template Selector - hidden during recording and when completed */}
+          {!isInInteractionMode && !isCompleted && (
             <Box sx={{ mt: 4 }}>
               <TemplateSelector
                 currentTemplateId={interaction.templateId}
                 onSelectTemplate={handleSelectTemplate}
+                onGenerateCustom={handleGenerateCustomTalkingPoints}
+                isGenerating={isGeneratingTalkingPoints}
                 disabled={isGeneratingTalkingPoints}
               />
             </Box>
           )}
 
-          {/* Interaction Intelligence - shown inline when in interaction mode */}
+          {/* Meeting Recording - shown inline when in recording mode */}
           {isInInteractionMode && (
             <Box sx={{ mt: 4 }}>
-              <SectionCard title="Interaction Recording" icon={<Mic size={18} className="text-green-600" />}>
+              <SectionCard title="Meeting Recording" icon={<Mic size={18} className="text-green-600" />}>
                 <InteractionIntelligence
                   studentName={`${studentData.student.firstName} ${studentData.student.lastName}`}
                   onClose={handleCancelInteraction}

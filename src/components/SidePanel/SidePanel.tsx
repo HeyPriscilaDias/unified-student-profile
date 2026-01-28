@@ -3,15 +3,16 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, Typography, IconButton, TextField, Checkbox, Button, Tab, Tabs } from '@mui/material';
-import { Sparkles, Plus, Check, X } from 'lucide-react';
+import { Plus, Check, X } from 'lucide-react';
 import { AlmaChatPanel } from '@/components/AlmaChatPanel';
 import { CounselorMeetingsList } from './CounselorMeetingsList';
 import { ActiveMeetingPanel } from './ActiveMeetingPanel';
 import { NewMeetingModal } from './StudentPickerModal';
+import { AddTaskModal } from './AddTaskModal';
 import { MEETING_TEMPLATES, templateToHTML } from '@/lib/meetingTemplates';
 import { useActiveMeetingContext } from '@/contexts/ActiveMeetingContext';
 import { useInteractionsContext } from '@/contexts/InteractionsContext';
-import { useTasksContext, type TaskWithStudent } from '@/contexts/TasksContext';
+import { useTasksContext } from '@/contexts/TasksContext';
 import type { Task, SuggestedAction } from '@/types/student';
 
 export type SidePanelTabType = 'alma' | 'tasks' | 'meetings';
@@ -35,11 +36,13 @@ interface SidePanelProps {
 
 function TaskItem({
   task,
+  studentName,
   onToggle,
   onEdit,
   onDelete,
 }: {
   task: Task;
+  studentName?: string;
   onToggle?: () => void;
   onEdit?: (newTitle: string) => void;
   onDelete?: () => void;
@@ -114,23 +117,36 @@ function TaskItem({
             }}
           />
         ) : (
-          <Typography
-            onClick={() => setIsEditing(true)}
-            sx={{
-              fontSize: '14px',
-              color: task.status === 'completed' ? '#9CA3AF' : '#062F29',
-              textDecoration: task.status === 'completed' ? 'line-through' : 'none',
-              cursor: 'pointer',
-              '&:hover': {
-                backgroundColor: '#F9FAFB',
-                borderRadius: '4px',
-                mx: -0.5,
-                px: 0.5,
-              },
-            }}
-          >
-            {task.title}
-          </Typography>
+          <Box>
+            <Typography
+              onClick={() => setIsEditing(true)}
+              sx={{
+                fontSize: '14px',
+                color: task.status === 'completed' ? '#9CA3AF' : '#062F29',
+                textDecoration: task.status === 'completed' ? 'line-through' : 'none',
+                cursor: 'pointer',
+                '&:hover': {
+                  backgroundColor: '#F9FAFB',
+                  borderRadius: '4px',
+                  mx: -0.5,
+                  px: 0.5,
+                },
+              }}
+            >
+              {task.title}
+            </Typography>
+            {studentName && (
+              <Typography
+                sx={{
+                  fontSize: '12px',
+                  color: '#9CA3AF',
+                  mt: 0.25,
+                }}
+              >
+                {studentName}
+              </Typography>
+            )}
+          </Box>
         )}
       </Box>
       {!isEditing && (
@@ -289,49 +305,60 @@ export function SidePanel({
     }
   };
   const [showCompleted, setShowCompleted] = useState(false);
-  const [isAddingTask, setIsAddingTask] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
   const [isStudentPickerOpen, setIsStudentPickerOpen] = useState(false);
 
   // Contexts for meetings
   const { activeMeeting, startMeeting, endMeeting } = useActiveMeetingContext();
   const { addInteraction, updateInteractionTalkingPoints, updateInteractionTemplate } = useInteractionsContext();
-  const { getAllCounselorTasks, toggleTask: contextToggleTask, deleteTask: contextDeleteTask } = useTasksContext();
+  const { getAllCounselorTasks, addTask, toggleTask: contextToggleTask, deleteTask: contextDeleteTask } = useTasksContext();
 
   // Counselor-wide tasks
   const allCounselorTasks = getAllCounselorTasks();
-  const openCounselorTasks = allCounselorTasks.filter((t) => t.status === 'open');
-  const completedCounselorTasks = allCounselorTasks.filter((t) => t.status === 'completed');
-  const openStaffTasks = openCounselorTasks.filter((t) => t.taskType === 'staff');
-  const openStudentTasks = openCounselorTasks.filter((t) => t.taskType === 'student');
-  const completedStaffTasks = completedCounselorTasks.filter((t) => t.taskType === 'staff');
-  const completedStudentTasks = completedCounselorTasks.filter((t) => t.taskType === 'student');
+  const openTasks = allCounselorTasks.filter((t) => t.status === 'open');
+  const completedTasks = allCounselorTasks.filter((t) => t.status === 'completed');
 
   const pendingActions = suggestedActions.filter((a) => a.status === 'pending');
-
-  // Group tasks by student for counselor-wide display
-  const groupedOpenStaffTasks = groupTasksByStudent(openStaffTasks);
-  const groupedOpenStudentTasks = groupTasksByStudent(openStudentTasks);
-  const groupedCompletedStaffTasks = groupTasksByStudent(completedStaffTasks);
-  const groupedCompletedStudentTasks = groupTasksByStudent(completedStudentTasks);
 
   // Meeting handlers
   const handleStartTranscribing = () => {
     setIsStudentPickerOpen(true);
   };
 
-  const handleStartMeeting = (selectedStudentId: string, studentName: string, templateId?: string) => {
+  const handleStartMeeting = (
+    selectedStudentId: string,
+    studentName: string,
+    options?: { templateId?: string; customTalkingPoints?: string }
+  ) => {
     setIsStudentPickerOpen(false);
-    const template = templateId ? MEETING_TEMPLATES.find(t => t.id === templateId) : undefined;
+    const template = options?.templateId ? MEETING_TEMPLATES.find(t => t.id === options.templateId) : undefined;
+
+    // Determine meeting title
+    let meetingTitle: string;
+    if (template) {
+      meetingTitle = `${template.name} — ${studentName.split(' ')[0]}`;
+    } else if (options?.customTalkingPoints) {
+      meetingTitle = `Custom Meeting — ${studentName.split(' ')[0]}`;
+    } else {
+      meetingTitle = `Meeting with ${studentName.split(' ')[0]}`;
+    }
+
     const newInteraction = addInteraction({
       studentId: selectedStudentId,
-      title: template ? `${template.name} — ${studentName.split(' ')[0]}` : `Meeting with ${studentName.split(' ')[0]}`,
+      title: meetingTitle,
     });
+
+    // Set talking points from template OR custom
+    const talkingPoints = options?.customTalkingPoints || (template ? templateToHTML(template) : undefined);
+
+    if (talkingPoints) {
+      updateInteractionTalkingPoints(selectedStudentId, newInteraction.id, talkingPoints);
+    }
     if (template) {
-      updateInteractionTalkingPoints(selectedStudentId, newInteraction.id, templateToHTML(template));
       updateInteractionTemplate(selectedStudentId, newInteraction.id, template.id);
     }
-    startMeeting(selectedStudentId, studentName, newInteraction.id, newInteraction.title, template ? templateToHTML(template) : undefined);
+
+    startMeeting(selectedStudentId, studentName, newInteraction.id, newInteraction.title, talkingPoints);
     router.push(`/students/${selectedStudentId}/interactions/${newInteraction.id}`);
   };
 
@@ -349,21 +376,21 @@ export function SidePanel({
     }
   };
 
-  const handleSubmitNewTask = () => {
-    if (newTaskTitle.trim()) {
-      onNewTask?.(newTaskTitle.trim());
-      setNewTaskTitle('');
-      setIsAddingTask(false);
-    }
-  };
-
-  const handleNewTaskKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSubmitNewTask();
-    } else if (e.key === 'Escape') {
-      setNewTaskTitle('');
-      setIsAddingTask(false);
-    }
+  const handleCreateTask = (data: {
+    title: string;
+    description?: string;
+    dueDate?: string;
+    studentId?: string;
+    taskType: 'staff' | 'student';
+  }) => {
+    addTask({
+      studentId: data.studentId,
+      title: data.title,
+      description: data.description,
+      dueDate: data.dueDate,
+      source: 'manual',
+      taskType: data.taskType,
+    });
   };
 
   return (
@@ -421,7 +448,7 @@ export function SidePanel({
         {/* Alma Tab Content */}
         {activeTab === 'alma' && (
           <AlmaChatPanel
-            studentFirstName={studentFirstName}
+            studentFirstName={studentFirstName || ''}
           />
         )}
 
@@ -435,7 +462,7 @@ export function SidePanel({
               overflowY: 'auto',
             }}
           >
-            {/* Tasks Description */}
+            {/* Add Task Button */}
             <Box
               sx={{
                 px: 2,
@@ -443,19 +470,25 @@ export function SidePanel({
                 borderBottom: '1px solid #E5E7EB',
               }}
             >
-              <Typography
+              <Button
+                startIcon={<Plus size={16} />}
+                onClick={() => setIsAddTaskModalOpen(true)}
                 sx={{
-                  fontSize: '13px',
-                  color: '#6B7280',
+                  textTransform: 'none',
+                  color: '#062F29',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  p: 0,
+                  '&:hover': { backgroundColor: 'transparent', textDecoration: 'underline' },
                 }}
               >
-                All tasks and follow-ups across your students.
-              </Typography>
+                Add task
+              </Button>
             </Box>
 
             {/* Tasks list */}
             <Box sx={{ flex: 1, px: 2, py: 1, overflowY: 'auto' }}>
-              {openCounselorTasks.length === 0 && completedCounselorTasks.length === 0 ? (
+              {openTasks.length === 0 && completedTasks.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 4, px: 2, backgroundColor: '#F9FAFB', borderRadius: 2, mt: 1 }}>
                   <Typography
                     sx={{
@@ -473,95 +506,24 @@ export function SidePanel({
                       color: '#6B7280',
                     }}
                   >
-                    Tasks and follow-ups across all students will show up here.
+                    Add a task above to get started.
                   </Typography>
                 </Box>
               ) : (
                 <>
-                  {/* Open Counselor Tasks grouped by student */}
-                  {groupedOpenStaffTasks.length > 0 && (
-                    <Box sx={{ mb: 2 }}>
-                      <Typography
-                        sx={{
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: '#6B7280',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          mb: 1,
-                          mt: 1,
-                        }}
-                      >
-                        Counselor tasks
-                      </Typography>
-                      {groupedOpenStaffTasks.map((group) => (
-                        <Box key={group.studentId} sx={{ mb: 1 }}>
-                          <Typography
-                            sx={{
-                              fontSize: '12px',
-                              fontWeight: 500,
-                              color: '#155E4C',
-                              mb: 0.5,
-                            }}
-                          >
-                            {group.studentName}
-                          </Typography>
-                          {group.tasks.map((task) => (
-                            <TaskItem
-                              key={task.id}
-                              task={task}
-                              onToggle={() => contextToggleTask(task.studentId, task.id)}
-                              onDelete={() => contextDeleteTask(task.studentId, task.id)}
-                            />
-                          ))}
-                        </Box>
-                      ))}
-                    </Box>
-                  )}
-
-                  {/* Open Student Tasks grouped by student */}
-                  {groupedOpenStudentTasks.length > 0 && (
-                    <Box sx={{ mb: 2 }}>
-                      <Typography
-                        sx={{
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: '#6B7280',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          mb: 1,
-                          mt: 1,
-                        }}
-                      >
-                        Student tasks
-                      </Typography>
-                      {groupedOpenStudentTasks.map((group) => (
-                        <Box key={group.studentId} sx={{ mb: 1 }}>
-                          <Typography
-                            sx={{
-                              fontSize: '12px',
-                              fontWeight: 500,
-                              color: '#155E4C',
-                              mb: 0.5,
-                            }}
-                          >
-                            {group.studentName}
-                          </Typography>
-                          {group.tasks.map((task) => (
-                            <TaskItem
-                              key={task.id}
-                              task={task}
-                              onToggle={() => contextToggleTask(task.studentId, task.id)}
-                              onDelete={() => contextDeleteTask(task.studentId, task.id)}
-                            />
-                          ))}
-                        </Box>
-                      ))}
-                    </Box>
-                  )}
+                  {/* Open Tasks */}
+                  {openTasks.map((task) => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      studentName={task.studentName}
+                      onToggle={() => contextToggleTask(task.studentId, task.id)}
+                      onDelete={() => contextDeleteTask(task.studentId, task.id)}
+                    />
+                  ))}
 
                   {/* Show/Hide completed toggle */}
-                  {completedCounselorTasks.length > 0 && (
+                  {completedTasks.length > 0 && (
                     <>
                       <Typography
                         onClick={() => setShowCompleted(!showCompleted)}
@@ -577,66 +539,20 @@ export function SidePanel({
                       >
                         {showCompleted
                           ? 'Hide completed'
-                          : `Show completed (${completedCounselorTasks.length})`}
+                          : `Show completed (${completedTasks.length})`}
                       </Typography>
 
                       {showCompleted && (
                         <Box>
-                          {/* Completed Counselor Tasks */}
-                          {groupedCompletedStaffTasks.length > 0 && (
-                            <Box sx={{ mb: 2 }}>
-                              {groupedCompletedStaffTasks.map((group) => (
-                                <Box key={group.studentId} sx={{ mb: 1 }}>
-                                  <Typography
-                                    sx={{
-                                      fontSize: '12px',
-                                      fontWeight: 500,
-                                      color: '#155E4C',
-                                      mb: 0.5,
-                                    }}
-                                  >
-                                    {group.studentName}
-                                  </Typography>
-                                  {group.tasks.map((task) => (
-                                    <TaskItem
-                                      key={task.id}
-                                      task={task}
-                                      onToggle={() => contextToggleTask(task.studentId, task.id)}
-                                      onDelete={() => contextDeleteTask(task.studentId, task.id)}
-                                    />
-                                  ))}
-                                </Box>
-                              ))}
-                            </Box>
-                          )}
-
-                          {/* Completed Student Tasks */}
-                          {groupedCompletedStudentTasks.length > 0 && (
-                            <Box>
-                              {groupedCompletedStudentTasks.map((group) => (
-                                <Box key={group.studentId} sx={{ mb: 1 }}>
-                                  <Typography
-                                    sx={{
-                                      fontSize: '12px',
-                                      fontWeight: 500,
-                                      color: '#155E4C',
-                                      mb: 0.5,
-                                    }}
-                                  >
-                                    {group.studentName}
-                                  </Typography>
-                                  {group.tasks.map((task) => (
-                                    <TaskItem
-                                      key={task.id}
-                                      task={task}
-                                      onToggle={() => contextToggleTask(task.studentId, task.id)}
-                                      onDelete={() => contextDeleteTask(task.studentId, task.id)}
-                                    />
-                                  ))}
-                                </Box>
-                              ))}
-                            </Box>
-                          )}
+                          {completedTasks.map((task) => (
+                            <TaskItem
+                              key={task.id}
+                              task={task}
+                              studentName={task.studentName}
+                              onToggle={() => contextToggleTask(task.studentId, task.id)}
+                              onDelete={() => contextDeleteTask(task.studentId, task.id)}
+                            />
+                          ))}
                         </Box>
                       )}
                     </>
@@ -680,25 +596,15 @@ export function SidePanel({
         onStartMeeting={handleStartMeeting}
         preselectedStudentId={currentStudentId}
       />
+
+      {/* Add Task Modal */}
+      <AddTaskModal
+        open={isAddTaskModalOpen}
+        onClose={() => setIsAddTaskModalOpen(false)}
+        onCreateTask={handleCreateTask}
+      />
     </Box>
   );
-}
-
-function groupTasksByStudent(tasks: TaskWithStudent[]): { studentId: string; studentName: string; tasks: TaskWithStudent[] }[] {
-  const groups = new Map<string, { studentName: string; tasks: TaskWithStudent[] }>();
-  tasks.forEach((task) => {
-    const existing = groups.get(task.studentId);
-    if (existing) {
-      existing.tasks.push(task);
-    } else {
-      groups.set(task.studentId, { studentName: task.studentName, tasks: [task] });
-    }
-  });
-  return Array.from(groups.entries()).map(([studentId, group]) => ({
-    studentId,
-    studentName: group.studentName,
-    tasks: group.tasks,
-  }));
 }
 
 export default SidePanel;

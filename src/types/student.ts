@@ -33,6 +33,7 @@ export interface Milestone {
 export interface Task {
   id: string;
   title: string;
+  description?: string;
   dueDate: string | null;
   status: 'open' | 'completed';
   source: 'manual' | 'suggested_action' | 'interaction';

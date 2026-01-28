@@ -167,7 +167,6 @@ export const jessicaMilestones: Milestone[] = [
 ];
 
 export const jessicaTasks: Task[] = [
-  // Staff tasks
   {
     id: 'task-1',
     title: 'Schedule college visit to UT Austin',
@@ -178,68 +177,19 @@ export const jessicaTasks: Task[] = [
   },
   {
     id: 'task-2',
-    title: 'Complete scholarship application for nursing program',
-    dueDate: '2025-01-25',
-    status: 'open',
-    source: 'suggested_action',
-    taskType: 'staff',
-  },
-  {
-    id: 'task-3',
-    title: 'Follow up with Mrs. Johnson about recommendation letter',
+    title: 'Follow up on recommendation letter',
     dueDate: '2025-01-10',
     status: 'open',
     source: 'interaction',
     taskType: 'staff',
   },
   {
-    id: 'task-4',
+    id: 'task-3',
     title: 'Research financial aid options',
     dueDate: '2024-12-15',
     status: 'completed',
     source: 'manual',
     taskType: 'staff',
-  },
-  {
-    id: 'task-5',
-    title: 'Submit early action application to Texas State',
-    dueDate: '2024-11-01',
-    status: 'completed',
-    source: 'manual',
-    taskType: 'staff',
-  },
-  // Student tasks
-  {
-    id: 'task-6',
-    title: 'Complete FAFSA application',
-    dueDate: '2025-01-31',
-    status: 'open',
-    source: 'manual',
-    taskType: 'student',
-  },
-  {
-    id: 'task-7',
-    title: 'Write personal statement draft',
-    dueDate: '2025-01-15',
-    status: 'open',
-    source: 'manual',
-    taskType: 'student',
-  },
-  {
-    id: 'task-8',
-    title: 'Request transcript from registrar',
-    dueDate: '2025-01-10',
-    status: 'open',
-    source: 'interaction',
-    taskType: 'student',
-  },
-  {
-    id: 'task-9',
-    title: 'Update resume with volunteer hours',
-    dueDate: '2024-12-20',
-    status: 'completed',
-    source: 'manual',
-    taskType: 'student',
   },
 ];
 
@@ -802,7 +752,11 @@ export const studentBData: StudentData = {
   milestones: [
     { id: 'milestone-1', title: 'Complete Career Assessment', type: 'willow_generated', status: 'not_done', progress: 0 },
   ],
-  tasks: [],
+  tasks: [
+    { id: 'task-blake-1', title: 'Schedule tutoring session for Blake', dueDate: '2025-01-22', status: 'open', source: 'manual', taskType: 'staff' },
+    { id: 'task-blake-2', title: 'Contact Blake\'s parents about academic support', dueDate: '2025-01-18', status: 'open', source: 'suggested_action', taskType: 'staff' },
+    { id: 'task-blake-3', title: 'Review Blake\'s progress in Art I', dueDate: null, status: 'completed', source: 'manual', taskType: 'staff' },
+  ],
   suggestedActions: [
     { id: 'action-1', title: 'Meet with academic advisor', description: 'Discuss strategies for improving grades.', source: 'alma_snapshot', status: 'pending', assignee: 'staff' },
   ],
@@ -989,7 +943,10 @@ export const studentDData: StudentData = {
   milestones: [
     { id: 'milestone-1', title: 'Complete Career Assessment', type: 'willow_generated', status: 'done', progress: 100 },
   ],
-  tasks: [],
+  tasks: [
+    { id: 'task-dana-1', title: 'Review Dana\'s reflection portfolio', dueDate: '2025-01-25', status: 'open', source: 'manual', taskType: 'staff' },
+    { id: 'task-dana-2', title: 'Discuss summer internship options', dueDate: null, status: 'open', source: 'interaction', taskType: 'staff' },
+  ],
   suggestedActions: [],
   smartGoals: [],
   almaSnapshot: null,
@@ -1076,6 +1033,16 @@ export function getAllStudentInteractions(): Record<string, Interaction[]> {
   for (const [studentId, data] of Object.entries(allStudentData)) {
     if (data.interactions.length > 0) {
       result[studentId] = data.interactions;
+    }
+  }
+  return result;
+}
+
+export function getAllStudentTasks(): Record<string, Task[]> {
+  const result: Record<string, Task[]> = {};
+  for (const [studentId, data] of Object.entries(allStudentData)) {
+    if (data.tasks.length > 0) {
+      result[studentId] = data.tasks;
     }
   }
   return result;

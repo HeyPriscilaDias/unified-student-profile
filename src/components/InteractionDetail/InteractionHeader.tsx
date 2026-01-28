@@ -1,34 +1,31 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Box, Typography, Chip, Button, TextField, IconButton } from '@mui/material';
-import { Calendar, Mic, CheckCircle, Pencil, X } from 'lucide-react';
+import { Box, Typography, Button, TextField, IconButton, Select, MenuItem, SelectChangeEvent } from '@mui/material';
+import { Calendar, Mic, Pencil, X, ChevronDown } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import type { Interaction, InteractionStatus } from '@/types/student';
 
 interface InteractionHeaderProps {
   interaction: Interaction;
   showStartRecordingButton?: boolean;
-  showMarkCompleteButton?: boolean;
   onStartRecording?: () => void;
-  onMarkComplete?: () => void;
+  onStatusChange?: (status: InteractionStatus) => void;
   onDateChange?: (date: string | undefined) => void;
 }
 
-const statusConfig: Record<InteractionStatus, { label: string; color: 'default' | 'primary' | 'success' }> = {
-  draft: { label: 'Draft', color: 'default' },
-  completed: { label: 'Completed', color: 'success' },
-};
+const statusOptions: { value: InteractionStatus; label: string }[] = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'completed', label: 'Completed' },
+];
 
 export function InteractionHeader({
   interaction,
   showStartRecordingButton,
-  showMarkCompleteButton,
   onStartRecording,
-  onMarkComplete,
+  onStatusChange,
   onDateChange,
 }: InteractionHeaderProps) {
-  const status = statusConfig[interaction.status];
   const isDraft = interaction.status === 'draft';
   const [isEditingDate, setIsEditingDate] = useState(false);
   const [dateValue, setDateValue] = useState(interaction.interactionDate || '');
@@ -66,6 +63,12 @@ export function InteractionHeader({
     }
     setDateValue('');
     setIsEditingDate(false);
+  };
+
+  const handleStatusChange = (event: SelectChangeEvent<InteractionStatus>) => {
+    if (onStatusChange) {
+      onStatusChange(event.target.value as InteractionStatus);
+    }
   };
 
   return (
@@ -184,51 +187,57 @@ export function InteractionHeader({
               </Box>
             )}
 
-            <Chip
-              label={status.label}
-              color={status.color}
+            <Select
+              value={interaction.status}
+              onChange={handleStatusChange}
               size="small"
-              sx={{ fontWeight: 500, ml: 1 }}
-            />
+              IconComponent={(props) => <ChevronDown {...props} size={16} />}
+              sx={{
+                ml: 1,
+                minWidth: 120,
+                fontSize: '13px',
+                fontWeight: 500,
+                borderRadius: '16px',
+                backgroundColor: interaction.status === 'completed' ? '#DCFCE7' : '#F3F4F6',
+                color: interaction.status === 'completed' ? '#166534' : '#374151',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  border: 'none',
+                },
+                '& .MuiSelect-select': {
+                  py: 0.5,
+                  pl: 1.5,
+                  pr: 3,
+                },
+                '&:hover': {
+                  backgroundColor: interaction.status === 'completed' ? '#BBF7D0' : '#E5E7EB',
+                },
+              }}
+            >
+              {statusOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value} sx={{ fontSize: '13px' }}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
           </Box>
         </Box>
 
-        {(showMarkCompleteButton || showStartRecordingButton) && (
+        {showStartRecordingButton && (
           <Box className="flex items-center gap-2">
-            {showMarkCompleteButton && (
-              <Button
-                variant="outlined"
-                startIcon={<CheckCircle size={16} />}
-                onClick={onMarkComplete}
-                sx={{
-                  textTransform: 'none',
-                  borderColor: '#E5E7EB',
-                  color: '#374151',
-                  '&:hover': {
-                    borderColor: '#D1D5DB',
-                    backgroundColor: '#F9FAFB',
-                  },
-                }}
-              >
-                Mark as complete
-              </Button>
-            )}
-            {showStartRecordingButton && (
-              <Button
-                variant="contained"
-                startIcon={<Mic size={16} />}
-                onClick={onStartRecording}
-                sx={{
-                  textTransform: 'none',
-                  backgroundColor: '#155E4C',
-                  '&:hover': {
-                    backgroundColor: '#134d3f',
-                  },
-                }}
-              >
-                Start recording
-              </Button>
-            )}
+            <Button
+              variant="contained"
+              startIcon={<Mic size={16} />}
+              onClick={onStartRecording}
+              sx={{
+                textTransform: 'none',
+                backgroundColor: '#155E4C',
+                '&:hover': {
+                  backgroundColor: '#134d3f',
+                },
+              }}
+            >
+              Start recording
+            </Button>
           </Box>
         )}
       </Box>
