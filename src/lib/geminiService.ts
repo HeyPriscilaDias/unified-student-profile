@@ -602,7 +602,7 @@ export function generateFallbackTextAgenda(
     : null;
 
   if (lastInteraction?.aiSummary?.recommendedActions?.some(a => a.status === 'pending') && lastInteraction.interactionDate) {
-    discussionItems.push(`<li><b>Follow Up from Previous Interaction</b><br>Review pending action items from ${new Date(lastInteraction.interactionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.</li>`);
+    discussionItems.push(`<li><b>Follow Up from Previous Meeting</b><br>Review pending action items from ${new Date(lastInteraction.interactionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.</li>`);
   }
 
   if (discussionItems.length === 0) {

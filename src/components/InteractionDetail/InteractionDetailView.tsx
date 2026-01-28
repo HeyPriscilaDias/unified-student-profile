@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, Collapse, Skeleton } from '@mui/material';
 import { ArrowLeft, Trash2, Mic, FileText } from 'lucide-react';
 import { Alma } from '@/components/icons/AlmaIcon';
 import { InteractionIntelligence, ActionItemsPanel } from '@/components/InteractionIntelligence';
@@ -14,7 +14,6 @@ import { useInteractions, useInteractionsContext } from '@/contexts/Interactions
 import { useTasks, useTasksContext } from '@/contexts/TasksContext';
 import { usePersistentRightPanelTab } from '@/hooks/usePersistentRightPanelTab';
 import { InteractionHeader } from './InteractionHeader';
-import { TemplateSelector } from './TemplateSelector';
 import { NotesSection } from './NotesSection';
 import { TranscriptSection } from './TranscriptSection';
 import { MEETING_TEMPLATES, templateToHTML } from '@/lib/meetingTemplates';
@@ -35,6 +34,8 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const summaryModeParam = searchParams.get('mode') === 'summary';
   const [isInInteractionMode, setIsInInteractionMode] = useState(startInteractionParam);
   const [isGeneratingTalkingPoints, setIsGeneratingTalkingPoints] = useState(false);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  const [isSummaryRevealed, setIsSummaryRevealed] = useState(false);
   const [sidePanelTab, setSidePanelTab] = usePersistentRightPanelTab('alma');
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
   const { updateInteraction, updateInteractionSummary, updateInteractionTalkingPoints, updateInteractionTemplate, updateInteractionWithRecording, updateInteractionActionItems, updateInteractionStatus, deleteInteraction, addInteraction } = useInteractionsContext();
@@ -136,7 +137,17 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
       transcript: data.transcript,
       actionItems: recommendedActions,
     });
+
+    // Close recording UI and show loading state
     setIsInInteractionMode(false);
+    setIsLoadingSummary(true);
+    setIsSummaryRevealed(false);
+
+    // After 2 seconds, reveal the summary with animation
+    setTimeout(() => {
+      setIsLoadingSummary(false);
+      setIsSummaryRevealed(true);
+    }, 2000);
   }, [studentId, interactionId, updateInteractionWithRecording]);
 
   // Handle adding counselor tasks - creates a real task
@@ -460,19 +471,6 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
             onDateChange={handleDateChange}
           />
 
-          {/* Template Selector - hidden during recording and when completed */}
-          {!isInInteractionMode && !isCompleted && (
-            <Box sx={{ mt: 4 }}>
-              <TemplateSelector
-                currentTemplateId={interaction.templateId}
-                onSelectTemplate={handleSelectTemplate}
-                onGenerateCustom={handleGenerateCustomTalkingPoints}
-                isGenerating={isGeneratingTalkingPoints}
-                disabled={isGeneratingTalkingPoints}
-              />
-            </Box>
-          )}
-
           {/* Meeting Recording - shown inline when in recording mode */}
           {isInInteractionMode && (
             <Box sx={{ mt: 4 }}>
@@ -505,6 +503,11 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
                   label="Talking points"
                   placeholder="Plan what you want to talk about..."
                   readOnly={isCompleted}
+                  isGenerating={isGeneratingTalkingPoints}
+                  showTemplateSelector={!isCompleted}
+                  currentTemplateId={interaction.templateId}
+                  onSelectTemplate={handleSelectTemplate}
+                  onGenerateCustom={handleGenerateCustomTalkingPoints}
                 />
               )}
             </Box>
@@ -513,34 +516,56 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
           {/* Summary - show when not in interaction mode */}
           {!isInInteractionMode && (
             <Box sx={{ mt: 4 }}>
-              <NotesSection
-                notes={interaction.summary || ''}
-                onNotesChange={handleSummaryChange}
-                label="Summary"
-                placeholder="Enter your notes on this interaction..."
-                icon={<Alma size={18} color="#12B76A" />}
-              />
+              {isLoadingSummary ? (
+                <SectionCard title="Summary" icon={<Alma size={18} color="#12B76A" />}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    <Skeleton variant="text" width="90%" height={24} animation="wave" />
+                    <Skeleton variant="text" width="100%" height={20} animation="wave" />
+                    <Skeleton variant="text" width="85%" height={20} animation="wave" />
+                    <Skeleton variant="text" width="95%" height={20} animation="wave" />
+                    <Box sx={{ mt: 1 }}>
+                      <Skeleton variant="text" width="40%" height={24} animation="wave" />
+                      <Skeleton variant="text" width="80%" height={20} animation="wave" />
+                      <Skeleton variant="text" width="75%" height={20} animation="wave" />
+                    </Box>
+                  </Box>
+                </SectionCard>
+              ) : (
+                <Collapse in={true} timeout={isSummaryRevealed ? 500 : 0} appear={isSummaryRevealed}>
+                  <NotesSection
+                    notes={interaction.summary || ''}
+                    onNotesChange={handleSummaryChange}
+                    label="Summary"
+                    placeholder="Enter your notes on this interaction..."
+                    icon={<Alma size={18} color="#12B76A" />}
+                  />
+                </Collapse>
+              )}
             </Box>
           )}
 
           {/* Action Items (if AI summary has recommended actions) */}
-          {!isInInteractionMode && actionItemsForPanel.length > 0 && (
-            <Box sx={{ mt: 4 }}>
-              <ActionItemsPanel
-                actionItems={actionItemsForPanel}
-                onActionItemsChange={handleActionItemsChange}
-                onAddCounselorTask={handleAddCounselorTask}
-                onAddStudentTask={handleAddStudentTask}
-              />
-            </Box>
+          {!isInInteractionMode && actionItemsForPanel.length > 0 && !isLoadingSummary && (
+            <Collapse in={true} timeout={isSummaryRevealed ? 500 : 0} appear={isSummaryRevealed}>
+              <Box sx={{ mt: 4 }}>
+                <ActionItemsPanel
+                  actionItems={actionItemsForPanel}
+                  onActionItemsChange={handleActionItemsChange}
+                  onAddCounselorTask={handleAddCounselorTask}
+                  onAddStudentTask={handleAddStudentTask}
+                />
+              </Box>
+            </Collapse>
           )}
 
           {/* Transcript */}
-          {interaction.transcript ? (
-            <Box sx={{ mt: 4 }}>
-              <TranscriptSection transcript={interaction.transcript} />
-            </Box>
-          ) : (
+          {interaction.transcript && !isLoadingSummary ? (
+            <Collapse in={true} timeout={isSummaryRevealed ? 500 : 0} appear={isSummaryRevealed}>
+              <Box sx={{ mt: 4 }}>
+                <TranscriptSection transcript={interaction.transcript} />
+              </Box>
+            </Collapse>
+          ) : !isLoadingSummary && (
             <Box sx={{ mt: 4 }}>
               <SectionCard title="Transcript" icon={<Mic size={18} />}>
                 <Typography sx={{ fontSize: '14px', color: '#6B7280', fontStyle: 'italic' }}>
