@@ -520,7 +520,7 @@ export const jessicaInteractions: Interaction[] = [
     id: 'interaction-1',
     studentId: 'jessica-santiago',
     counselorId: 'counselor-rodriguez',
-    counselorName: 'Mr. Rodriguez',
+    counselorName: 'Ms. Rodriguez',
     title: 'College Planning Check-in',
     interactionDate: '2024-12-28',
     status: 'completed',
@@ -607,7 +607,7 @@ Counselor: Great. The FAFSA deadline for priority consideration is January 15th,
     id: 'interaction-2',
     studentId: 'jessica-santiago',
     counselorId: 'counselor-rodriguez',
-    counselorName: 'Mr. Rodriguez',
+    counselorName: 'Ms. Rodriguez',
     title: 'Senior Year Kickoff',
     interactionDate: '2024-09-05',
     status: 'completed',
@@ -641,13 +641,57 @@ Counselor: Great. The FAFSA deadline for priority consideration is January 15th,
     id: 'interaction-3',
     studentId: 'jessica-santiago',
     counselorId: 'counselor-rodriguez',
-    counselorName: 'Mr. Rodriguez',
+    counselorName: 'Ms. Rodriguez',
     title: 'FAFSA Follow-up',
     interactionDate: '2025-01-25',
     status: 'draft',
     summary: '',
     createdAt: '2025-01-15T14:00:00Z',
     updatedAt: '2025-01-15T14:00:00Z',
+  },
+  // Meeting with another counselor (Mr. Chen)
+  {
+    id: 'interaction-4',
+    studentId: 'jessica-santiago',
+    counselorId: 'counselor-chen',
+    counselorName: 'Mr. Chen',
+    title: 'Academic Advising - Math Placement',
+    interactionDate: '2024-08-20',
+    status: 'completed',
+    summary: `<h3>Math Course Selection</h3>
+<ul>
+<li>Recommended: AP Calculus AB based on strong Precalculus performance</li>
+<li>Alternative: AP Statistics if workload becomes too heavy</li>
+</ul>
+
+<h3>Notes</h3>
+<p>Jessica expressed confidence in her math abilities. She mentioned wanting to keep math strong for nursing prerequisites.</p>`,
+    createdAt: '2024-08-20T11:00:00Z',
+    updatedAt: '2024-08-20T11:45:00Z',
+  },
+  // Another meeting with a different counselor (Ms. Thompson)
+  {
+    id: 'interaction-5',
+    studentId: 'jessica-santiago',
+    counselorId: 'counselor-thompson',
+    counselorName: 'Ms. Thompson',
+    title: 'College Essay Workshop',
+    interactionDate: '2024-10-15',
+    status: 'completed',
+    summary: `<h3>Essay Topics Discussed</h3>
+<ul>
+<li>Personal statement: Hospital volunteering experience as hook</li>
+<li>Why nursing: Combine empathy with science passion</li>
+<li>Diversity essay: Bilingual/bicultural background</li>
+</ul>
+
+<h3>Next Steps</h3>
+<ul>
+<li>First draft due October 25th</li>
+<li>Schedule follow-up review session</li>
+</ul>`,
+    createdAt: '2024-10-15T14:00:00Z',
+    updatedAt: '2024-10-15T15:30:00Z',
   },
 ];
 
@@ -775,7 +819,49 @@ export const studentBData: StudentData = {
   activityHistory: [],
   aiReflections: [],
   qualityFlags: [],
-  interactions: [],
+  interactions: [
+    {
+      id: 'interaction-blake-1',
+      studentId: 'student-b-low-gpa',
+      counselorId: 'counselor-rodriguez',
+      counselorName: 'Ms. Rodriguez',
+      title: 'Academic Support Check-in',
+      interactionDate: '2025-01-10',
+      status: 'completed',
+      summary: `<h3>Current Situation</h3>
+<ul>
+<li>GPA at 1.8 - need to bring up to 2.0 minimum</li>
+<li>Struggling in Algebra II and English</li>
+<li>Showing improvement in Art class</li>
+</ul>
+
+<h3>Support Plan</h3>
+<ul>
+<li>Enrolled in after-school tutoring for math</li>
+<li>Weekly check-ins with Ms. Rodriguez</li>
+<li>Explore creative career pathways</li>
+</ul>`,
+      createdAt: '2025-01-10T09:00:00Z',
+      updatedAt: '2025-01-10T10:00:00Z',
+    },
+    {
+      id: 'interaction-blake-2',
+      studentId: 'student-b-low-gpa',
+      counselorId: 'counselor-chen',
+      counselorName: 'Mr. Chen',
+      title: 'Course Recovery Options',
+      interactionDate: '2024-12-15',
+      status: 'completed',
+      summary: `<h3>Recovery Options Discussed</h3>
+<ul>
+<li>Credit recovery program available in summer</li>
+<li>Online course options for failed classes</li>
+<li>Grade improvement plan with teachers</li>
+</ul>`,
+      createdAt: '2024-12-15T14:00:00Z',
+      updatedAt: '2024-12-15T15:00:00Z',
+    },
+  ],
 };
 
 // Student C - Off-track (missed deadline)
@@ -829,7 +915,31 @@ export const studentCData: StudentData = {
   activityHistory: [],
   aiReflections: [],
   qualityFlags: [],
-  interactions: [],
+  interactions: [
+    {
+      id: 'interaction-casey-1',
+      studentId: 'student-c-missed',
+      counselorId: 'counselor-rodriguez',
+      counselorName: 'Ms. Rodriguez',
+      title: 'Deadline Recovery Planning',
+      interactionDate: '2025-01-20',
+      status: 'completed',
+      summary: `<h3>Missed Deadlines</h3>
+<ul>
+<li>College list was due Nov 1 - only 50% done</li>
+<li>Recommendation letters not requested yet (was due Dec 1)</li>
+</ul>
+
+<h3>Recovery Plan</h3>
+<ul>
+<li>Finalize college list this week - focus on schools with rolling admissions</li>
+<li>Request recommendation letters immediately</li>
+<li>Identify 2-3 backup schools with later deadlines</li>
+</ul>`,
+      createdAt: '2025-01-20T10:00:00Z',
+      updatedAt: '2025-01-20T11:00:00Z',
+    },
+  ],
 };
 
 // Student D - Many reflections (20+) - tests pagination
@@ -959,6 +1069,16 @@ export function getStudentData(studentId: string): StudentData | null {
 
 export function getAllStudents(): Student[] {
   return Object.values(allStudentData).map(data => data.student);
+}
+
+export function getAllStudentInteractions(): Record<string, Interaction[]> {
+  const result: Record<string, Interaction[]> = {};
+  for (const [studentId, data] of Object.entries(allStudentData)) {
+    if (data.interactions.length > 0) {
+      result[studentId] = data.interactions;
+    }
+  }
+  return result;
 }
 
 export const defaultStudentId = 'jessica-santiago';

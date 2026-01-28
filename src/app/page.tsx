@@ -1,20 +1,17 @@
 'use client';
 
-import { useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { AppLayout } from '@/components/AppLayout';
 import { SidePanel } from '@/components/SidePanel';
+import { usePersistentRightPanelTab } from '@/hooks/usePersistentRightPanelTab';
 
 export default function Home() {
-  const [sidePanelTab, setSidePanelTab] = useState<'alma' | 'tasks'>('alma');
+  const [sidePanelTab, setSidePanelTab] = usePersistentRightPanelTab('alma');
 
   return (
     <AppLayout
       rightPanel={
         <SidePanel
-          studentFirstName=""
-          tasks={[]}
-          suggestedActions={[]}
           activeTab={sidePanelTab}
           onTabChange={setSidePanelTab}
         />

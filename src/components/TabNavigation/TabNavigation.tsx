@@ -6,6 +6,7 @@ import type { TabType } from '@/types/student';
 interface TabNavigationProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
+  meetingsCount?: number;
 }
 
 const tabs: { value: TabType; label: string }[] = [
@@ -17,7 +18,7 @@ const tabs: { value: TabType; label: string }[] = [
   { value: 'meetings', label: 'Meetings' },
 ];
 
-export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
+export function TabNavigation({ activeTab, onTabChange, meetingsCount }: TabNavigationProps) {
   const handleChange = (_event: React.SyntheticEvent, newValue: TabType) => {
     onTabChange(newValue);
   };
@@ -60,7 +61,15 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
         }}
       >
         {tabs.map((tab) => (
-          <Tab key={tab.value} value={tab.value} label={tab.label} />
+          <Tab
+            key={tab.value}
+            value={tab.value}
+            label={
+              tab.value === 'meetings' && meetingsCount !== undefined && meetingsCount > 0
+                ? `${tab.label} (${meetingsCount})`
+                : tab.label
+            }
+          />
         ))}
       </Tabs>
     </Box>

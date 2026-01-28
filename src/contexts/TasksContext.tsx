@@ -2,6 +2,12 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import type { Task } from '@/types/student';
+import { getAllStudents } from '@/lib/mockData';
+
+export interface TaskWithStudent extends Task {
+  studentId: string;
+  studentName: string;
+}
 
 interface NewTaskData {
   studentId: string;
@@ -14,6 +20,7 @@ interface NewTaskData {
 interface TasksContextType {
   tasks: Map<string, Task[]>; // studentId -> tasks
   getTasksForStudent: (studentId: string) => Task[];
+  getAllCounselorTasks: () => TaskWithStudent[];
   addTask: (data: NewTaskData) => Task;
   updateTask: (studentId: string, taskId: string, updates: Partial<Task>) => void;
   toggleTask: (studentId: string, taskId: string) => void;
@@ -29,6 +36,25 @@ export function TasksProvider({ children }: { children: ReactNode }) {
 
   const getTasksForStudent = useCallback((studentId: string): Task[] => {
     return tasks.get(studentId) || [];
+  }, [tasks]);
+
+  const getAllCounselorTasks = useCallback((): TaskWithStudent[] => {
+    const allStudents = getAllStudents();
+    const studentNameMap = new Map(allStudents.map(s => [s.id, `${s.firstName} ${s.lastName}`]));
+
+    const allTasks: TaskWithStudent[] = [];
+    tasks.forEach((studentTasks, studentId) => {
+      const studentName = studentNameMap.get(studentId) || 'Unknown Student';
+      studentTasks.forEach((task) => {
+        allTasks.push({
+          ...task,
+          studentId,
+          studentName,
+        });
+      });
+    });
+
+    return allTasks;
   }, [tasks]);
 
   const initializeTasks = useCallback((studentId: string, initialTasks: Task[]) => {
@@ -121,6 +147,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     <TasksContext.Provider value={{
       tasks,
       getTasksForStudent,
+      getAllCounselorTasks,
       addTask,
       updateTask,
       toggleTask,

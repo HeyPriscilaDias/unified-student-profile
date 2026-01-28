@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import type { Interaction, InteractionRecommendedAction } from '@/types/student';
+import { getAllStudents, getAllStudentInteractions } from '@/lib/mockData';
 
 interface NewInteractionData {
   studentId: string;
@@ -24,12 +25,19 @@ interface RecordingData {
   actionItems: InteractionRecommendedAction[];
 }
 
+export interface InteractionWithStudent extends Interaction {
+  studentName: string;
+  studentAvatarUrl: string;
+}
+
 interface InteractionsContextType {
   interactions: Map<string, Interaction[]>; // studentId -> interactions
   getInteractionsForStudent: (studentId: string) => Interaction[];
+  getAllCounselorInteractions: () => InteractionWithStudent[];
   addInteraction: (data: NewInteractionData) => Interaction;
   updateInteraction: (data: UpdateInteractionData) => Interaction | null;
   updateInteractionTalkingPoints: (studentId: string, interactionId: string, talkingPoints: string) => void;
+  updateInteractionTemplate: (studentId: string, interactionId: string, templateId: string) => void;
   updateInteractionSummary: (studentId: string, interactionId: string, summary: string) => void;
   updateInteractionWithRecording: (studentId: string, interactionId: string, data: RecordingData) => void;
   updateInteractionActionItems: (studentId: string, interactionId: string, actionItems: InteractionRecommendedAction[]) => void;
@@ -41,11 +49,50 @@ interface InteractionsContextType {
 const InteractionsContext = createContext<InteractionsContextType | null>(null);
 
 export function InteractionsProvider({ children }: { children: ReactNode }) {
-  const [interactions, setInteractions] = useState<Map<string, Interaction[]>>(new Map());
-  const [initialized, setInitialized] = useState<Set<string>>(new Set());
+  const [interactions, setInteractions] = useState<Map<string, Interaction[]>>(() => {
+    // Eagerly load all student interactions so the counselor meetings tab is populated
+    const allInteractions = getAllStudentInteractions();
+    const map = new Map<string, Interaction[]>();
+    for (const [studentId, studentInteractions] of Object.entries(allInteractions)) {
+      map.set(studentId, studentInteractions);
+    }
+    return map;
+  });
+  const [initialized, setInitialized] = useState<Set<string>>(() => {
+    // Mark all eagerly-loaded students as initialized
+    const allInteractions = getAllStudentInteractions();
+    return new Set(Object.keys(allInteractions));
+  });
 
   const getInteractionsForStudent = useCallback((studentId: string): Interaction[] => {
     return interactions.get(studentId) || [];
+  }, [interactions]);
+
+  const getAllCounselorInteractions = useCallback((): InteractionWithStudent[] => {
+    const allStudents = getAllStudents();
+    const studentInfoMap = new Map(allStudents.map(s => [s.id, { name: `${s.firstName} ${s.lastName}`, avatarUrl: s.avatarUrl }]));
+
+    const allInteractions: InteractionWithStudent[] = [];
+    interactions.forEach((studentInteractions, studentId) => {
+      const info = studentInfoMap.get(studentId);
+      const studentName = info?.name || 'Unknown Student';
+      const studentAvatarUrl = info?.avatarUrl || '/avatars/default.jpg';
+      studentInteractions.forEach((interaction) => {
+        // Only include interactions from the current counselor (Ms. Rodriguez)
+        if (interaction.counselorId === 'counselor-rodriguez') {
+          allInteractions.push({
+            ...interaction,
+            studentName,
+            studentAvatarUrl,
+          });
+        }
+      });
+    });
+
+    // Sort by createdAt descending (most recent first)
+    return allInteractions.sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
   }, [interactions]);
 
   const initializeInteractions = useCallback((studentId: string, initialInteractions: Interaction[]) => {
@@ -63,7 +110,7 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
     const newInteraction: Interaction = {
       id: `interaction-new-${Date.now()}`,
       studentId: data.studentId,
-      counselorId: 'counselor-1',
+      counselorId: 'counselor-rodriguez',
       counselorName: 'Ms. Rodriguez',
       title: data.title,
       interactionDate: data.interactionDate,
@@ -124,6 +171,29 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
       const updatedInteraction = {
         ...existingInteraction,
         talkingPoints,
+        updatedAt: new Date().toISOString(),
+      };
+
+      const newStudentInteractions = [...studentInteractions];
+      newStudentInteractions[interactionIndex] = updatedInteraction;
+      newMap.set(studentId, newStudentInteractions);
+
+      return newMap;
+    });
+  }, []);
+
+  const updateInteractionTemplate = useCallback((studentId: string, interactionId: string, templateId: string) => {
+    setInteractions(prev => {
+      const newMap = new Map(prev);
+      const studentInteractions = newMap.get(studentId) || [];
+      const interactionIndex = studentInteractions.findIndex(m => m.id === interactionId);
+
+      if (interactionIndex === -1) return prev;
+
+      const existingInteraction = studentInteractions[interactionIndex];
+      const updatedInteraction = {
+        ...existingInteraction,
+        templateId,
         updatedAt: new Date().toISOString(),
       };
 
@@ -254,9 +324,11 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
     <InteractionsContext.Provider value={{
       interactions,
       getInteractionsForStudent,
+      getAllCounselorInteractions,
       addInteraction,
       updateInteraction,
       updateInteractionTalkingPoints,
+      updateInteractionTemplate,
       updateInteractionSummary,
       updateInteractionWithRecording,
       updateInteractionActionItems,

@@ -4,6 +4,7 @@ import { ThemeProvider } from "../components/ThemeProvider";
 import { InteractionsProvider } from "../contexts/InteractionsContext";
 import { TasksProvider } from "../contexts/TasksContext";
 import { AlmaChatProvider } from "../contexts/AlmaChatContext";
+import { ActiveMeetingProvider } from "../contexts/ActiveMeetingContext";
 
 export const metadata: Metadata = {
   title: "Unified Student Profile",
@@ -21,9 +22,11 @@ export default function RootLayout({
         <ThemeProvider>
           <InteractionsProvider>
             <TasksProvider>
-              <AlmaChatProvider>
-                {children}
-              </AlmaChatProvider>
+              <ActiveMeetingProvider>
+                <AlmaChatProvider>
+                  {children}
+                </AlmaChatProvider>
+              </ActiveMeetingProvider>
             </TasksProvider>
           </InteractionsProvider>
         </ThemeProvider>

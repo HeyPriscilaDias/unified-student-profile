@@ -1,0 +1,117 @@
+'use client';
+
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+
+export type ActiveMeetingPhase = 'recording' | 'processing' | 'results';
+
+export interface ActiveMeetingState {
+  studentId: string;
+  studentName: string;
+  interactionId: string;
+  interactionTitle: string;
+  phase: ActiveMeetingPhase;
+  startTime: number; // timestamp when recording started
+  talkingPoints?: string;
+}
+
+interface ActiveMeetingContextType {
+  activeMeeting: ActiveMeetingState | null;
+  startMeeting: (
+    studentId: string,
+    studentName: string,
+    interactionId: string,
+    interactionTitle: string,
+    talkingPoints?: string
+  ) => void;
+  setPhase: (phase: ActiveMeetingPhase) => void;
+  updateTalkingPoints: (talkingPoints: string) => void;
+  endMeeting: () => void;
+}
+
+const STORAGE_KEY = 'willow-active-meeting';
+
+const ActiveMeetingContext = createContext<ActiveMeetingContextType | null>(null);
+
+export function ActiveMeetingProvider({ children }: { children: ReactNode }) {
+  const [activeMeeting, setActiveMeeting] = useState<ActiveMeetingState | null>(() => {
+    // Initialize from localStorage if available (client-side only)
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  });
+
+  // Persist to localStorage whenever activeMeeting changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (activeMeeting) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(activeMeeting));
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  }, [activeMeeting]);
+
+  const startMeeting = useCallback((
+    studentId: string,
+    studentName: string,
+    interactionId: string,
+    interactionTitle: string,
+    talkingPoints?: string
+  ) => {
+    setActiveMeeting({
+      studentId,
+      studentName,
+      interactionId,
+      interactionTitle,
+      phase: 'recording',
+      startTime: Date.now(),
+      talkingPoints,
+    });
+  }, []);
+
+  const setPhase = useCallback((phase: ActiveMeetingPhase) => {
+    setActiveMeeting(prev => {
+      if (!prev) return null;
+      return { ...prev, phase };
+    });
+  }, []);
+
+  const updateTalkingPoints = useCallback((talkingPoints: string) => {
+    setActiveMeeting(prev => {
+      if (!prev) return null;
+      return { ...prev, talkingPoints };
+    });
+  }, []);
+
+  const endMeeting = useCallback(() => {
+    setActiveMeeting(null);
+  }, []);
+
+  return (
+    <ActiveMeetingContext.Provider value={{
+      activeMeeting,
+      startMeeting,
+      setPhase,
+      updateTalkingPoints,
+      endMeeting,
+    }}>
+      {children}
+    </ActiveMeetingContext.Provider>
+  );
+}
+
+export function useActiveMeetingContext() {
+  const context = useContext(ActiveMeetingContext);
+  if (!context) {
+    throw new Error('useActiveMeetingContext must be used within an ActiveMeetingProvider');
+  }
+  return context;
+}

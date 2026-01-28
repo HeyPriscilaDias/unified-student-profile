@@ -12,7 +12,7 @@ export function usePersistentRightPanelTab(defaultTab: SidePanelTabType = 'alma'
     // Initialize from localStorage if available
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored && ['alma', 'tasks', 'notes', 'interactions'].includes(stored)) {
+      if (stored && ['alma', 'tasks', 'meetings', 'notes', 'interactions'].includes(stored)) {
         return stored as SidePanelTabType;
       }
     }

@@ -310,7 +310,7 @@ export function Sidebar({ currentStudentId }: SidebarProps) {
     if (item.submenu) {
       toggleSubmenu(item.id);
     }
-    // Menu items are non-functional for now
+    router.push('/');
   };
 
   const handleViewModeChange = (

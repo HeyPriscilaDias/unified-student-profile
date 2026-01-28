@@ -214,6 +214,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
           tasks={tasks}
           suggestedActions={localSuggestedActions}
           studentId={studentId}
+          currentStudentId={studentId}
           activeTab={sidePanelTab}
           onTabChange={setSidePanelTab}
           onTaskToggle={handleTaskToggle}
@@ -242,6 +243,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
         <TabNavigation
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          meetingsCount={interactions.length}
         />
 
         {/* Tab Content */}

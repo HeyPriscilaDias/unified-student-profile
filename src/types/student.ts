@@ -245,6 +245,9 @@ export interface Interaction {
   // AI-generated content (from recording)
   aiSummary?: InteractionSummary;
 
+  // Template (for analytics)
+  templateId?: string;
+
   // Metadata
   createdAt: string;
   updatedAt: string;

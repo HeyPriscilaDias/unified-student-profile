@@ -1,20 +1,28 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Box, Typography, IconButton, TextField, Checkbox, Button, Tab, Tabs } from '@mui/material';
 import { Sparkles, Plus, Check, X } from 'lucide-react';
 import { SubTabNavigation, AIReviewBadge } from '@/components/shared';
 import { AlmaChatPanel } from '@/components/AlmaChatPanel';
+import { CounselorMeetingsList } from './CounselorMeetingsList';
+import { ActiveMeetingPanel } from './ActiveMeetingPanel';
+import { StudentPickerModal } from './StudentPickerModal';
+import { useActiveMeetingContext } from '@/contexts/ActiveMeetingContext';
+import { useInteractionsContext } from '@/contexts/InteractionsContext';
+import { useTasksContext, type TaskWithStudent } from '@/contexts/TasksContext';
 import type { Task, SuggestedAction } from '@/types/student';
 
-export type SidePanelTabType = 'alma' | 'tasks';
+export type SidePanelTabType = 'alma' | 'tasks' | 'meetings';
 type TabType = SidePanelTabType;
 
 interface SidePanelProps {
-  studentFirstName: string;
-  tasks: Task[];
-  suggestedActions: SuggestedAction[];
+  studentFirstName?: string;
+  tasks?: Task[];
+  suggestedActions?: SuggestedAction[];
   studentId?: string;
+  currentStudentId?: string;
   activeTab?: TabType;
   onTabChange?: (tab: TabType) => void;
   onTaskToggle?: (task: Task) => void;
@@ -255,9 +263,10 @@ function ActionItem({
 
 export function SidePanel({
   studentFirstName,
-  tasks,
-  suggestedActions,
+  tasks = [],
+  suggestedActions = [],
   studentId,
+  currentStudentId,
   activeTab: controlledActiveTab,
   onTabChange,
   onTaskToggle,
@@ -267,6 +276,7 @@ export function SidePanel({
   onActionAccept,
   onActionDismiss,
 }: SidePanelProps) {
+  const router = useRouter();
   const [internalActiveTab, setInternalActiveTab] = useState<TabType>('alma');
 
   // Support both controlled and uncontrolled modes
@@ -281,13 +291,55 @@ export function SidePanel({
   const [taskFilter, setTaskFilter] = useState<'open' | 'completed'>('open');
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [isStudentPickerOpen, setIsStudentPickerOpen] = useState(false);
 
-  const filteredTasks = tasks.filter((t) => t.status === taskFilter);
-  const staffTasks = filteredTasks.filter((t) => t.taskType === 'staff');
-  const studentTasks = filteredTasks.filter((t) => t.taskType === 'student');
-  const openCount = tasks.filter((t) => t.status === 'open').length;
-  const completedCount = tasks.filter((t) => t.status === 'completed').length;
+  // Contexts for meetings
+  const { activeMeeting, startMeeting, endMeeting } = useActiveMeetingContext();
+  const { addInteraction } = useInteractionsContext();
+  const { getAllCounselorTasks, toggleTask: contextToggleTask, deleteTask: contextDeleteTask } = useTasksContext();
+
+  // Counselor-wide tasks
+  const allCounselorTasks = getAllCounselorTasks();
+  const filteredCounselorTasks = allCounselorTasks.filter((t) => t.status === taskFilter);
+  const counselorStaffTasks = filteredCounselorTasks.filter((t) => t.taskType === 'staff');
+  const counselorStudentTasks = filteredCounselorTasks.filter((t) => t.taskType === 'student');
+  const counselorOpenCount = allCounselorTasks.filter((t) => t.status === 'open').length;
+  const counselorCompletedCount = allCounselorTasks.filter((t) => t.status === 'completed').length;
+
   const pendingActions = suggestedActions.filter((a) => a.status === 'pending');
+
+  // Group tasks by student for counselor-wide display
+  const groupedStaffTasks = groupTasksByStudent(counselorStaffTasks);
+  const groupedStudentTasks = groupTasksByStudent(counselorStudentTasks);
+
+  // Meeting handlers
+  const handleStartTranscribing = () => {
+    setIsStudentPickerOpen(true);
+  };
+
+  const handleStudentSelected = (selectedStudentId: string, studentName: string) => {
+    setIsStudentPickerOpen(false);
+    const newInteraction = addInteraction({
+      studentId: selectedStudentId,
+      title: `Meeting with ${studentName.split(' ')[0]}`,
+    });
+    startMeeting(selectedStudentId, studentName, newInteraction.id, newInteraction.title);
+    router.push(`/students/${selectedStudentId}/interactions/${newInteraction.id}`);
+  };
+
+  const handleMeetingClick = (meetingStudentId: string, interactionId: string) => {
+    router.push(`/students/${meetingStudentId}/interactions/${interactionId}`);
+  };
+
+  const handleStopRecording = () => {
+    endMeeting();
+  };
+
+  const handleViewMeeting = () => {
+    if (activeMeeting) {
+      router.push(`/students/${activeMeeting.studentId}/interactions/${activeMeeting.interactionId}`);
+    }
+  };
 
   const handleSubmitNewTask = () => {
     if (newTaskTitle.trim()) {
@@ -346,6 +398,7 @@ export function SidePanel({
       >
         <Tab value="alma" label="Alma" />
         <Tab value="tasks" label="Tasks" />
+        <Tab value="meetings" label="Meetings" />
       </Tabs>
 
       {/* Content Area */}
@@ -364,7 +417,7 @@ export function SidePanel({
           />
         )}
 
-        {/* Tasks Tab Content */}
+        {/* Tasks Tab Content - Counselor-wide */}
         {activeTab === 'tasks' && (
           <Box
             sx={{
@@ -374,53 +427,6 @@ export function SidePanel({
               overflowY: 'auto',
             }}
           >
-            {/* Suggested Actions Section - Hidden for prototype testing */}
-            {false && pendingActions.length > 0 && (
-              <>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    px: 2,
-                    py: 1.5,
-                    borderBottom: '1px solid #E5E7EB',
-                  }}
-                >
-                  <Sparkles size={18} style={{ color: '#F59E0B' }} />
-                  <Typography
-                    sx={{
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      color: '#111827',
-                    }}
-                  >
-                    Suggested Actions
-                  </Typography>
-                  <AIReviewBadge />
-                </Box>
-                <Box
-                  sx={{
-                    px: 2,
-                    py: 1.5,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 1.5,
-                    borderBottom: '1px solid #E5E7EB',
-                  }}
-                >
-                  {pendingActions.map((action) => (
-                    <ActionItem
-                      key={action.id}
-                      action={action}
-                      onAccept={() => onActionAccept?.(action)}
-                      onDismiss={() => onActionDismiss?.(action)}
-                    />
-                  ))}
-                </Box>
-              </>
-            )}
-
             {/* Tasks Description */}
             <Box
               sx={{
@@ -435,12 +441,12 @@ export function SidePanel({
                   color: '#6B7280',
                 }}
               >
-                Next steps and follow-ups for this student.
+                All tasks and follow-ups across your students.
               </Typography>
             </Box>
 
             {/* Tasks Filter - only show when there are tasks */}
-            {tasks.length > 0 && (
+            {allCounselorTasks.length > 0 && (
               <Box
                 sx={{
                   px: 2,
@@ -450,8 +456,8 @@ export function SidePanel({
               >
                 <SubTabNavigation
                   options={[
-                    { value: 'open', label: `Open (${openCount})` },
-                    { value: 'completed', label: `Completed (${completedCount})` },
+                    { value: 'open', label: `Open (${counselorOpenCount})` },
+                    { value: 'completed', label: `Completed (${counselorCompletedCount})` },
                   ]}
                   value={taskFilter}
                   onChange={(v) => setTaskFilter(v as 'open' | 'completed')}
@@ -461,76 +467,7 @@ export function SidePanel({
 
             {/* Tasks list */}
             <Box sx={{ flex: 1, px: 2, py: 1, overflowY: 'auto' }}>
-              {isAddingTask && taskFilter === 'open' && (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    py: 1.5,
-                    borderBottom: '1px solid #E5E7EB',
-                  }}
-                >
-                  <Checkbox disabled size="small" sx={{ padding: 0, marginTop: '2px' }} />
-                  <TextField
-                    value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                    onKeyDown={handleNewTaskKeyDown}
-                    onBlur={() => {
-                      if (!newTaskTitle.trim()) {
-                        setIsAddingTask(false);
-                      }
-                    }}
-                    placeholder="Enter task title..."
-                    autoFocus
-                    size="small"
-                    fullWidth
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        fontSize: '14px',
-                        '& fieldset': {
-                          borderColor: '#E5E7EB',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#062F29',
-                        },
-                      },
-                    }}
-                  />
-                  <IconButton
-                    size="small"
-                    onClick={handleSubmitNewTask}
-                    disabled={!newTaskTitle.trim()}
-                    sx={{
-                      color: newTaskTitle.trim() ? '#16A34A' : '#9CA3AF',
-                      padding: '4px',
-                      '&:hover': {
-                        backgroundColor: '#DCFCE7',
-                      },
-                    }}
-                  >
-                    <Check size={16} />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setNewTaskTitle('');
-                      setIsAddingTask(false);
-                    }}
-                    sx={{
-                      color: '#9CA3AF',
-                      padding: '4px',
-                      '&:hover': {
-                        backgroundColor: '#F3F4F6',
-                      },
-                    }}
-                  >
-                    <X size={16} />
-                  </IconButton>
-                </Box>
-              )}
-
-              {filteredTasks.length === 0 && !isAddingTask ? (
+              {filteredCounselorTasks.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 4, px: 2, backgroundColor: '#F9FAFB', borderRadius: 2, mt: 1 }}>
                   <Typography
                     sx={{
@@ -548,13 +485,13 @@ export function SidePanel({
                       color: '#6B7280',
                     }}
                   >
-                    {taskFilter === 'open' ? 'Next steps and follow-ups for this student will show up here.' : ''}
+                    {taskFilter === 'open' ? 'Tasks and follow-ups across all students will show up here.' : ''}
                   </Typography>
                 </Box>
               ) : (
                 <>
-                  {/* Staff Tasks */}
-                  {staffTasks.length > 0 && (
+                  {/* Counselor Tasks grouped by student */}
+                  {groupedStaffTasks.length > 0 && (
                     <Box sx={{ mb: 2 }}>
                       <Typography
                         sx={{
@@ -569,20 +506,33 @@ export function SidePanel({
                       >
                         Counselor tasks
                       </Typography>
-                      {staffTasks.map((task) => (
-                        <TaskItem
-                          key={task.id}
-                          task={task}
-                          onToggle={() => onTaskToggle?.(task)}
-                          onEdit={(newTitle) => onTaskEdit?.(task.id, newTitle)}
-                          onDelete={() => onTaskDelete?.(task.id)}
-                        />
+                      {groupedStaffTasks.map((group) => (
+                        <Box key={group.studentId} sx={{ mb: 1 }}>
+                          <Typography
+                            sx={{
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              color: '#155E4C',
+                              mb: 0.5,
+                            }}
+                          >
+                            {group.studentName}
+                          </Typography>
+                          {group.tasks.map((task) => (
+                            <TaskItem
+                              key={task.id}
+                              task={task}
+                              onToggle={() => contextToggleTask(task.studentId, task.id)}
+                              onDelete={() => contextDeleteTask(task.studentId, task.id)}
+                            />
+                          ))}
+                        </Box>
                       ))}
                     </Box>
                   )}
 
-                  {/* Student Tasks */}
-                  {studentTasks.length > 0 && (
+                  {/* Student Tasks grouped by student */}
+                  {groupedStudentTasks.length > 0 && (
                     <Box>
                       <Typography
                         sx={{
@@ -597,54 +547,88 @@ export function SidePanel({
                       >
                         Student tasks
                       </Typography>
-                      {studentTasks.map((task) => (
-                        <TaskItem
-                          key={task.id}
-                          task={task}
-                          onToggle={() => onTaskToggle?.(task)}
-                          onEdit={(newTitle) => onTaskEdit?.(task.id, newTitle)}
-                          onDelete={() => onTaskDelete?.(task.id)}
-                        />
+                      {groupedStudentTasks.map((group) => (
+                        <Box key={group.studentId} sx={{ mb: 1 }}>
+                          <Typography
+                            sx={{
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              color: '#155E4C',
+                              mb: 0.5,
+                            }}
+                          >
+                            {group.studentName}
+                          </Typography>
+                          {group.tasks.map((task) => (
+                            <TaskItem
+                              key={task.id}
+                              task={task}
+                              onToggle={() => contextToggleTask(task.studentId, task.id)}
+                              onDelete={() => contextDeleteTask(task.studentId, task.id)}
+                            />
+                          ))}
+                        </Box>
                       ))}
                     </Box>
                   )}
                 </>
               )}
             </Box>
+          </Box>
+        )}
 
-            {/* Add task button */}
-            {taskFilter === 'open' && filteredTasks.length > 0 && !isAddingTask && (
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderTop: '1px solid #E5E7EB',
-                }}
-              >
-                <Button
-                  variant="text"
-                  startIcon={<Plus size={16} />}
-                  onClick={() => setIsAddingTask(true)}
-                  sx={{
-                    textTransform: 'none',
-                    padding: 0,
-                    color: '#4B5563',
-                    fontSize: '14px',
-                    '&:hover': {
-                      color: '#062F29',
-                      backgroundColor: 'transparent',
-                    },
-                  }}
-                >
-                  Add task
-                </Button>
-              </Box>
+        {/* Meetings Tab Content */}
+        {activeTab === 'meetings' && (
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            {activeMeeting ? (
+              <ActiveMeetingPanel
+                activeMeeting={activeMeeting}
+                onStopRecording={handleStopRecording}
+                onViewMeeting={handleViewMeeting}
+              />
+            ) : (
+              <CounselorMeetingsList
+                onStartTranscribing={handleStartTranscribing}
+                onMeetingClick={handleMeetingClick}
+              />
             )}
           </Box>
         )}
       </Box>
+
+      {/* Student Picker Modal */}
+      <StudentPickerModal
+        open={isStudentPickerOpen}
+        onClose={() => setIsStudentPickerOpen(false)}
+        onSelectStudent={handleStudentSelected}
+        preselectedStudentId={currentStudentId}
+      />
     </Box>
   );
+}
+
+function groupTasksByStudent(tasks: TaskWithStudent[]): { studentId: string; studentName: string; tasks: TaskWithStudent[] }[] {
+  const groups = new Map<string, { studentName: string; tasks: TaskWithStudent[] }>();
+  tasks.forEach((task) => {
+    const existing = groups.get(task.studentId);
+    if (existing) {
+      existing.tasks.push(task);
+    } else {
+      groups.set(task.studentId, { studentName: task.studentName, tasks: [task] });
+    }
+  });
+  return Array.from(groups.entries()).map(([studentId, group]) => ({
+    studentId,
+    studentName: group.studentName,
+    tasks: group.tasks,
+  }));
 }
 
 export default SidePanel;

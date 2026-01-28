@@ -14,8 +14,10 @@ import { useInteractions, useInteractionsContext } from '@/contexts/Interactions
 import { useTasks, useTasksContext } from '@/contexts/TasksContext';
 import { usePersistentRightPanelTab } from '@/hooks/usePersistentRightPanelTab';
 import { InteractionHeader } from './InteractionHeader';
+import { TemplateSelector } from './TemplateSelector';
 import { NotesSection } from './NotesSection';
 import { TranscriptSection } from './TranscriptSection';
+import { MEETING_TEMPLATES, templateToHTML } from '@/lib/meetingTemplates';
 import type { ExtractedActionItem } from '@/lib/geminiService';
 import type { Task, SuggestedAction, Interaction } from '@/types/student';
 
@@ -34,7 +36,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const [isGeneratingTalkingPoints, setIsGeneratingTalkingPoints] = useState(false);
   const [sidePanelTab, setSidePanelTab] = usePersistentRightPanelTab('alma');
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
-  const { updateInteraction, updateInteractionSummary, updateInteractionTalkingPoints, updateInteractionWithRecording, updateInteractionActionItems, markInteractionComplete, deleteInteraction, addInteraction } = useInteractionsContext();
+  const { updateInteraction, updateInteractionSummary, updateInteractionTalkingPoints, updateInteractionTemplate, updateInteractionWithRecording, updateInteractionActionItems, markInteractionComplete, deleteInteraction, addInteraction } = useInteractionsContext();
   const { addTask, updateTask, toggleTask, deleteTask } = useTasksContext();
 
   // Clean up the URL after reading the params
@@ -68,6 +70,23 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const handleSummaryChange = useCallback((summary: string) => {
     updateInteractionSummary(studentId, interactionId, summary);
   }, [studentId, interactionId, updateInteractionSummary]);
+
+  const handleSelectTemplate = useCallback((templateId: string) => {
+    const template = MEETING_TEMPLATES.find((t) => t.id === templateId);
+    if (!template) return;
+
+    const currentTalkingPoints = interaction?.talkingPoints || '';
+    const isEmpty = !currentTalkingPoints || currentTalkingPoints.replace(/<[^>]*>/g, '').trim().length === 0;
+
+    if (!isEmpty) {
+      if (!confirm('This will replace your current talking points. Continue?')) {
+        return;
+      }
+    }
+
+    handleTalkingPointsChange(templateToHTML(template));
+    updateInteractionTemplate(studentId, interactionId, template.id);
+  }, [interaction?.talkingPoints, handleTalkingPointsChange, updateInteractionTemplate, studentId, interactionId]);
 
   const handleRecordingCompleted = useCallback((data: {
     summary: string;
@@ -370,6 +389,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
             tasks={tasks}
             suggestedActions={localSuggestedActions}
             studentId={studentId}
+            currentStudentId={studentId}
             activeTab={sidePanelTab}
             onTabChange={setSidePanelTab}
             onTaskToggle={handleTaskToggle}
@@ -417,6 +437,17 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
             onDateChange={handleDateChange}
           />
 
+          {/* Template Selector - hidden during recording */}
+          {!isInInteractionMode && (
+            <Box sx={{ mt: 4 }}>
+              <TemplateSelector
+                currentTemplateId={interaction.templateId}
+                onSelectTemplate={handleSelectTemplate}
+                disabled={isGeneratingTalkingPoints}
+              />
+            </Box>
+          )}
+
           {/* Interaction Intelligence - shown inline when in interaction mode */}
           {isInInteractionMode && (
             <Box sx={{ mt: 4 }}>
@@ -448,10 +479,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
                   onNotesChange={handleTalkingPointsChange}
                   label="Talking points"
                   placeholder="Plan what you want to talk about..."
-                  showGenerateButton={isDraft}
-                  onGenerate={handleGenerateTalkingPoints}
                   readOnly={isCompleted}
-                  isGenerating={isGeneratingTalkingPoints}
                 />
               )}
             </Box>
