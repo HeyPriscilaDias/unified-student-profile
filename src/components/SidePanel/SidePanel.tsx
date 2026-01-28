@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, Typography, IconButton, TextField, Checkbox, Button, Tab, Tabs } from '@mui/material';
 import { Sparkles, Plus, Check, X } from 'lucide-react';
-import { SubTabNavigation, AIReviewBadge } from '@/components/shared';
 import { AlmaChatPanel } from '@/components/AlmaChatPanel';
 import { CounselorMeetingsList } from './CounselorMeetingsList';
 import { ActiveMeetingPanel } from './ActiveMeetingPanel';
-import { StudentPickerModal } from './StudentPickerModal';
+import { NewMeetingModal } from './StudentPickerModal';
+import { MEETING_TEMPLATES, templateToHTML } from '@/lib/meetingTemplates';
 import { useActiveMeetingContext } from '@/contexts/ActiveMeetingContext';
 import { useInteractionsContext } from '@/contexts/InteractionsContext';
 import { useTasksContext, type TaskWithStudent } from '@/contexts/TasksContext';
@@ -288,42 +288,50 @@ export function SidePanel({
       setInternalActiveTab(tab);
     }
   };
-  const [taskFilter, setTaskFilter] = useState<'open' | 'completed'>('open');
+  const [showCompleted, setShowCompleted] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [isStudentPickerOpen, setIsStudentPickerOpen] = useState(false);
 
   // Contexts for meetings
   const { activeMeeting, startMeeting, endMeeting } = useActiveMeetingContext();
-  const { addInteraction } = useInteractionsContext();
+  const { addInteraction, updateInteractionTalkingPoints, updateInteractionTemplate } = useInteractionsContext();
   const { getAllCounselorTasks, toggleTask: contextToggleTask, deleteTask: contextDeleteTask } = useTasksContext();
 
   // Counselor-wide tasks
   const allCounselorTasks = getAllCounselorTasks();
-  const filteredCounselorTasks = allCounselorTasks.filter((t) => t.status === taskFilter);
-  const counselorStaffTasks = filteredCounselorTasks.filter((t) => t.taskType === 'staff');
-  const counselorStudentTasks = filteredCounselorTasks.filter((t) => t.taskType === 'student');
-  const counselorOpenCount = allCounselorTasks.filter((t) => t.status === 'open').length;
-  const counselorCompletedCount = allCounselorTasks.filter((t) => t.status === 'completed').length;
+  const openCounselorTasks = allCounselorTasks.filter((t) => t.status === 'open');
+  const completedCounselorTasks = allCounselorTasks.filter((t) => t.status === 'completed');
+  const openStaffTasks = openCounselorTasks.filter((t) => t.taskType === 'staff');
+  const openStudentTasks = openCounselorTasks.filter((t) => t.taskType === 'student');
+  const completedStaffTasks = completedCounselorTasks.filter((t) => t.taskType === 'staff');
+  const completedStudentTasks = completedCounselorTasks.filter((t) => t.taskType === 'student');
 
   const pendingActions = suggestedActions.filter((a) => a.status === 'pending');
 
   // Group tasks by student for counselor-wide display
-  const groupedStaffTasks = groupTasksByStudent(counselorStaffTasks);
-  const groupedStudentTasks = groupTasksByStudent(counselorStudentTasks);
+  const groupedOpenStaffTasks = groupTasksByStudent(openStaffTasks);
+  const groupedOpenStudentTasks = groupTasksByStudent(openStudentTasks);
+  const groupedCompletedStaffTasks = groupTasksByStudent(completedStaffTasks);
+  const groupedCompletedStudentTasks = groupTasksByStudent(completedStudentTasks);
 
   // Meeting handlers
   const handleStartTranscribing = () => {
     setIsStudentPickerOpen(true);
   };
 
-  const handleStudentSelected = (selectedStudentId: string, studentName: string) => {
+  const handleStartMeeting = (selectedStudentId: string, studentName: string, templateId?: string) => {
     setIsStudentPickerOpen(false);
+    const template = templateId ? MEETING_TEMPLATES.find(t => t.id === templateId) : undefined;
     const newInteraction = addInteraction({
       studentId: selectedStudentId,
-      title: `Meeting with ${studentName.split(' ')[0]}`,
+      title: template ? `${template.name} — ${studentName.split(' ')[0]}` : `Meeting with ${studentName.split(' ')[0]}`,
     });
-    startMeeting(selectedStudentId, studentName, newInteraction.id, newInteraction.title);
+    if (template) {
+      updateInteractionTalkingPoints(selectedStudentId, newInteraction.id, templateToHTML(template));
+      updateInteractionTemplate(selectedStudentId, newInteraction.id, template.id);
+    }
+    startMeeting(selectedStudentId, studentName, newInteraction.id, newInteraction.title, template ? templateToHTML(template) : undefined);
     router.push(`/students/${selectedStudentId}/interactions/${newInteraction.id}`);
   };
 
@@ -445,29 +453,9 @@ export function SidePanel({
               </Typography>
             </Box>
 
-            {/* Tasks Filter - only show when there are tasks */}
-            {allCounselorTasks.length > 0 && (
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderBottom: '1px solid #E5E7EB',
-                }}
-              >
-                <SubTabNavigation
-                  options={[
-                    { value: 'open', label: `Open (${counselorOpenCount})` },
-                    { value: 'completed', label: `Completed (${counselorCompletedCount})` },
-                  ]}
-                  value={taskFilter}
-                  onChange={(v) => setTaskFilter(v as 'open' | 'completed')}
-                />
-              </Box>
-            )}
-
             {/* Tasks list */}
             <Box sx={{ flex: 1, px: 2, py: 1, overflowY: 'auto' }}>
-              {filteredCounselorTasks.length === 0 ? (
+              {openCounselorTasks.length === 0 && completedCounselorTasks.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 4, px: 2, backgroundColor: '#F9FAFB', borderRadius: 2, mt: 1 }}>
                   <Typography
                     sx={{
@@ -477,7 +465,7 @@ export function SidePanel({
                       mb: 0.5,
                     }}
                   >
-                    {taskFilter === 'open' ? 'No tasks yet.' : 'No completed tasks.'}
+                    No tasks yet.
                   </Typography>
                   <Typography
                     sx={{
@@ -485,13 +473,13 @@ export function SidePanel({
                       color: '#6B7280',
                     }}
                   >
-                    {taskFilter === 'open' ? 'Tasks and follow-ups across all students will show up here.' : ''}
+                    Tasks and follow-ups across all students will show up here.
                   </Typography>
                 </Box>
               ) : (
                 <>
-                  {/* Counselor Tasks grouped by student */}
-                  {groupedStaffTasks.length > 0 && (
+                  {/* Open Counselor Tasks grouped by student */}
+                  {groupedOpenStaffTasks.length > 0 && (
                     <Box sx={{ mb: 2 }}>
                       <Typography
                         sx={{
@@ -506,7 +494,7 @@ export function SidePanel({
                       >
                         Counselor tasks
                       </Typography>
-                      {groupedStaffTasks.map((group) => (
+                      {groupedOpenStaffTasks.map((group) => (
                         <Box key={group.studentId} sx={{ mb: 1 }}>
                           <Typography
                             sx={{
@@ -531,9 +519,9 @@ export function SidePanel({
                     </Box>
                   )}
 
-                  {/* Student Tasks grouped by student */}
-                  {groupedStudentTasks.length > 0 && (
-                    <Box>
+                  {/* Open Student Tasks grouped by student */}
+                  {groupedOpenStudentTasks.length > 0 && (
+                    <Box sx={{ mb: 2 }}>
                       <Typography
                         sx={{
                           fontSize: '12px',
@@ -547,7 +535,7 @@ export function SidePanel({
                       >
                         Student tasks
                       </Typography>
-                      {groupedStudentTasks.map((group) => (
+                      {groupedOpenStudentTasks.map((group) => (
                         <Box key={group.studentId} sx={{ mb: 1 }}>
                           <Typography
                             sx={{
@@ -570,6 +558,88 @@ export function SidePanel({
                         </Box>
                       ))}
                     </Box>
+                  )}
+
+                  {/* Show/Hide completed toggle */}
+                  {completedCounselorTasks.length > 0 && (
+                    <>
+                      <Typography
+                        onClick={() => setShowCompleted(!showCompleted)}
+                        sx={{
+                          fontSize: '14px',
+                          color: '#4D7CFE',
+                          cursor: 'pointer',
+                          py: 1.5,
+                          '&:hover': {
+                            textDecoration: 'underline',
+                          },
+                        }}
+                      >
+                        {showCompleted
+                          ? 'Hide completed'
+                          : `Show completed (${completedCounselorTasks.length})`}
+                      </Typography>
+
+                      {showCompleted && (
+                        <Box>
+                          {/* Completed Counselor Tasks */}
+                          {groupedCompletedStaffTasks.length > 0 && (
+                            <Box sx={{ mb: 2 }}>
+                              {groupedCompletedStaffTasks.map((group) => (
+                                <Box key={group.studentId} sx={{ mb: 1 }}>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '12px',
+                                      fontWeight: 500,
+                                      color: '#155E4C',
+                                      mb: 0.5,
+                                    }}
+                                  >
+                                    {group.studentName}
+                                  </Typography>
+                                  {group.tasks.map((task) => (
+                                    <TaskItem
+                                      key={task.id}
+                                      task={task}
+                                      onToggle={() => contextToggleTask(task.studentId, task.id)}
+                                      onDelete={() => contextDeleteTask(task.studentId, task.id)}
+                                    />
+                                  ))}
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
+
+                          {/* Completed Student Tasks */}
+                          {groupedCompletedStudentTasks.length > 0 && (
+                            <Box>
+                              {groupedCompletedStudentTasks.map((group) => (
+                                <Box key={group.studentId} sx={{ mb: 1 }}>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '12px',
+                                      fontWeight: 500,
+                                      color: '#155E4C',
+                                      mb: 0.5,
+                                    }}
+                                  >
+                                    {group.studentName}
+                                  </Typography>
+                                  {group.tasks.map((task) => (
+                                    <TaskItem
+                                      key={task.id}
+                                      task={task}
+                                      onToggle={() => contextToggleTask(task.studentId, task.id)}
+                                      onDelete={() => contextDeleteTask(task.studentId, task.id)}
+                                    />
+                                  ))}
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
+                        </Box>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -603,11 +673,11 @@ export function SidePanel({
         )}
       </Box>
 
-      {/* Student Picker Modal */}
-      <StudentPickerModal
+      {/* New Meeting Modal */}
+      <NewMeetingModal
         open={isStudentPickerOpen}
         onClose={() => setIsStudentPickerOpen(false)}
-        onSelectStudent={handleStudentSelected}
+        onStartMeeting={handleStartMeeting}
         preselectedStudentId={currentStudentId}
       />
     </Box>

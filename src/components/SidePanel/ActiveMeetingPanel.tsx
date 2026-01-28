@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, Typography, Button, IconButton, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, CircularProgress } from '@mui/material';
 import { Mic, Square, ExternalLink, Clock } from 'lucide-react';
 
 interface ActiveMeetingPanelProps {
@@ -154,20 +154,6 @@ export function ActiveMeetingPanel({
           >
             Stop Recording
           </Button>
-          <IconButton
-            onClick={onViewMeeting}
-            sx={{
-              border: '1px solid #E5E7EB',
-              borderRadius: '8px',
-              color: '#062F29',
-              '&:hover': {
-                backgroundColor: '#F9FAFB',
-                borderColor: '#D1D5DB',
-              },
-            }}
-          >
-            <ExternalLink size={18} />
-          </IconButton>
         </Box>
 
         {/* Talking points */}

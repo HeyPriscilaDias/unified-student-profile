@@ -15,28 +15,34 @@ import {
   Button,
   Box,
   Typography,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
-import { Search, X } from 'lucide-react';
+import { Search, X, Mic } from 'lucide-react';
 import { getAllStudents } from '@/lib/mockData';
+import { MEETING_TEMPLATES } from '@/lib/meetingTemplates';
 import type { Student } from '@/types/student';
 
-interface StudentPickerModalProps {
+interface NewMeetingModalProps {
   open: boolean;
   onClose: () => void;
-  onSelectStudent: (studentId: string, studentName: string) => void;
+  onStartMeeting: (studentId: string, studentName: string, templateId?: string) => void;
   preselectedStudentId?: string;
 }
 
-export function StudentPickerModal({
+export function NewMeetingModal({
   open,
   onClose,
-  onSelectStudent,
+  onStartMeeting,
   preselectedStudentId,
-}: StudentPickerModalProps) {
+}: NewMeetingModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
     preselectedStudentId ?? null
   );
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
 
   const students = useMemo(() => getAllStudents(), []);
 
@@ -54,11 +60,12 @@ export function StudentPickerModal({
     [students, selectedStudentId]
   );
 
-  const handleStartMeeting = () => {
+  const handleStart = () => {
     if (selectedStudent) {
-      onSelectStudent(
+      onStartMeeting(
         selectedStudent.id,
-        `${selectedStudent.firstName} ${selectedStudent.lastName}`
+        `${selectedStudent.firstName} ${selectedStudent.lastName}`,
+        selectedTemplateId || undefined
       );
     }
   };
@@ -66,8 +73,11 @@ export function StudentPickerModal({
   const handleClose = () => {
     setSearchQuery('');
     setSelectedStudentId(preselectedStudentId ?? null);
+    setSelectedTemplateId('');
     onClose();
   };
+
+  const canStart = !!selectedStudentId && !!selectedTemplateId;
 
   return (
     <Dialog
@@ -78,7 +88,7 @@ export function StudentPickerModal({
       PaperProps={{
         sx: {
           borderRadius: '12px',
-          maxHeight: '520px',
+          maxHeight: '620px',
         },
       }}
     >
@@ -99,7 +109,7 @@ export function StudentPickerModal({
             color: '#111827',
           }}
         >
-          Select a Student
+          New Meeting
         </Typography>
         <Box
           onClick={handleClose}
@@ -123,14 +133,71 @@ export function StudentPickerModal({
       </DialogTitle>
 
       <DialogContent sx={{ px: 3, py: 0 }}>
-        {/* Search Field */}
+        {/* Template Selector */}
+        <FormControl fullWidth size="small" sx={{ mt: 1, mb: 2 }}>
+          <InputLabel
+            sx={{
+              fontSize: '14px',
+              color: '#6B7280',
+              '&.Mui-focused': {
+                color: '#062F29',
+              },
+            }}
+          >
+            Meeting template
+          </InputLabel>
+          <Select
+            value={selectedTemplateId}
+            onChange={(e) => setSelectedTemplateId(e.target.value)}
+            label="Meeting template"
+            sx={{
+              fontSize: '14px',
+              borderRadius: '8px',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#E5E7EB',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#D1D5DB',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#062F29',
+              },
+            }}
+          >
+            {MEETING_TEMPLATES.map((template) => (
+              <MenuItem key={template.id} value={template.id}>
+                <Box>
+                  <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#111827' }}>
+                    {template.name}
+                  </Typography>
+                  <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
+                    {template.description}
+                  </Typography>
+                </Box>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {/* Student Search */}
+        <Typography
+          sx={{
+            fontSize: '12px',
+            fontWeight: 600,
+            color: '#6B7280',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            mb: 1,
+          }}
+        >
+          Student
+        </Typography>
         <TextField
           placeholder="Search students..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           fullWidth
           size="small"
-          autoFocus
           InputProps={{
             startAdornment: (
               <Search
@@ -140,8 +207,7 @@ export function StudentPickerModal({
             ),
           }}
           sx={{
-            mt: 1,
-            mb: 1.5,
+            mb: 1,
             '& .MuiOutlinedInput-root': {
               fontSize: '14px',
               borderRadius: '8px',
@@ -163,7 +229,7 @@ export function StudentPickerModal({
         <List
           sx={{
             py: 0,
-            maxHeight: '300px',
+            maxHeight: '240px',
             overflowY: 'auto',
             mx: -1,
             '&::-webkit-scrollbar': {
@@ -315,8 +381,9 @@ export function StudentPickerModal({
         </Button>
         <Button
           variant="contained"
-          onClick={handleStartMeeting}
-          disabled={!selectedStudentId}
+          onClick={handleStart}
+          disabled={!canStart}
+          startIcon={<Mic size={16} />}
           sx={{
             textTransform: 'none',
             fontSize: '14px',
@@ -337,11 +404,11 @@ export function StudentPickerModal({
             },
           }}
         >
-          Start Meeting
+          Start Transcribing
         </Button>
       </DialogActions>
     </Dialog>
   );
 }
 
-export default StudentPickerModal;
+export default NewMeetingModal;

@@ -1,7 +1,7 @@
 'use client';
 
 import { Avatar, Box, Typography, Button, Chip } from '@mui/material';
-import { Mic, MessageSquare } from 'lucide-react';
+import { Plus, MessageSquare } from 'lucide-react';
 import { useInteractionsContext } from '@/contexts/InteractionsContext';
 import type { InteractionWithStudent } from '@/contexts/InteractionsContext';
 
@@ -144,7 +144,7 @@ export function CounselorMeetingsList({
         <Button
           variant="contained"
           fullWidth
-          startIcon={<Mic size={18} />}
+          startIcon={<Plus size={18} />}
           onClick={onStartTranscribing}
           sx={{
             backgroundColor: '#155E4C',
@@ -161,7 +161,7 @@ export function CounselorMeetingsList({
             },
           }}
         >
-          Start Transcribing
+          New Meeting
         </Button>
       </Box>
 
