@@ -5,6 +5,7 @@ import { InteractionsProvider } from "../contexts/InteractionsContext";
 import { TasksProvider } from "../contexts/TasksContext";
 import { AlmaChatProvider } from "../contexts/AlmaChatContext";
 import { ActiveMeetingProvider } from "../contexts/ActiveMeetingContext";
+import { FloatingRecordingWidgetWrapper } from "../components/FloatingRecordingWidget";
 
 export const metadata: Metadata = {
   title: "Unified Student Profile",
@@ -25,6 +26,7 @@ export default function RootLayout({
               <ActiveMeetingProvider>
                 <AlmaChatProvider>
                   {children}
+                  <FloatingRecordingWidgetWrapper />
                 </AlmaChatProvider>
               </ActiveMeetingProvider>
             </TasksProvider>

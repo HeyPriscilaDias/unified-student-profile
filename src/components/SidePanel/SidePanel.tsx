@@ -1,21 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Box, Typography, IconButton, TextField, Checkbox, Button, Tab, Tabs } from '@mui/material';
 import { Plus, Check, X } from 'lucide-react';
 import { AlmaChatPanel } from '@/components/AlmaChatPanel';
-import { CounselorMeetingsList } from './CounselorMeetingsList';
-import { ActiveMeetingPanel } from './ActiveMeetingPanel';
-import { NewMeetingModal } from './StudentPickerModal';
 import { AddTaskModal } from './AddTaskModal';
-import { MEETING_TEMPLATES, templateToHTML } from '@/lib/meetingTemplates';
-import { useActiveMeetingContext } from '@/contexts/ActiveMeetingContext';
-import { useInteractionsContext } from '@/contexts/InteractionsContext';
 import { useTasksContext } from '@/contexts/TasksContext';
 import type { Task, SuggestedAction } from '@/types/student';
 
-export type SidePanelTabType = 'alma' | 'tasks' | 'meetings';
+export type SidePanelTabType = 'alma' | 'tasks';
 type TabType = SidePanelTabType;
 
 interface SidePanelProps {
@@ -292,7 +285,6 @@ export function SidePanel({
   onActionAccept,
   onActionDismiss,
 }: SidePanelProps) {
-  const router = useRouter();
   const [internalActiveTab, setInternalActiveTab] = useState<TabType>('alma');
 
   // Support both controlled and uncontrolled modes
@@ -306,11 +298,7 @@ export function SidePanel({
   };
   const [showCompleted, setShowCompleted] = useState(false);
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
-  const [isStudentPickerOpen, setIsStudentPickerOpen] = useState(false);
 
-  // Contexts for meetings
-  const { activeMeeting, startMeeting, endMeeting } = useActiveMeetingContext();
-  const { addInteraction, updateInteractionTalkingPoints, updateInteractionTemplate } = useInteractionsContext();
   const { getAllCounselorTasks, addTask, toggleTask: contextToggleTask, deleteTask: contextDeleteTask } = useTasksContext();
 
   // Counselor-wide tasks
@@ -319,65 +307,6 @@ export function SidePanel({
   const completedTasks = allCounselorTasks.filter((t) => t.status === 'completed');
 
   const pendingActions = suggestedActions.filter((a) => a.status === 'pending');
-
-  // Meeting handlers
-  const handleStartTranscribing = () => {
-    setIsStudentPickerOpen(true);
-  };
-
-  const handleStartMeeting = (
-    selectedStudentId: string,
-    studentName: string,
-    options?: { templateId?: string; customTalkingPoints?: string }
-  ) => {
-    setIsStudentPickerOpen(false);
-    const template = options?.templateId ? MEETING_TEMPLATES.find(t => t.id === options.templateId) : undefined;
-
-    // Determine meeting title
-    let meetingTitle: string;
-    if (template) {
-      meetingTitle = `${template.name} — ${studentName.split(' ')[0]}`;
-    } else if (options?.customTalkingPoints) {
-      meetingTitle = `Custom Meeting — ${studentName.split(' ')[0]}`;
-    } else {
-      meetingTitle = `Meeting with ${studentName.split(' ')[0]}`;
-    }
-
-    const newInteraction = addInteraction({
-      studentId: selectedStudentId,
-      title: meetingTitle,
-    });
-
-    // Set talking points from template OR custom
-    const talkingPoints = options?.customTalkingPoints || (template ? templateToHTML(template) : undefined);
-
-    if (talkingPoints) {
-      updateInteractionTalkingPoints(selectedStudentId, newInteraction.id, talkingPoints);
-    }
-    if (template) {
-      updateInteractionTemplate(selectedStudentId, newInteraction.id, template.id);
-    }
-
-    startMeeting(selectedStudentId, studentName, newInteraction.id, newInteraction.title, talkingPoints);
-  };
-
-  const handleMeetingClick = (meetingStudentId: string, interactionId: string) => {
-    router.push(`/students/${meetingStudentId}/interactions/${interactionId}`);
-  };
-
-  const handleStopRecording = () => {
-    if (activeMeeting) {
-      // Navigate to the meeting details page with showSummary param to trigger loading/reveal
-      router.push(`/students/${activeMeeting.studentId}/interactions/${activeMeeting.interactionId}?showSummary=true`);
-    }
-    endMeeting();
-  };
-
-  const handleViewMeeting = () => {
-    if (activeMeeting) {
-      router.push(`/students/${activeMeeting.studentId}/interactions/${activeMeeting.interactionId}`);
-    }
-  };
 
   const handleCreateTask = (data: {
     title: string;
@@ -436,7 +365,6 @@ export function SidePanel({
       >
         <Tab value="alma" label="Alma" />
         <Tab value="tasks" label="Tasks" />
-        <Tab value="meetings" label="Meetings" />
       </Tabs>
 
       {/* Content Area */}
@@ -566,39 +494,7 @@ export function SidePanel({
           </Box>
         )}
 
-        {/* Meetings Tab Content */}
-        {activeTab === 'meetings' && (
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-            }}
-          >
-            {activeMeeting ? (
-              <ActiveMeetingPanel
-                activeMeeting={activeMeeting}
-                onStopRecording={handleStopRecording}
-                onViewMeeting={handleViewMeeting}
-              />
-            ) : (
-              <CounselorMeetingsList
-                onStartTranscribing={handleStartTranscribing}
-                onMeetingClick={handleMeetingClick}
-              />
-            )}
-          </Box>
-        )}
       </Box>
-
-      {/* New Meeting Modal */}
-      <NewMeetingModal
-        open={isStudentPickerOpen}
-        onClose={() => setIsStudentPickerOpen(false)}
-        onStartMeeting={handleStartMeeting}
-        preselectedStudentId={currentStudentId}
-      />
 
       {/* Add Task Modal */}
       <AddTaskModal

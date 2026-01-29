@@ -12,6 +12,9 @@ export interface ActiveMeetingState {
   phase: ActiveMeetingPhase;
   startTime: number; // timestamp when recording started
   talkingPoints?: string;
+  isPaused: boolean;
+  pausedAt?: number; // timestamp when paused
+  totalPausedDuration: number; // accumulated paused time in ms
 }
 
 interface ActiveMeetingContextType {
@@ -25,6 +28,7 @@ interface ActiveMeetingContextType {
   ) => void;
   setPhase: (phase: ActiveMeetingPhase) => void;
   updateTalkingPoints: (talkingPoints: string) => void;
+  togglePause: () => void;
   endMeeting: () => void;
 }
 
@@ -74,6 +78,8 @@ export function ActiveMeetingProvider({ children }: { children: ReactNode }) {
       phase: 'recording',
       startTime: Date.now(),
       talkingPoints,
+      isPaused: false,
+      totalPausedDuration: 0,
     });
   }, []);
 
@@ -91,6 +97,29 @@ export function ActiveMeetingProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const togglePause = useCallback(() => {
+    setActiveMeeting(prev => {
+      if (!prev) return null;
+      if (prev.isPaused) {
+        // Resuming: add the paused duration to total
+        const pausedDuration = prev.pausedAt ? Date.now() - prev.pausedAt : 0;
+        return {
+          ...prev,
+          isPaused: false,
+          pausedAt: undefined,
+          totalPausedDuration: prev.totalPausedDuration + pausedDuration,
+        };
+      } else {
+        // Pausing: record when we paused
+        return {
+          ...prev,
+          isPaused: true,
+          pausedAt: Date.now(),
+        };
+      }
+    });
+  }, []);
+
   const endMeeting = useCallback(() => {
     setActiveMeeting(null);
   }, []);
@@ -101,6 +130,7 @@ export function ActiveMeetingProvider({ children }: { children: ReactNode }) {
       startMeeting,
       setPhase,
       updateTalkingPoints,
+      togglePause,
       endMeeting,
     }}>
       {children}
