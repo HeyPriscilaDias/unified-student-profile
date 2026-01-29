@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Box, Typography, Button } from '@mui/material';
 import { Users, FileEdit, CheckSquare, Mic, Plus, Trash2, RefreshCw, Copy, Sparkles } from 'lucide-react';
@@ -54,16 +54,17 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   // Check if this interaction is currently being recorded
   const isRecording = activeMeeting?.interactionId === interactionId && activeMeeting?.phase === 'recording';
 
-  // Clean up the URL after reading the params
-  useEffect(() => {
-    if (showSummaryParam) {
-      router.replace(`/students/${studentId}/interactions/${interactionId}`, { scroll: false });
-    }
-  }, [showSummaryParam, router, studentId, interactionId]);
+  // Track if we've already started processing to avoid canceling on URL change
+  const isProcessingRef = useRef(false);
 
   // Handle showSummary param - triggered when recording stops from SidePanel
   useEffect(() => {
-    if (showSummaryParam) {
+    if (showSummaryParam && !isProcessingRef.current) {
+      isProcessingRef.current = true;
+
+      // Clean up the URL immediately
+      router.replace(`/students/${studentId}/interactions/${interactionId}`, { scroll: false });
+
       const MOCK_SUMMARY = `Discussed the FAFSA application process and financial aid options with the student. Reviewed key deadlines and next steps for completing the application successfully.
 
 <ul>
@@ -83,18 +84,17 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
       ];
 
       // Simulate processing delay so user can see the summarizing modal
-      const timer = setTimeout(() => {
+      setTimeout(() => {
         updateInteractionWithRecording(studentId, interactionId, {
           summary: MOCK_SUMMARY,
           transcript: MOCK_TRANSCRIPT,
           actionItems: MOCK_ACTION_ITEMS,
         });
         endMeeting();
+        isProcessingRef.current = false;
       }, 2500);
-
-      return () => clearTimeout(timer);
     }
-  }, [showSummaryParam, studentId, interactionId, updateInteractionWithRecording, endMeeting]);
+  }, [showSummaryParam, studentId, interactionId, updateInteractionWithRecording, endMeeting, router]);
 
   // Use interactions from context
   const interactions = useInteractions(studentId, studentData?.interactions || []);
@@ -295,7 +295,7 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
       currentStudentId={studentId}
       breadcrumbs={breadcrumbs}
     >
-      <Box>
+      <Box sx={{ pb: !isCompleted && !isRecording ? '80px' : 0 }}>
         {/* Header */}
         <InteractionHeader
           interaction={interaction}
@@ -500,64 +500,184 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
         <Box sx={{ mt: 4 }}>
           <SectionHeader icon={<CheckSquare size={18} />} title="Tasks" />
           {interaction.aiSummary?.recommendedActions && interaction.aiSummary.recommendedActions.length > 0 ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {interaction.aiSummary.recommendedActions.map((action) => (
-                <Box
-                  key={action.id}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    py: 0.5,
-                  }}
-                >
-                  <Box
-                    component="input"
-                    type="checkbox"
-                    checked={action.status === 'converted_to_task'}
-                    readOnly
-                    sx={{
-                      width: 16,
-                      height: 16,
-                      cursor: 'pointer',
-                    }}
-                  />
-                  <Typography sx={{ fontSize: '14px', color: '#374151' }}>
-                    {action.title}
-                  </Typography>
-                </Box>
-              ))}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {/* Staff Tasks ("Yours") */}
+              {(() => {
+                const staffTasks = interaction.aiSummary.recommendedActions.filter(a => a.assignee === 'staff');
+                return staffTasks.length > 0 ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Typography sx={{ fontSize: '14px', color: '#252B37' }}>
+                      Yours
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {staffTasks.map((action) => (
+                        <Box
+                          key={action.id}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            backgroundColor: '#F5F5F5',
+                            borderRadius: '8px',
+                            px: 1.5,
+                            py: 1,
+                          }}
+                        >
+                          <Typography sx={{ flex: 1, fontSize: '14px', color: '#252B37', lineHeight: '20px' }}>
+                            {action.title}
+                          </Typography>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              textTransform: 'none',
+                              fontSize: '14px',
+                              fontWeight: 600,
+                              color: '#414651',
+                              backgroundColor: 'white',
+                              borderColor: '#D5D7DA',
+                              borderRadius: '8px',
+                              px: 1.5,
+                              py: 0.5,
+                              minHeight: 32,
+                              whiteSpace: 'nowrap',
+                              '&:hover': {
+                                borderColor: '#9CA3AF',
+                                backgroundColor: 'white',
+                              },
+                            }}
+                          >
+                            Add to my tasks
+                          </Button>
+                        </Box>
+                      ))}
+                    </Box>
+                    <Button
+                      startIcon={<Plus size={14} />}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: '14px',
+                        color: '#535862',
+                        p: 0,
+                        justifyContent: 'flex-start',
+                        minWidth: 'auto',
+                        '&:hover': {
+                          backgroundColor: 'transparent',
+                          color: '#374151',
+                        },
+                      }}
+                    >
+                      Add task
+                    </Button>
+                  </Box>
+                ) : null;
+              })()}
+
+              {/* Student Tasks */}
+              {(() => {
+                const studentTasks = interaction.aiSummary!.recommendedActions!.filter(a => a.assignee === 'student');
+                return studentTasks.length > 0 ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Typography sx={{ fontSize: '14px', color: '#252B37' }}>
+                      {studentData.student.firstName}&apos;s
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {studentTasks.map((action) => (
+                        <Box
+                          key={action.id}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            backgroundColor: '#F5F5F5',
+                            borderRadius: '8px',
+                            px: 1.5,
+                            py: 1,
+                          }}
+                        >
+                          <Typography sx={{ flex: 1, fontSize: '14px', color: '#252B37', lineHeight: '20px' }}>
+                            {action.title}
+                          </Typography>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              textTransform: 'none',
+                              fontSize: '14px',
+                              fontWeight: 600,
+                              color: '#414651',
+                              backgroundColor: 'white',
+                              borderColor: '#D5D7DA',
+                              borderRadius: '8px',
+                              px: 1.5,
+                              py: 0.5,
+                              minHeight: 32,
+                              whiteSpace: 'nowrap',
+                              '&:hover': {
+                                borderColor: '#9CA3AF',
+                                backgroundColor: 'white',
+                              },
+                            }}
+                          >
+                            Add to student tasks
+                          </Button>
+                        </Box>
+                      ))}
+                    </Box>
+                    <Button
+                      startIcon={<Plus size={14} />}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: '14px',
+                        color: '#535862',
+                        p: 0,
+                        justifyContent: 'flex-start',
+                        minWidth: 'auto',
+                        '&:hover': {
+                          backgroundColor: 'transparent',
+                          color: '#374151',
+                        },
+                      }}
+                    >
+                      Add task
+                    </Button>
+                  </Box>
+                ) : null;
+              })()}
             </Box>
           ) : (
-            <Typography sx={{ fontSize: '14px', color: '#6B7280' }}>
-              Add tasks or transcribe the meeting so Alma generates tasks.
-            </Typography>
+            <>
+              <Typography sx={{ fontSize: '14px', color: '#535862', mb: 2 }}>
+                Add tasks or transcribe the meeting so Alma generates tasks.
+              </Typography>
+              <Button
+                startIcon={<Plus size={14} />}
+                sx={{
+                  textTransform: 'none',
+                  fontSize: '14px',
+                  color: '#535862',
+                  p: 0,
+                  justifyContent: 'flex-start',
+                  minWidth: 'auto',
+                  '&:hover': {
+                    backgroundColor: 'transparent',
+                    color: '#374151',
+                  },
+                }}
+              >
+                Add task
+              </Button>
+            </>
           )}
-          <Button
-            startIcon={<Plus size={14} />}
-            sx={{
-              textTransform: 'none',
-              fontSize: '14px',
-              color: '#6B7280',
-              p: 0,
-              mt: 1.5,
-              minWidth: 'auto',
-              '&:hover': {
-                backgroundColor: 'transparent',
-                color: '#374151',
-              },
-            }}
-          >
-            Add task
-          </Button>
         </Box>
 
         {/* Transcript Section */}
         <Box sx={{ mt: 4 }}>
-          <SectionHeader icon={<Mic size={18} />} title="Transcript" />
           {hasTranscript ? (
             <TranscriptSection transcript={interaction.transcript!} />
           ) : (
+            <>
+            <SectionHeader icon={<Mic size={18} />} title="Transcript" />
             <Typography
               onClick={!isCompleted && !isRecording ? handleStartRecording : undefined}
               sx={{
@@ -571,6 +691,7 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
             >
               {isCompleted ? 'This meeting was not transcribed.' : 'Start transcribing.'}
             </Typography>
+            </>
           )}
         </Box>
 
@@ -595,8 +716,13 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
         )}
 
         {/* Start Transcribing Banner */}
-        {!isCompleted && !hasTranscript && !isRecording && (
-          <StartTranscribingBanner onStartRecording={handleStartRecording} />
+        {!isCompleted && !isRecording && (
+          <StartTranscribingBanner
+            onStartRecording={handleStartRecording}
+            hasTranscript={hasTranscript}
+            meetingTitle={interaction.title}
+            studentName={studentName}
+          />
         )}
       </Box>
 
