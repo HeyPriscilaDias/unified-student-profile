@@ -155,7 +155,8 @@ export function TranscriptionBanner() {
 
   return (
     <>
-      {/* Fixed Banner */}
+      {/* Fixed Banner - hidden when modal is expanded */}
+      {!isExpanded && (
       <Box
         sx={{
           position: 'fixed',
@@ -297,6 +298,7 @@ export function TranscriptionBanner() {
           </IconButton>
         </Box>
       </Box>
+      )}
 
       {/* Expanded Modal */}
       <RecordingWidgetModal
