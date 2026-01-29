@@ -26,7 +26,8 @@ export function AppLayout({
     <Box
       sx={{
         display: 'flex',
-        minHeight: '100vh',
+        height: '100vh',
+        overflow: 'hidden',
       }}
     >
       {/* Level 1: Sidebar */}
@@ -39,6 +40,7 @@ export function AppLayout({
           flex: 1,
           display: 'flex',
           minWidth: 0,
+          minHeight: 0,
           padding: `${GAP}px`,
           gap: `${GAP}px`,
         }}
@@ -51,6 +53,7 @@ export function AppLayout({
             flexDirection: 'column',
             gap: `${GAP}px`,
             minWidth: 0,
+            minHeight: 0,
           }}
         >
           {/* Breadcrumbs Bar */}

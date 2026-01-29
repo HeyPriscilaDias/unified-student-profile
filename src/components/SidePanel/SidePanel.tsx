@@ -12,7 +12,7 @@ export type SidePanelTabType = 'alma' | 'tasks';
 type TabType = SidePanelTabType;
 
 interface SidePanelProps {
-  studentFirstName?: string;
+  studentFirstName?: string; // Used for context-aware suggestions, not chat switching
   tasks?: Task[];
   suggestedActions?: SuggestedAction[];
   studentId?: string;
@@ -328,16 +328,11 @@ export function SidePanel({
   return (
     <Box
       sx={{
-        width: '350px',
-        height: '100vh',
-        position: 'fixed',
-        right: 0,
-        top: 0,
+        width: '100%',
+        height: '100%',
         backgroundColor: '#fff',
-        borderLeft: '1px solid #E5E7EB',
         display: 'flex',
         flexDirection: 'column',
-        zIndex: 1000,
       }}
     >
       {/* Horizontal Tabs */}

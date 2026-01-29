@@ -9,10 +9,12 @@ export interface ChatMessage {
   timestamp: string;
 }
 
-export interface StudentContextInfo {
+export interface Chat {
   id: string;
-  firstName: string;
-  lastName: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AlmaChatContextType {
@@ -21,63 +23,121 @@ interface AlmaChatContextType {
   setIsExpanded: (expanded: boolean) => void;
   toggleExpanded: () => void;
 
-  // Context State
-  currentStudent: StudentContextInfo | null;
-  setCurrentStudent: (student: StudentContextInfo | null) => void;
+  // Chat Management
+  chats: Chat[];
+  activeChatId: string | null;
+  activeChat: Chat | null;
 
-  // Thread Management
-  threads: Map<string, ChatMessage[]>;
-  getActiveThread: () => ChatMessage[];
-  addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
-  clearThread: (threadId?: string) => void;
-
-  // Active thread ID helper
-  activeThreadId: string;
+  // Actions
+  createChat: () => string;
+  deleteChat: (chatId: string) => void;
+  renameChat: (chatId: string, newTitle: string) => void;
+  setActiveChat: (chatId: string) => void;
+  addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>, chatId?: string) => void;
 }
 
 const AlmaChatContext = createContext<AlmaChatContextType | null>(null);
 
-const GENERAL_THREAD_ID = 'general';
+function generateChatId(): string {
+  return `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+function generateMessageId(): string {
+  return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+function generateTitleFromMessage(content: string): string {
+  // Take first ~40 chars of the message, cut at word boundary
+  const maxLength = 40;
+  if (content.length <= maxLength) {
+    return content;
+  }
+  const truncated = content.substring(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(' ');
+  if (lastSpace > 20) {
+    return truncated.substring(0, lastSpace) + '...';
+  }
+  return truncated + '...';
+}
 
 export function AlmaChatProvider({ children }: { children: ReactNode }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [currentStudent, setCurrentStudent] = useState<StudentContextInfo | null>(null);
-  const [threads, setThreads] = useState<Map<string, ChatMessage[]>>(new Map());
-
-  // Determine active thread based on current student (location-based)
-  const activeThreadId = currentStudent ? currentStudent.id : GENERAL_THREAD_ID;
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded(prev => !prev);
   }, []);
 
-  const getActiveThread = useCallback((): ChatMessage[] => {
-    return threads.get(activeThreadId) || [];
-  }, [threads, activeThreadId]);
+  const activeChat = chats.find(c => c.id === activeChatId) || null;
 
-  const addMessage = useCallback((message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
+  const createChat = useCallback((): string => {
+    const newChat: Chat = {
+      id: generateChatId(),
+      title: 'New chat',
+      messages: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setChats(prev => [newChat, ...prev]);
+    setActiveChatId(newChat.id);
+    return newChat.id;
+  }, []);
+
+  const deleteChat = useCallback((chatId: string) => {
+    setChats(prev => {
+      const filtered = prev.filter(c => c.id !== chatId);
+      // If we're deleting the active chat, switch to most recent or null
+      if (chatId === activeChatId) {
+        const nextChat = filtered[0];
+        setActiveChatId(nextChat?.id || null);
+      }
+      return filtered;
+    });
+  }, [activeChatId]);
+
+  const renameChat = useCallback((chatId: string, newTitle: string) => {
+    setChats(prev => prev.map(chat =>
+      chat.id === chatId
+        ? { ...chat, title: newTitle, updatedAt: new Date().toISOString() }
+        : chat
+    ));
+  }, []);
+
+  const setActiveChat = useCallback((chatId: string) => {
+    setActiveChatId(chatId);
+  }, []);
+
+  const addMessage = useCallback((message: Omit<ChatMessage, 'id' | 'timestamp'>, chatId?: string) => {
+    const targetChatId = chatId || activeChatId;
+    if (!targetChatId) return;
+
     const newMessage: ChatMessage = {
       ...message,
-      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: generateMessageId(),
       timestamp: new Date().toISOString(),
     };
 
-    setThreads(prev => {
-      const newMap = new Map(prev);
-      const currentMessages = newMap.get(activeThreadId) || [];
-      newMap.set(activeThreadId, [...currentMessages, newMessage]);
-      return newMap;
-    });
-  }, [activeThreadId]);
+    setChats(prev => prev.map(chat => {
+      if (chat.id !== targetChatId) return chat;
 
-  const clearThread = useCallback((threadId?: string) => {
-    const targetThreadId = threadId ?? activeThreadId;
-    setThreads(prev => {
-      const newMap = new Map(prev);
-      newMap.set(targetThreadId, []);
-      return newMap;
-    });
-  }, [activeThreadId]);
+      const updatedMessages = [...chat.messages, newMessage];
+
+      // Auto-generate title from first user message if title is still "New chat"
+      let newTitle = chat.title;
+      if (chat.title === 'New chat' && message.role === 'user') {
+        newTitle = generateTitleFromMessage(message.content);
+      }
+
+      return {
+        ...chat,
+        title: newTitle,
+        messages: updatedMessages,
+        updatedAt: new Date().toISOString(),
+      };
+    }));
+  }, [activeChatId]);
 
   // Load expanded state from localStorage on mount
   useEffect(() => {
@@ -98,13 +158,14 @@ export function AlmaChatProvider({ children }: { children: ReactNode }) {
         isExpanded,
         setIsExpanded,
         toggleExpanded,
-        currentStudent,
-        setCurrentStudent,
-        threads,
-        getActiveThread,
+        chats,
+        activeChatId,
+        activeChat,
+        createChat,
+        deleteChat,
+        renameChat,
+        setActiveChat,
         addMessage,
-        clearThread,
-        activeThreadId,
       }}
     >
       {children}

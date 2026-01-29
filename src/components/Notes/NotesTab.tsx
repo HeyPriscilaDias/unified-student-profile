@@ -8,24 +8,29 @@ import {
   Button,
   Checkbox,
   FormControlLabel,
+  IconButton,
 } from '@mui/material';
-import { Lock, Globe } from 'lucide-react';
+import { Lock, Globe, Pencil, Trash2 } from 'lucide-react';
+import { useNotesContext, Note } from '@/contexts/NotesContext';
+import { formatRelativeTime } from '@/lib/dateUtils';
 
 interface NotesTabProps {
   studentId: string;
   studentFirstName: string;
 }
 
-export function NotesTab({ studentId: _studentId, studentFirstName }: NotesTabProps) {
-  // Note: _studentId is available for future API integration
+export function NotesTab({ studentId, studentFirstName }: NotesTabProps) {
+  const { getNotesForStudent, addNote, deleteNote } = useNotesContext();
   const [noteText, setNoteText] = useState('');
   const [noteVisibility, setNoteVisibility] = useState<'private' | 'public'>(
     'private'
   );
 
+  const notes = getNotesForStudent(studentId);
+
   const handleSubmitNote = () => {
     if (noteText.trim()) {
-      // TODO: Save note to backend
+      addNote(studentId, noteText.trim(), noteVisibility);
       setNoteText('');
     }
   };
@@ -36,8 +41,12 @@ export function NotesTab({ studentId: _studentId, studentFirstName }: NotesTabPr
     }
   };
 
+  const handleDeleteNote = (noteId: string) => {
+    deleteNote(studentId, noteId);
+  };
+
   return (
-    <Box sx={{ py: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box sx={{ py: 2.5, display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Note Input Form */}
       <Box>
         <Typography
@@ -50,7 +59,7 @@ export function NotesTab({ studentId: _studentId, studentFirstName }: NotesTabPr
             mb: 2,
           }}
         >
-          Add a Note
+          Notes
         </Typography>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Typography sx={{ fontSize: '13px', color: '#6B7280' }}>
@@ -165,6 +174,111 @@ export function NotesTab({ studentId: _studentId, studentFirstName }: NotesTabPr
             </Button>
           </Box>
         </Box>
+      </Box>
+
+      {/* Saved Notes List */}
+      {notes.length > 0 && (
+        <Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+            {notes.map((note) => (
+              <NoteItem
+                key={note.id}
+                note={note}
+                onDelete={() => handleDeleteNote(note.id)}
+              />
+            ))}
+          </Box>
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+interface NoteItemProps {
+  note: Note;
+  onDelete: () => void;
+}
+
+function NoteItem({ note, onDelete }: NoteItemProps) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        gap: 2,
+        py: 2,
+        borderBottom: '1px solid #F3F4F6',
+        '&:last-child': {
+          borderBottom: 'none',
+        },
+      }}
+    >
+      <Box
+        sx={{
+          p: 1,
+          backgroundColor: '#F3F4F6',
+          borderRadius: '8px',
+          height: 'fit-content',
+          flexShrink: 0,
+        }}
+      >
+        <Pencil size={18} style={{ color: '#6B7280' }} />
+      </Box>
+
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+          <Typography
+            sx={{
+              fontSize: '11px',
+              fontWeight: 500,
+              color: '#6B7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
+            Note
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            {note.visibility === 'private' ? (
+              <Lock size={12} style={{ color: '#9CA3AF' }} />
+            ) : (
+              <Globe size={12} style={{ color: '#9CA3AF' }} />
+            )}
+            <Typography sx={{ fontSize: '11px', color: '#9CA3AF' }}>
+              {note.visibility === 'private' ? 'Private' : 'Visible to staff'}
+            </Typography>
+          </Box>
+        </Box>
+
+        <Typography
+          sx={{
+            fontSize: '14px',
+            color: '#374151',
+            lineHeight: 1.6,
+            whiteSpace: 'pre-wrap',
+          }}
+        >
+          {note.content}
+        </Typography>
+      </Box>
+
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, flexShrink: 0 }}>
+        <Typography sx={{ fontSize: '12px', color: '#9CA3AF' }}>
+          {formatRelativeTime(note.createdAt)}
+        </Typography>
+        <IconButton
+          size="small"
+          onClick={onDelete}
+          sx={{
+            p: 0.5,
+            color: '#9CA3AF',
+            '&:hover': {
+              color: '#EF4444',
+              backgroundColor: '#FEE2E2',
+            },
+          }}
+        >
+          <Trash2 size={14} />
+        </IconButton>
       </Box>
     </Box>
   );

@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, Typography, IconButton, TextField, Modal, Button } from '@mui/material';
-import { Minimize2, Pause, Play, Square, ExternalLink, Calendar, User } from 'lucide-react';
+import { Minimize2, Pause, Play, Square, ExternalLink, CheckCircle2, Circle } from 'lucide-react';
 import { useActiveMeetingContext, ActiveMeetingState } from '@/contexts/ActiveMeetingContext';
 import { useInteractionsContext } from '@/contexts/InteractionsContext';
+import { useTasksContext } from '@/contexts/TasksContext';
 import { AudioWaveform } from './AudioWaveform';
 
 interface RecordingWidgetModalProps {
@@ -18,15 +19,6 @@ function formatElapsed(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-}
-
-function formatDate(): string {
-  return new Date().toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
 }
 
 // Inner component that receives initial values as props
@@ -42,23 +34,16 @@ function ModalContent({
 }) {
   const router = useRouter();
   const { togglePause, setPhase, updateTalkingPoints } = useActiveMeetingContext();
-  const { updateInteraction, updateInteractionTalkingPoints } = useInteractionsContext();
+  const { updateInteractionTalkingPoints } = useInteractionsContext();
+  const { getTasksForStudent, toggleTask } = useTasksContext();
 
-  const [editedTitle, setEditedTitle] = useState(activeMeeting.interactionTitle);
   const [editedNotes, setEditedNotes] = useState(activeMeeting.talkingPoints || '');
+
+  const studentTasks = getTasksForStudent(activeMeeting.studentId).filter(t => t.status === 'open').slice(0, 5);
 
   const isPaused = activeMeeting.isPaused;
 
   const handleSaveAndClose = () => {
-    // Update the interaction title if changed
-    if (editedTitle !== activeMeeting.interactionTitle) {
-      updateInteraction({
-        id: activeMeeting.interactionId,
-        studentId: activeMeeting.studentId,
-        title: editedTitle,
-      });
-    }
-
     // Update talking points if changed
     if (editedNotes !== activeMeeting.talkingPoints) {
       updateInteractionTalkingPoints(
@@ -74,13 +59,6 @@ function ModalContent({
 
   const handleStopRecording = () => {
     // Save any pending changes first
-    if (editedTitle !== activeMeeting.interactionTitle) {
-      updateInteraction({
-        id: activeMeeting.interactionId,
-        studentId: activeMeeting.studentId,
-        title: editedTitle,
-      });
-    }
     if (editedNotes !== activeMeeting.talkingPoints) {
       updateInteractionTalkingPoints(
         activeMeeting.studentId,
@@ -233,23 +211,7 @@ function ModalContent({
           py: 2,
         }}
       >
-        {/* Meeting Info */}
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-            <User size={16} color="#9CA3AF" />
-            <Typography sx={{ fontSize: '14px', color: '#9CA3AF' }}>
-              {activeMeeting.studentName}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Calendar size={16} color="#9CA3AF" />
-            <Typography sx={{ fontSize: '14px', color: '#9CA3AF' }}>
-              {formatDate()}
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Meeting Title */}
+        {/* Notes & Talking Points */}
         <Box sx={{ mb: 3 }}>
           <Typography
             sx={{
@@ -261,53 +223,12 @@ function ModalContent({
               mb: 1,
             }}
           >
-            Meeting Title
-          </Typography>
-          <TextField
-            fullWidth
-            value={editedTitle}
-            onChange={(e) => setEditedTitle(e.target.value)}
-            variant="outlined"
-            size="small"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                color: '#fff',
-                '& fieldset': {
-                  borderColor: 'rgba(255,255,255,0.2)',
-                },
-                '&:hover fieldset': {
-                  borderColor: 'rgba(255,255,255,0.3)',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#EF4444',
-                },
-              },
-              '& .MuiOutlinedInput-input': {
-                color: '#fff',
-              },
-            }}
-          />
-        </Box>
-
-        {/* Talking Points / Notes */}
-        <Box>
-          <Typography
-            sx={{
-              fontSize: '12px',
-              fontWeight: 600,
-              color: '#9CA3AF',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              mb: 1,
-            }}
-          >
-            Meeting Notes
+            Notes & Talking Points
           </Typography>
           <TextField
             fullWidth
             multiline
-            rows={8}
+            rows={5}
             value={editedNotes}
             onChange={(e) => setEditedNotes(e.target.value)}
             placeholder="Add notes for this meeting..."
@@ -335,6 +256,81 @@ function ModalContent({
               },
             }}
           />
+        </Box>
+
+        {/* Tasks */}
+        <Box>
+          <Typography
+            sx={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: '#9CA3AF',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              mb: 1,
+            }}
+          >
+            Tasks
+          </Typography>
+          <Box
+            sx={{
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              borderRadius: '8px',
+              border: '1px solid rgba(255,255,255,0.2)',
+              overflow: 'hidden',
+            }}
+          >
+            {studentTasks.length === 0 ? (
+              <Box sx={{ px: 2, py: 2 }}>
+                <Typography sx={{ fontSize: '14px', color: '#6B7280' }}>
+                  No open tasks
+                </Typography>
+              </Box>
+            ) : (
+              studentTasks.map((task, index) => (
+                <Box
+                  key={task.id}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 1.5,
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: index < studentTasks.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,0.05)',
+                    },
+                  }}
+                  onClick={() => toggleTask(activeMeeting.studentId, task.id)}
+                >
+                  <Box sx={{ mt: '2px' }}>
+                    {task.status === 'completed' ? (
+                      <CheckCircle2 size={18} color="#10B981" />
+                    ) : (
+                      <Circle size={18} color="#6B7280" />
+                    )}
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography
+                      sx={{
+                        fontSize: '14px',
+                        color: task.status === 'completed' ? '#6B7280' : '#fff',
+                        textDecoration: task.status === 'completed' ? 'line-through' : 'none',
+                      }}
+                    >
+                      {task.title}
+                    </Typography>
+                    {task.dueDate && (
+                      <Typography sx={{ fontSize: '12px', color: '#9CA3AF', mt: 0.5 }}>
+                        Due: {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              ))
+            )}
+          </Box>
         </Box>
       </Box>
 

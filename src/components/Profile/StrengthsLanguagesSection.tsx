@@ -1,53 +1,83 @@
 'use client';
 
-import { useState } from 'react';
 import { Box, Typography } from '@mui/material';
-import { SectionCard, SubTabNavigation } from '@/components/shared';
+import { SectionCard } from '@/components/shared';
 
 interface StrengthsLanguagesSectionProps {
+  interests?: string[];
   strengths: string[];
   languages: string[];
 }
 
+function TagList({ items }: { items: string[] }) {
+  if (items.length === 0) return null;
+
+  return (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+      {items.map((item, index) => (
+        <Box
+          key={index}
+          sx={{
+            px: 1,
+            py: 0.5,
+            height: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'white',
+            border: '1px solid #d5d7da',
+            borderRadius: '4px',
+            fontSize: '12px',
+            color: '#414651',
+          }}
+        >
+          {item}
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+function LabeledRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Typography sx={{ fontSize: '14px', color: '#535862', width: 150, flexShrink: 0 }}>
+        {label}
+      </Typography>
+      {children}
+    </Box>
+  );
+}
+
 export function StrengthsLanguagesSection({
+  interests = [],
   strengths,
   languages,
 }: StrengthsLanguagesSectionProps) {
-  const [activeTab, setActiveTab] = useState<'strengths' | 'languages'>('strengths');
-
-  const items = activeTab === 'strengths' ? strengths : languages;
-  const emptyText = activeTab === 'strengths'
-    ? 'No strengths identified yet'
-    : 'No languages added yet';
-
   return (
-    <SectionCard
-      title="Strengths & languages"
-      action={
-        <SubTabNavigation
-          options={[
-            { value: 'strengths', label: 'Strengths' },
-            { value: 'languages', label: 'Languages' },
-          ]}
-          value={activeTab}
-          onChange={(v) => setActiveTab(v as 'strengths' | 'languages')}
-        />
-      }
-    >
-      {items.length === 0 ? (
-        <Typography className="text-sm text-neutral-500">{emptyText}</Typography>
-      ) : (
-        <Box className="flex flex-wrap gap-2">
-          {items.map((item, index) => (
-            <Box
-              key={index}
-              className="px-3 py-1.5 bg-neutral-100 rounded-full text-sm text-neutral-700"
-            >
-              {item}
-            </Box>
-          ))}
-        </Box>
-      )}
+    <SectionCard title="Interests, Strengths & Languages">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {interests.length > 0 && (
+          <LabeledRow label="Interests">
+            <TagList items={interests} />
+          </LabeledRow>
+        )}
+        {strengths.length > 0 && (
+          <LabeledRow label="Strengths">
+            <TagList items={strengths} />
+          </LabeledRow>
+        )}
+        {languages.length > 0 && (
+          <LabeledRow label="Languages">
+            <TagList items={languages} />
+          </LabeledRow>
+        )}
+        {interests.length === 0 && strengths.length === 0 && languages.length === 0 && (
+          <Typography sx={{ fontSize: '14px', color: '#6B7280' }}>
+            No information added yet
+          </Typography>
+        )}
+      </Box>
     </SectionCard>
   );
 }

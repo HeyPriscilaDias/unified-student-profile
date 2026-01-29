@@ -12,8 +12,9 @@ interface TabNavigationProps {
 const tabs: { value: TabType; label: string }[] = [
   { value: 'overview', label: 'Overview' },
   { value: 'profile', label: 'Profile' },
+  { value: 'purpose', label: 'Purpose' },
   { value: 'postsecondary', label: 'Postsecondary Planning' },
-  { value: 'student-work', label: 'Student Work' },
+  { value: 'student-work', label: 'Work' },
   { value: 'notes', label: 'Notes' },
   { value: 'meetings', label: 'Meetings' },
 ];

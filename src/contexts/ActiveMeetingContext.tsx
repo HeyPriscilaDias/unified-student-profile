@@ -43,7 +43,13 @@ export function ActiveMeetingProvider({ children }: { children: ReactNode }) {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         try {
-          return JSON.parse(stored);
+          const parsed = JSON.parse(stored);
+          // Don't restore 'processing' phase - it shouldn't survive page reloads
+          if (parsed.phase === 'processing') {
+            localStorage.removeItem(STORAGE_KEY);
+            return null;
+          }
+          return parsed;
         } catch {
           return null;
         }

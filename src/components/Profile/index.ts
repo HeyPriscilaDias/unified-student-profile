@@ -1,4 +1,5 @@
 export { ProfileTab } from './ProfileTab';
+export { PurposeTab } from './PurposeTab';
 export { IdDetailsSection } from './IdDetailsSection';
 export { AcademicAchievementsSection } from './AcademicAchievementsSection';
 export { StrengthsLanguagesSection } from './StrengthsLanguagesSection';

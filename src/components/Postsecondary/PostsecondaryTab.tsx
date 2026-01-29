@@ -1,7 +1,6 @@
 'use client';
 
 import { Box } from '@mui/material';
-import { FAFSAInfoSection } from './FAFSAInfoSection';
 import { ApplicationsSection } from './ApplicationsSection';
 import { BookmarksSection } from './BookmarksSection';
 import { RecommendationsSection } from './RecommendationsSection';
@@ -27,9 +26,6 @@ export function PostsecondaryTab({
   return (
     <Box>
       <Box sx={{ py: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {/* FAFSA Info */}
-        <FAFSAInfoSection />
-
         {/* Applications */}
         <ApplicationsSection />
 

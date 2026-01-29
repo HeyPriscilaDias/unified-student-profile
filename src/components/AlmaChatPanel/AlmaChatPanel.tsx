@@ -1,162 +1,131 @@
 'use client';
 
-import { useState } from 'react';
-import { Box, Typography, IconButton, TextField, InputAdornment } from '@mui/material';
-import { ChevronDown, ChevronUp, Send } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  IconButton,
+  TextField,
+  InputAdornment,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+} from '@mui/material';
+import { Send, ChevronDown, Plus, Pencil, Trash2, MessageSquare, Check, X } from 'lucide-react';
 import { Alma } from '@/components/icons/AlmaIcon';
-import type { Milestone, SmartGoal, Bookmark, StudentProfile } from '@/types/student';
-
-interface StudentContext {
-  firstName: string;
-  lastName: string;
-  grade: number;
-  careerVision?: string;
-  milestones: Milestone[];
-  smartGoals: SmartGoal[];
-  bookmarks: Bookmark[];
-  profile?: StudentProfile;
-}
+import { useAlmaChatContext, type ChatMessage } from '@/contexts/AlmaChatContext';
 
 interface AlmaChatPanelProps {
-  studentFirstName: string;
-  studentContext?: StudentContext;
+  studentFirstName?: string;
 }
 
-function generateContextAwareSuggestions(studentFirstName?: string, context?: StudentContext): { initial: string[]; more: string[] } {
-  // No student context - show general suggestions
-  if (!studentFirstName && !context) {
-    return {
-      initial: [
-        'How to choose the best college for a student?',
-        'What are the key milestones for college readiness?',
-      ],
-      more: [
-        'How do I help students with financial aid applications?',
-        'What resources are available for first-generation students?',
-        'Tips for writing effective recommendation letters',
-      ],
-    };
+function generateContextAwareSuggestions(studentFirstName?: string): string[] {
+  if (!studentFirstName) {
+    return [
+      'How to choose the best college for a student?',
+      'What are the key milestones for college readiness?',
+    ];
   }
 
-  // Student context but no detailed data - show student-specific general suggestions
-  if (studentFirstName && !context) {
-    return {
-      initial: [
-        `What colleges might be a good fit for ${studentFirstName}?`,
-        `How can I help ${studentFirstName} explore career options?`,
-      ],
-      more: [
-        `What are ${studentFirstName}'s upcoming deadlines?`,
-        `How to support ${studentFirstName}'s college applications?`,
-        `What scholarships might ${studentFirstName} qualify for?`,
-      ],
-    };
-  }
-
-  // Full context available - generate detailed suggestions
-  const suggestions: string[] = [];
-  const { firstName, grade, careerVision, milestones, smartGoals, bookmarks, profile } = context!;
-  const name = studentFirstName || firstName;
-
-  // Get career interests from bookmarks
-  const careerBookmarks = bookmarks.filter(b => b.type === 'career' && b.isBookmarked);
-  const schoolBookmarks = bookmarks.filter(b => b.type === 'school' && b.isBookmarked);
-
-  // Get in-progress milestones
-  const pendingMilestones = milestones.filter(m => m.status === 'not_done');
-
-  // Get active goals
-  const activeGoals = smartGoals.filter(g => g.status === 'active');
-
-  // Career-specific suggestions
-  if (careerBookmarks.length > 0) {
-    const topCareer = careerBookmarks[0];
-    suggestions.push(`What are the best pathways to become a ${topCareer.title}?`);
-    if (topCareer.tags?.includes('Healthcare')) {
-      suggestions.push(`What clinical experiences would help ${name}'s healthcare career goals?`);
-    }
-  }
-
-  // School-specific suggestions
-  if (schoolBookmarks.length > 0) {
-    const topSchool = schoolBookmarks[0];
-    suggestions.push(`How can ${name} strengthen their ${topSchool.title} application?`);
-  }
-
-  // Milestone-based suggestions
-  if (pendingMilestones.length > 0) {
-    const urgentMilestone = pendingMilestones[0];
-    if (urgentMilestone.title.toLowerCase().includes('fafsa')) {
-      suggestions.push(`What documents does ${name} need for FAFSA completion?`);
-    } else if (urgentMilestone.title.toLowerCase().includes('college')) {
-      suggestions.push(`What are the key deadlines ${name} should track?`);
-    } else if (urgentMilestone.title.toLowerCase().includes('shadow')) {
-      suggestions.push(`How can ${name} find job shadowing opportunities?`);
-    }
-  }
-
-  // Goal-based suggestions
-  if (activeGoals.length > 0) {
-    const topGoal = activeGoals[0];
-    if (topGoal.title.toLowerCase().includes('application')) {
-      suggestions.push(`Tips for completing ${name}'s remaining college applications?`);
-    } else if (topGoal.title.toLowerCase().includes('sat') || topGoal.title.toLowerCase().includes('score')) {
-      suggestions.push(`What study strategies could help ${name} improve test scores?`);
-    }
-  }
-
-  // Grade-level suggestions
-  if (grade === 12) {
-    suggestions.push(`What should ${name} know about senior year financial aid?`);
-    suggestions.push(`How to prepare for college transition?`);
-  } else if (grade === 11) {
-    suggestions.push(`What can ${name} do this year to prepare for college applications?`);
-  }
-
-  // Career vision suggestions
-  if (careerVision && careerVision.toLowerCase().includes('nurs')) {
-    suggestions.push(`What nursing programs align with ${name}'s goals?`);
-  }
-
-  // Profile-based suggestions
-  if (profile?.experiences?.some(exp => exp.type === 'volunteer')) {
-    suggestions.push(`How can ${name}'s volunteer experience strengthen applications?`);
-  }
-
-  // Deduplicate and split into initial and more
-  const uniqueSuggestions = [...new Set(suggestions)];
-
-  // If we don't have enough suggestions, add some defaults
-  if (uniqueSuggestions.length < 2) {
-    uniqueSuggestions.push(`What colleges might be a good fit for ${name}?`);
-    uniqueSuggestions.push(`How can I help ${name} with their applications?`);
-  }
-
-  return {
-    initial: uniqueSuggestions.slice(0, 2),
-    more: uniqueSuggestions.slice(2, 5),
-  };
+  return [
+    `What colleges might be a good fit for ${studentFirstName}?`,
+    `How can I help ${studentFirstName} explore career options?`,
+  ];
 }
 
-export function AlmaChatPanel({
-  studentFirstName,
-  studentContext,
-}: AlmaChatPanelProps) {
+function ChatMessageBubble({ message }: { message: ChatMessage }) {
+  const isUser = message.role === 'user';
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: isUser ? 'flex-end' : 'flex-start',
+        mb: 1.5,
+      }}
+    >
+      <Box
+        sx={{
+          maxWidth: '85%',
+          px: 2,
+          py: 1.5,
+          borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+          backgroundColor: isUser ? '#062F29' : '#F3F4F6',
+          color: isUser ? '#fff' : '#374151',
+        }}
+      >
+        <Typography sx={{ fontSize: '14px', lineHeight: 1.5 }}>
+          {message.content}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+export function AlmaChatPanel({ studentFirstName }: AlmaChatPanelProps) {
   const [message, setMessage] = useState('');
-  const [showMoreSuggestions, setShowMoreSuggestions] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Generate context-aware suggestions based on current location (student page or not)
-  const contextSuggestions = generateContextAwareSuggestions(studentFirstName, studentContext);
+  const {
+    chats,
+    activeChatId,
+    activeChat,
+    createChat,
+    deleteChat,
+    renameChat,
+    setActiveChat,
+    addMessage,
+  } = useAlmaChatContext();
+
+  const menuOpen = Boolean(anchorEl);
+
+  // Generate suggestions based on current page context (not chat context)
+  const suggestions = generateContextAwareSuggestions(studentFirstName);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [activeChat?.messages]);
 
   const handleSend = () => {
-    if (message.trim()) {
-      console.log('Send message:', message);
-      setMessage('');
-    }
+    if (!message.trim()) return;
+
+    // If no active chat, create one first
+    const chatId = activeChatId || createChat();
+    const messageContent = message.trim();
+
+    // Add user message
+    addMessage({ role: 'user', content: messageContent }, chatId);
+
+    // Simulate AI response (in real app, this would call an API)
+    setTimeout(() => {
+      addMessage({
+        role: 'assistant',
+        content: `I understand you're asking about "${messageContent.substring(0, 50)}...". This is a simulated response for the prototype.`,
+      }, chatId);
+    }, 500);
+
+    setMessage('');
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    console.log('Suggestion clicked:', suggestion);
+    // If no active chat, create one first
+    const chatId = activeChatId || createChat();
+
+    addMessage({ role: 'user', content: suggestion }, chatId);
+
+    // Simulate AI response
+    setTimeout(() => {
+      addMessage({
+        role: 'assistant',
+        content: `Great question! Here's information about "${suggestion.substring(0, 40)}...". This is a simulated response for the prototype.`,
+      }, chatId);
+    }, 500);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -165,6 +134,50 @@ export function AlmaChatPanel({
       handleSend();
     }
   };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setEditingChatId(null);
+  };
+
+  const handleNewChat = () => {
+    createChat();
+    handleMenuClose();
+  };
+
+  const handleSelectChat = (chatId: string) => {
+    setActiveChat(chatId);
+    handleMenuClose();
+  };
+
+  const handleStartRename = (e: React.MouseEvent, chatId: string, currentTitle: string) => {
+    e.stopPropagation();
+    setEditingChatId(chatId);
+    setEditTitle(currentTitle);
+  };
+
+  const handleSaveRename = (chatId: string) => {
+    if (editTitle.trim()) {
+      renameChat(chatId, editTitle.trim());
+    }
+    setEditingChatId(null);
+  };
+
+  const handleCancelRename = () => {
+    setEditingChatId(null);
+  };
+
+  const handleDeleteChat = (e: React.MouseEvent, chatId: string) => {
+    e.stopPropagation();
+    deleteChat(chatId);
+  };
+
+  const currentTitle = activeChat?.title || 'New chat';
+  const hasMessages = activeChat && activeChat.messages.length > 0;
 
   return (
     <Box
@@ -176,26 +189,190 @@ export function AlmaChatPanel({
         flexDirection: 'column',
       }}
     >
-      {/* Student context indicator */}
-      {studentFirstName && (
+      {/* Chat Selector */}
+      <Box
+        sx={{
+          px: 2,
+          py: 1.5,
+          borderBottom: '1px solid #E5E7EB',
+          backgroundColor: '#F9FAFB',
+        }}
+      >
         <Box
+          onClick={handleMenuOpen}
           sx={{
-            px: 2,
-            py: 1,
-            borderBottom: '1px solid #E5E7EB',
-            backgroundColor: '#F9FAFB',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            cursor: 'pointer',
+            '&:hover': {
+              '& .chat-title': {
+                color: '#062F29',
+              },
+            },
           }}
         >
+          <MessageSquare size={16} color="#6B7280" />
           <Typography
+            className="chat-title"
             sx={{
-              fontSize: '12px',
-              color: '#6B7280',
+              fontSize: '14px',
+              fontWeight: 500,
+              color: '#374151',
+              flex: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
           >
-            Chatting about <span style={{ fontWeight: 600, color: '#062F29' }}>{studentFirstName}</span>
+            {currentTitle}
           </Typography>
+          <ChevronDown size={16} color="#6B7280" />
         </Box>
-      )}
+
+        <Menu
+          anchorEl={anchorEl}
+          open={menuOpen}
+          onClose={handleMenuClose}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          slotProps={{
+            paper: {
+              sx: {
+                width: 280,
+                maxHeight: 400,
+                mt: 0.5,
+              },
+            },
+          }}
+        >
+          {/* New Chat Button */}
+          <MenuItem onClick={handleNewChat}>
+            <ListItemIcon>
+              <Plus size={18} />
+            </ListItemIcon>
+            <ListItemText
+              primary="New chat"
+              primaryTypographyProps={{ fontSize: '14px', fontWeight: 500 }}
+            />
+          </MenuItem>
+
+          {chats.length > 0 && <Divider />}
+
+          {/* Chat List */}
+          {chats.map((chat) => (
+            <MenuItem
+              key={chat.id}
+              selected={chat.id === activeChatId}
+              onClick={() => handleSelectChat(chat.id)}
+              sx={{
+                '&:hover .chat-actions': {
+                  opacity: 1,
+                },
+              }}
+            >
+              {editingChatId === chat.id ? (
+                <Box
+                  sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '100%' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <TextField
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    size="small"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSaveRename(chat.id);
+                      } else if (e.key === 'Escape') {
+                        handleCancelRename();
+                      }
+                    }}
+                    sx={{
+                      flex: 1,
+                      '& .MuiOutlinedInput-root': {
+                        fontSize: '14px',
+                        '& fieldset': { borderColor: '#E5E7EB' },
+                        '&.Mui-focused fieldset': { borderColor: '#062F29' },
+                      },
+                    }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={() => handleSaveRename(chat.id)}
+                    sx={{ color: '#22C55E' }}
+                  >
+                    <Check size={16} />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={handleCancelRename}
+                    sx={{ color: '#6B7280' }}
+                  >
+                    <X size={16} />
+                  </IconButton>
+                </Box>
+              ) : (
+                <>
+                  <ListItemIcon>
+                    <MessageSquare size={16} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={chat.title}
+                    primaryTypographyProps={{
+                      fontSize: '14px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  />
+                  <Box
+                    className="chat-actions"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      opacity: 0,
+                      transition: 'opacity 0.15s',
+                    }}
+                  >
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleStartRename(e, chat.id, chat.title)}
+                      sx={{
+                        color: '#6B7280',
+                        padding: '4px',
+                        '&:hover': { color: '#062F29', backgroundColor: '#F3F4F6' },
+                      }}
+                    >
+                      <Pencil size={14} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleDeleteChat(e, chat.id)}
+                      sx={{
+                        color: '#6B7280',
+                        padding: '4px',
+                        '&:hover': { color: '#EF4444', backgroundColor: '#FEE2E2' },
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </IconButton>
+                  </Box>
+                </>
+              )}
+            </MenuItem>
+          ))}
+
+          {chats.length === 0 && (
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <Typography sx={{ fontSize: '13px', color: '#6B7280' }}>
+                No chats yet. Start a new conversation!
+              </Typography>
+            </Box>
+          )}
+        </Menu>
+      </Box>
 
       {/* Chat Area */}
       <Box
@@ -206,18 +383,24 @@ export function AlmaChatPanel({
           py: 2,
         }}
       >
-        {/* Welcome Message */}
-        <Typography
-          sx={{
-            fontSize: '14px',
-            color: '#374151',
-            lineHeight: 1.5,
-          }}
-        >
-          {studentFirstName
-            ? `Hey Sarah, how can I help you support ${studentFirstName} today?`
-            : 'Hey Sarah, how can I help you today?'}
-        </Typography>
+        {hasMessages ? (
+          <>
+            {activeChat.messages.map((msg) => (
+              <ChatMessageBubble key={msg.id} message={msg} />
+            ))}
+            <div ref={messagesEndRef} />
+          </>
+        ) : (
+          <Typography
+            sx={{
+              fontSize: '14px',
+              color: '#374151',
+              lineHeight: 1.5,
+            }}
+          >
+            Hey Sarah, how can I help you today?
+          </Typography>
+        )}
       </Box>
 
       {/* Suggestions & Input */}
@@ -228,41 +411,10 @@ export function AlmaChatPanel({
           py: 2,
         }}
       >
-        {/* Suggestions */}
-        <Box sx={{ mb: 2 }}>
-          {contextSuggestions.initial.map((suggestion) => (
-            <Box
-              key={suggestion}
-              onClick={() => handleSuggestionClick(suggestion)}
-              sx={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 1,
-                py: 0.75,
-                cursor: 'pointer',
-                '&:hover': {
-                  '& .suggestion-text': {
-                    color: '#062F29',
-                  },
-                },
-              }}
-            >
-              <Alma size={16} color="#12B76A" style={{ marginTop: 2, flexShrink: 0 }} />
-              <Typography
-                className="suggestion-text"
-                sx={{
-                  fontSize: '13px',
-                  color: '#374151',
-                  lineHeight: 1.4,
-                }}
-              >
-                {suggestion}
-              </Typography>
-            </Box>
-          ))}
-
-          {showMoreSuggestions &&
-            contextSuggestions.more.map((suggestion) => (
+        {/* Suggestions - only show when no messages */}
+        {!hasMessages && (
+          <Box sx={{ mb: 2 }}>
+            {suggestions.map((suggestion) => (
               <Box
                 key={suggestion}
                 onClick={() => handleSuggestionClick(suggestion)}
@@ -292,28 +444,8 @@ export function AlmaChatPanel({
                 </Typography>
               </Box>
             ))}
-
-          {/* More suggestions toggle - only show if there are more suggestions */}
-          {contextSuggestions.more.length > 0 && (
-            <Box
-              onClick={() => setShowMoreSuggestions(!showMoreSuggestions)}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-                pt: 0.5,
-                cursor: 'pointer',
-                color: '#6B7280',
-                '&:hover': { color: '#374151' },
-              }}
-            >
-              {showMoreSuggestions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              <Typography sx={{ fontSize: '13px' }}>
-                {showMoreSuggestions ? 'Less suggestions' : 'More suggestions'}
-              </Typography>
-            </Box>
-          )}
-        </Box>
+          </Box>
+        )}
 
         {/* Input */}
         <TextField
