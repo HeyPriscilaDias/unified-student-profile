@@ -8,7 +8,6 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { NewMeetingModal } from '@/components/SidePanel/StudentPickerModal';
 import { useInteractionsContext } from '@/contexts/InteractionsContext';
-import { useActiveMeetingContext } from '@/contexts/ActiveMeetingContext';
 import { MEETING_TEMPLATES, templateToHTML } from '@/lib/meetingTemplates';
 
 export interface BreadcrumbItem {
@@ -24,8 +23,7 @@ interface BreadcrumbsBarProps {
 export function BreadcrumbsBar({ items, actionButton }: BreadcrumbsBarProps) {
   const router = useRouter();
   const [isNewMeetingModalOpen, setIsNewMeetingModalOpen] = useState(false);
-  const { addInteraction, updateInteractionTalkingPoints, updateInteractionTemplate, updateInteractionCustomPrompt } = useInteractionsContext();
-  const { startMeeting } = useActiveMeetingContext();
+  const { addInteraction, updateInteractionTemplate, updateInteractionCustomPrompt } = useInteractionsContext();
 
   const handleStartMeeting = (
     selectedStudentId: string,
@@ -39,26 +37,23 @@ export function BreadcrumbsBar({ items, actionButton }: BreadcrumbsBarProps) {
     // Determine meeting title
     let meetingTitle: string;
     if (template) {
-      meetingTitle = `${template.name} — ${studentName.split(' ')[0]}`;
+      meetingTitle = template.name;
     } else if (isOther) {
-      meetingTitle = `Meeting with ${studentName.split(' ')[0]}`;
+      meetingTitle = 'Meeting';
     } else if (options?.customTalkingPoints) {
-      meetingTitle = `Custom Meeting — ${studentName.split(' ')[0]}`;
+      meetingTitle = 'Custom Meeting';
     } else {
-      meetingTitle = `Meeting with ${studentName.split(' ')[0]}`;
+      meetingTitle = 'Meeting';
     }
+
+    // Get talking points from template (not for "Other" - those are generated later)
+    const talkingPoints = options?.customTalkingPoints || (template ? templateToHTML(template) : undefined);
 
     const newInteraction = addInteraction({
       studentId: selectedStudentId,
       title: meetingTitle,
+      summary: talkingPoints, // Pre-fill summary with talking points so they show on details page
     });
-
-    // Set talking points from template (not for "Other" - those are generated later)
-    const talkingPoints = options?.customTalkingPoints || (template ? templateToHTML(template) : undefined);
-
-    if (talkingPoints) {
-      updateInteractionTalkingPoints(selectedStudentId, newInteraction.id, talkingPoints);
-    }
     if (template) {
       updateInteractionTemplate(selectedStudentId, newInteraction.id, template.id);
     }
@@ -69,8 +64,6 @@ export function BreadcrumbsBar({ items, actionButton }: BreadcrumbsBarProps) {
         updateInteractionCustomPrompt(selectedStudentId, newInteraction.id, options.customPrompt);
       }
     }
-
-    startMeeting(selectedStudentId, studentName, newInteraction.id, newInteraction.title, talkingPoints);
 
     // Navigate to the new meeting
     router.push(`/students/${selectedStudentId}/interactions/${newInteraction.id}`);

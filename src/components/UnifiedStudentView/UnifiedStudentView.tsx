@@ -100,7 +100,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     // Create a new interaction and navigate to detail view
     const newInteraction = addInteraction({
       studentId,
-      title: `Meeting with ${student?.firstName || 'Student'}`,
+      title: 'Meeting',
       summary: '',
     });
     // Navigate to interaction detail page

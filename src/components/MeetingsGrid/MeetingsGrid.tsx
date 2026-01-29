@@ -5,17 +5,15 @@ import { useRouter } from 'next/navigation';
 import { Box, Typography, Button } from '@mui/material';
 import { Calendar, Plus } from 'lucide-react';
 import { useInteractionsContext } from '@/contexts/InteractionsContext';
-import { useActiveMeetingContext } from '@/contexts/ActiveMeetingContext';
 import { NewMeetingModal } from '@/components/SidePanel/StudentPickerModal';
-import { MEETING_TEMPLATES, OTHER_MEETING_TEMPLATE, templateToHTML } from '@/lib/meetingTemplates';
+import { MEETING_TEMPLATES, templateToHTML } from '@/lib/meetingTemplates';
 import { MeetingCard } from './MeetingCard';
 
 export function MeetingsGrid() {
   const router = useRouter();
   const [isNewMeetingModalOpen, setIsNewMeetingModalOpen] = useState(false);
 
-  const { getAllCounselorInteractions, addInteraction, updateInteractionTalkingPoints, updateInteractionTemplate, updateInteractionCustomPrompt } = useInteractionsContext();
-  const { startMeeting } = useActiveMeetingContext();
+  const { getAllCounselorInteractions, addInteraction, updateInteractionTemplate, updateInteractionCustomPrompt } = useInteractionsContext();
   const meetings = getAllCounselorInteractions();
 
   const handleMeetingClick = (studentId: string, interactionId: string) => {
@@ -34,26 +32,24 @@ export function MeetingsGrid() {
     // Determine meeting title
     let meetingTitle: string;
     if (template) {
-      meetingTitle = `${template.name} — ${studentName.split(' ')[0]}`;
+      meetingTitle = template.name;
     } else if (isOther) {
-      meetingTitle = `Meeting with ${studentName.split(' ')[0]}`;
+      meetingTitle = 'Meeting';
     } else if (options?.customTalkingPoints) {
-      meetingTitle = `Custom Meeting — ${studentName.split(' ')[0]}`;
+      meetingTitle = 'Custom Meeting';
     } else {
-      meetingTitle = `Meeting with ${studentName.split(' ')[0]}`;
+      meetingTitle = 'Meeting';
     }
+
+    // Get talking points from template (not for "Other" - those are generated later)
+    const talkingPoints = options?.customTalkingPoints || (template ? templateToHTML(template) : undefined);
 
     const newInteraction = addInteraction({
       studentId: selectedStudentId,
       title: meetingTitle,
+      summary: talkingPoints, // Pre-fill summary with talking points so they show on details page
     });
 
-    // Set talking points from template (not for "Other" - those are generated later)
-    const talkingPoints = options?.customTalkingPoints || (template ? templateToHTML(template) : undefined);
-
-    if (talkingPoints) {
-      updateInteractionTalkingPoints(selectedStudentId, newInteraction.id, talkingPoints);
-    }
     if (template) {
       updateInteractionTemplate(selectedStudentId, newInteraction.id, template.id);
     }
@@ -65,7 +61,8 @@ export function MeetingsGrid() {
       }
     }
 
-    startMeeting(selectedStudentId, studentName, newInteraction.id, newInteraction.title, talkingPoints);
+    // Navigate to the new meeting
+    router.push(`/students/${selectedStudentId}/interactions/${newInteraction.id}`);
   };
 
   if (meetings.length === 0) {
