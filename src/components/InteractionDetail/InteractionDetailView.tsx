@@ -5,13 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Box, Typography, Button, Collapse, Skeleton } from '@mui/material';
 import { ArrowLeft, Trash2, Mic, FileText } from 'lucide-react';
 import { Alma } from '@/components/icons/AlmaIcon';
-import { InteractionIntelligence, ActionItemsPanel } from '@/components/InteractionIntelligence';
+import { ActionItemsPanel } from '@/components/InteractionIntelligence';
 import { AppLayout } from '@/components/AppLayout';
 import { LoadingSection, SectionCard } from '@/components/shared';
 import { SidePanel, SidePanelTabType } from '@/components/SidePanel';
 import { useStudentData } from '@/hooks/useStudentData';
 import { useInteractions, useInteractionsContext } from '@/contexts/InteractionsContext';
 import { useTasks, useTasksContext } from '@/contexts/TasksContext';
+import { useActiveMeetingContext } from '@/contexts/ActiveMeetingContext';
 import { usePersistentRightPanelTab } from '@/hooks/usePersistentRightPanelTab';
 import { InteractionHeader } from './InteractionHeader';
 import { NotesSection } from './NotesSection';
@@ -30,10 +31,8 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const router = useRouter();
   const searchParams = useSearchParams();
   const studentData = useStudentData(studentId);
-  const startInteractionParam = searchParams.get('startInteraction') === 'true';
   const summaryModeParam = searchParams.get('mode') === 'summary';
   const showSummaryParam = searchParams.get('showSummary') === 'true';
-  const [isInInteractionMode, setIsInInteractionMode] = useState(startInteractionParam);
   const [isGeneratingTalkingPoints, setIsGeneratingTalkingPoints] = useState(false);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   const [isSummaryRevealed, setIsSummaryRevealed] = useState(false);
@@ -41,13 +40,17 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
   const { updateInteraction, updateInteractionSummary, updateInteractionTalkingPoints, updateInteractionTemplate, updateInteractionWithRecording, updateInteractionActionItems, updateInteractionStatus, deleteInteraction, addInteraction } = useInteractionsContext();
   const { addTask, updateTask, toggleTask, deleteTask } = useTasksContext();
+  const { activeMeeting, startMeeting, endMeeting } = useActiveMeetingContext();
+
+  // Check if this interaction is currently being recorded
+  const isRecording = activeMeeting?.interactionId === interactionId && activeMeeting?.phase === 'recording';
 
   // Clean up the URL after reading the params
   useEffect(() => {
-    if (startInteractionParam || summaryModeParam || showSummaryParam) {
+    if (summaryModeParam || showSummaryParam) {
       router.replace(`/students/${studentId}/interactions/${interactionId}`, { scroll: false });
     }
-  }, [startInteractionParam, summaryModeParam, showSummaryParam, router, studentId, interactionId]);
+  }, [summaryModeParam, showSummaryParam, router, studentId, interactionId]);
 
   // Handle showSummary param - triggered when recording stops from SidePanel
   useEffect(() => {
@@ -103,16 +106,17 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
       });
 
       // Show loading state then reveal
-      setIsInInteractionMode(false);
       setIsLoadingSummary(true);
       setIsSummaryRevealed(false);
 
       setTimeout(() => {
         setIsLoadingSummary(false);
         setIsSummaryRevealed(true);
+        // End the meeting to dismiss the processing modal
+        endMeeting();
       }, 2000);
     }
-  }, [showSummaryParam, isLoadingSummary, isSummaryRevealed, studentId, interactionId, updateInteractionWithRecording]);
+  }, [showSummaryParam, isLoadingSummary, isSummaryRevealed, studentId, interactionId, updateInteractionWithRecording, endMeeting]);
 
   // Use interactions from context (allows real-time updates)
   const interactions = useInteractions(studentId, studentData?.interactions || []);
@@ -183,39 +187,6 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
     }
   }, [studentData, isGeneratingTalkingPoints, interaction?.talkingPoints, handleTalkingPointsChange, updateInteractionTemplate, studentId, interactionId]);
 
-  const handleRecordingCompleted = useCallback((data: {
-    summary: string;
-    transcript: string;
-    actionItems: ExtractedActionItem[];
-  }) => {
-    // Convert ExtractedActionItem[] to InteractionRecommendedAction[]
-    const recommendedActions = data.actionItems.map(item => ({
-      id: item.id,
-      title: item.text,
-      priority: 'medium' as const,
-      status: item.status === 'added' ? 'converted_to_task' as const : item.status as 'pending' | 'dismissed',
-      assignee: item.assignee === 'counselor' ? 'staff' as const : 'student' as const,
-    }));
-
-    // Save everything to the interaction
-    updateInteractionWithRecording(studentId, interactionId, {
-      summary: data.summary,
-      transcript: data.transcript,
-      actionItems: recommendedActions,
-    });
-
-    // Close recording UI and show loading state
-    setIsInInteractionMode(false);
-    setIsLoadingSummary(true);
-    setIsSummaryRevealed(false);
-
-    // After 2 seconds, reveal the summary with animation
-    setTimeout(() => {
-      setIsLoadingSummary(false);
-      setIsSummaryRevealed(true);
-    }, 2000);
-  }, [studentId, interactionId, updateInteractionWithRecording]);
-
   // Handle adding counselor tasks - creates a real task
   const handleAddCounselorTask = useCallback((title: string) => {
     addTask({
@@ -243,13 +214,17 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
     });
   }, [studentId, interactionId, updateInteraction]);
 
-  const handleStartInteraction = useCallback(() => {
-    setIsInInteractionMode(true);
-  }, []);
-
-  const handleCancelInteraction = useCallback(() => {
-    setIsInInteractionMode(false);
-  }, []);
+  const handleStartRecording = useCallback(() => {
+    if (!studentData || !interaction) return;
+    const studentName = `${studentData.student.firstName} ${studentData.student.lastName}`;
+    startMeeting(
+      studentId,
+      studentName,
+      interactionId,
+      interaction.title,
+      interaction.talkingPoints
+    );
+  }, [studentData, interaction, studentId, interactionId, startMeeting]);
 
   const handleBack = () => {
     router.push(`/students/${studentId}?tab=interactions`);
@@ -469,7 +444,7 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
   const isDraft = interaction.status === 'draft';
   const isCompleted = interaction.status === 'completed';
   const hasRecording = !!interaction.recordingUrl || !!interaction.transcript;
-  const showStartRecordingButton = !isInInteractionMode && !hasRecording && !isCompleted;
+  const showStartRecordingButton = !isRecording && !hasRecording && !isCompleted;
 
   // Helper to check if HTML content is actually empty (not just empty tags)
   const isContentEmpty = (content: string | undefined | null): boolean => {
@@ -532,29 +507,13 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
           <InteractionHeader
             interaction={interaction}
             showStartRecordingButton={showStartRecordingButton}
-            onStartRecording={handleStartInteraction}
+            onStartRecording={handleStartRecording}
             onStatusChange={handleStatusChange}
             onDateChange={handleDateChange}
           />
 
-          {/* Meeting Recording - shown inline when in recording mode */}
-          {isInInteractionMode && (
-            <Box sx={{ mt: 4 }}>
-              <SectionCard title="Meeting Recording" icon={<Mic size={18} className="text-green-600" />}>
-                <InteractionIntelligence
-                  studentName={`${studentData.student.firstName} ${studentData.student.lastName}`}
-                  onClose={handleCancelInteraction}
-                  onInteractionCompleted={handleRecordingCompleted}
-                  onAddCounselorTask={handleAddCounselorTask}
-                  onAddStudentTask={handleAddStudentTask}
-                  autoStart
-                />
-              </SectionCard>
-            </Box>
-          )}
-
-          {/* Talking points - show when not in interaction mode */}
-          {!isInInteractionMode && (
+          {/* Talking points - show when not recording */}
+          {!isRecording && (
             <Box sx={{ mt: 4 }}>
               {isCompleted && !hasTalkingPoints ? (
                 <SectionCard title="Talking points" icon={<FileText size={18} />}>
@@ -580,7 +539,7 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
           )}
 
           {/* Summary - show when not in interaction mode */}
-          {!isInInteractionMode && (
+          {!isRecording && (
             <Box sx={{ mt: 4 }}>
               {isLoadingSummary ? (
                 <SectionCard title="Summary" icon={<Alma size={18} color="#12B76A" />}>
@@ -611,7 +570,7 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
           )}
 
           {/* Action Items (if AI summary has recommended actions) */}
-          {!isInInteractionMode && actionItemsForPanel.length > 0 && !isLoadingSummary && (
+          {!isRecording && actionItemsForPanel.length > 0 && !isLoadingSummary && (
             <Collapse in={true} timeout={isSummaryRevealed ? 500 : 0} appear={isSummaryRevealed}>
               <Box sx={{ mt: 4 }}>
                 <ActionItemsPanel
@@ -644,7 +603,7 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
           )}
 
           {/* Delete meeting */}
-          {!isInInteractionMode && (
+          {!isRecording && (
             <Box sx={{ mt: 6, pt: 4, borderTop: '1px solid #E5E7EB' }}>
               <Button
                 variant="text"

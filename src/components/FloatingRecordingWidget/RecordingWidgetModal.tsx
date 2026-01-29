@@ -41,7 +41,7 @@ function ModalContent({
   activeMeeting: ActiveMeetingState;
 }) {
   const router = useRouter();
-  const { togglePause, endMeeting, updateTalkingPoints } = useActiveMeetingContext();
+  const { togglePause, setPhase, updateTalkingPoints } = useActiveMeetingContext();
   const { updateInteraction, updateInteractionTalkingPoints } = useInteractionsContext();
 
   const [editedTitle, setEditedTitle] = useState(activeMeeting.interactionTitle);
@@ -89,11 +89,13 @@ function ModalContent({
       );
     }
 
+    // Set phase to processing to show the summarizing modal
+    setPhase('processing');
+
     // Navigate to meeting details with summary reveal
     router.push(
       `/students/${activeMeeting.studentId}/interactions/${activeMeeting.interactionId}?showSummary=true`
     );
-    endMeeting();
     onClose();
   };
 

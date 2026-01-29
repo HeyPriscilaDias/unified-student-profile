@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, Typography, IconButton } from '@mui/material';
+import { useRouter } from 'next/navigation';
+import { Box, Typography, IconButton, Modal, CircularProgress } from '@mui/material';
 import { Pause, Play, Square, Maximize2 } from 'lucide-react';
+import { Alma } from '@/components/icons/AlmaIcon';
 import { useActiveMeetingContext } from '@/contexts/ActiveMeetingContext';
 import { AudioWaveform } from './AudioWaveform';
 import { RecordingWidgetModal } from './RecordingWidgetModal';
@@ -15,7 +17,8 @@ function formatElapsed(seconds: number): string {
 }
 
 export function FloatingRecordingWidget() {
-  const { activeMeeting, togglePause, endMeeting } = useActiveMeetingContext();
+  const router = useRouter();
+  const { activeMeeting, togglePause, setPhase } = useActiveMeetingContext();
   const [isExpanded, setIsExpanded] = useState(false);
   const [elapsed, setElapsed] = useState(0);
 
@@ -47,8 +50,91 @@ export function FloatingRecordingWidget() {
     return () => clearInterval(interval);
   }, [activeMeeting]);
 
-  // Don't render if no active meeting or not in recording phase
-  if (!activeMeeting || activeMeeting.phase !== 'recording') {
+  // Don't render if no active meeting
+  if (!activeMeeting) {
+    return null;
+  }
+
+  // Show processing modal when summarizing
+  if (activeMeeting.phase === 'processing') {
+    return (
+      <Modal
+        open={true}
+        slotProps={{
+          backdrop: {
+            sx: {
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            },
+          },
+        }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Box
+          sx={{
+            width: 320,
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+            p: 4,
+            textAlign: 'center',
+            outline: 'none',
+          }}
+        >
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              backgroundColor: '#F0FDF4',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 3,
+              position: 'relative',
+            }}
+          >
+            <Alma size={32} color="#12B76A" />
+            <CircularProgress
+              size={72}
+              thickness={2}
+              sx={{
+                color: '#12B76A',
+                position: 'absolute',
+                top: -4,
+                left: -4,
+              }}
+            />
+          </Box>
+          <Typography
+            sx={{
+              fontSize: '18px',
+              fontWeight: 600,
+              color: '#062F29',
+              mb: 1,
+            }}
+          >
+            Summarizing meeting...
+          </Typography>
+          <Typography
+            sx={{
+              fontSize: '14px',
+              color: '#6B7280',
+            }}
+          >
+            Alma is analyzing your conversation and generating a summary.
+          </Typography>
+        </Box>
+      </Modal>
+    );
+  }
+
+  // Don't render recording widget if not in recording phase
+  if (activeMeeting.phase !== 'recording') {
     return null;
   }
 
@@ -173,7 +259,14 @@ export function FloatingRecordingWidget() {
           <IconButton
             onClick={(e) => {
               e.stopPropagation();
-              endMeeting();
+              if (activeMeeting) {
+                // Set phase to processing to show the modal
+                setPhase('processing');
+                // Navigate to meeting details page
+                router.push(
+                  `/students/${activeMeeting.studentId}/interactions/${activeMeeting.interactionId}?showSummary=true`
+                );
+              }
             }}
             size="small"
             sx={{
