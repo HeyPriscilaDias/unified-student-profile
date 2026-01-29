@@ -3,7 +3,6 @@
 import { Box } from '@mui/material';
 import { MilestonesSection } from './MilestonesSection';
 import { AlmaSnapshotSection } from './AlmaSnapshotSection';
-import { PositiveOutreachSection } from './PositiveOutreachSection';
 import { SmartGoalsSection } from './SmartGoalsSection';
 import type {
   Milestone,
@@ -43,15 +42,12 @@ export function OverviewTab({
         onMilestoneClick={handleMilestoneClick}
       />
 
-      {/* Row 2: Alma Snapshot + Positive Outreach */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 2 }}>
-        <AlmaSnapshotSection
-          snapshot={almaSnapshot}
-          onGenerateSnapshot={onGenerateSnapshot}
-          isLoading={isGeneratingSnapshot}
-        />
-        <PositiveOutreachSection />
-      </Box>
+      {/* Row 2: Alma Snapshot */}
+      <AlmaSnapshotSection
+        snapshot={almaSnapshot}
+        onGenerateSnapshot={onGenerateSnapshot}
+        isLoading={isGeneratingSnapshot}
+      />
 
       {/* Row 3: SMART Goals */}
       <SmartGoalsSection

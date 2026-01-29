@@ -10,131 +10,155 @@ interface AlmaSnapshotSectionProps {
   isLoading?: boolean;
 }
 
+function formatGeneratedDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
 export function AlmaSnapshotSection({
   snapshot,
   onGenerateSnapshot,
   isLoading = false,
 }: AlmaSnapshotSectionProps) {
   return (
-    <Box
-      sx={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        border: '1px solid #E5E7EB',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Header */}
-      <Box
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      {/* Section Header - Outside container */}
+      <Typography
+        variant="h3"
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          px: 2.5,
-          py: 2,
-          borderBottom: '1px solid #E5E7EB',
+          fontFamily: '"Poppins", sans-serif',
+          fontWeight: 500,
+          fontSize: '22px',
+          lineHeight: '28px',
+          letterSpacing: '-0.01em',
+          color: '#051D19',
         }}
       >
-        <Sparkles size={18} style={{ color: '#6B7280' }} />
-        <Typography
-          sx={{
-            fontFamily: '"Poppins", sans-serif',
-            fontWeight: 600,
-            fontSize: '15px',
-            color: '#181D27',
-          }}
-        >
-          Alma Snapshot
-        </Typography>
-      </Box>
+        Alma Snapshot
+      </Typography>
 
-      {/* Content */}
-      <Box sx={{ p: 2.5 }}>
+      {/* Container */}
+      <Box
+        sx={{
+          backgroundColor: '#F5F8FF',
+          borderRadius: '12px',
+          border: '1px solid #C6D7FD',
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
         {snapshot ? (
           <>
-            <Typography
-              sx={{
-                color: '#414651',
-                mb: 2,
-                lineHeight: 1.6,
-                fontSize: '14px',
-              }}
-            >
-              {snapshot.content}
-            </Typography>
-
-            {snapshot.bulletPoints.length > 0 && (
-              <Box
-                component="ul"
+            {/* Generated date with icon */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Sparkles size={16} style={{ color: '#414651' }} />
+              <Typography
                 sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 0.75,
-                  mb: 2.5,
-                  listStyle: 'none',
-                  p: 0,
-                  m: 0,
+                  fontFamily: '"Inter", sans-serif',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  lineHeight: '20px',
+                  color: '#252B37',
                 }}
               >
-                {snapshot.bulletPoints.map((point, index) => (
-                  <Box
-                    key={index}
-                    component="li"
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 1,
-                      color: '#414651',
-                    }}
-                  >
+                Generated {formatGeneratedDate(snapshot.generatedAt)}
+              </Typography>
+            </Box>
+
+            {/* Content */}
+            <Box>
+              <Typography
+                sx={{
+                  fontFamily: '"Inter", sans-serif',
+                  fontWeight: 400,
+                  fontSize: '14px',
+                  lineHeight: '20px',
+                  color: '#252B37',
+                  mb: 2,
+                }}
+              >
+                {snapshot.content}
+              </Typography>
+
+              {snapshot.bulletPoints.length > 0 && (
+                <Box
+                  component="ul"
+                  sx={{
+                    listStyleType: 'disc',
+                    pl: '21px',
+                    m: 0,
+                  }}
+                >
+                  {snapshot.bulletPoints.map((point, index) => (
                     <Box
+                      key={index}
+                      component="li"
                       sx={{
-                        width: 5,
-                        height: 5,
-                        borderRadius: '50%',
-                        backgroundColor: '#181D27',
-                        mt: 0.75,
-                        flexShrink: 0,
+                        fontFamily: '"Inter", sans-serif',
+                        fontWeight: 400,
+                        fontSize: '14px',
+                        lineHeight: '20px',
+                        color: '#252B37',
                       }}
-                    />
-                    <Typography sx={{ fontSize: '14px', lineHeight: 1.5 }}>{point}</Typography>
-                  </Box>
-                ))}
-              </Box>
-            )}
+                    >
+                      {point}
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </Box>
           </>
         ) : (
           <Typography
             sx={{
-              color: '#6B7280',
+              fontFamily: '"Inter", sans-serif',
+              fontWeight: 400,
               fontSize: '14px',
-              mb: 2.5,
+              lineHeight: '20px',
+              color: '#252B37',
             }}
           >
             No snapshot generated yet. Generate one to get AI-powered insights about this student.
           </Typography>
         )}
 
+        {/* Update button */}
         <Button
           variant="outlined"
-          startIcon={isLoading ? <RefreshCw size={14} className="animate-spin" /> : null}
+          startIcon={<RefreshCw size={20} style={{ color: '#414651' }} />}
           onClick={onGenerateSnapshot}
           disabled={isLoading}
           sx={{
+            alignSelf: 'flex-start',
             textTransform: 'none',
+            backgroundColor: 'white',
             borderColor: '#D5D7DA',
+            borderRadius: '8px',
             color: '#414651',
-            fontSize: '13px',
-            fontWeight: 500,
-            py: 0.75,
-            px: 1.5,
+            fontFamily: '"Inter", sans-serif',
+            fontSize: '14px',
+            fontWeight: 600,
+            lineHeight: '20px',
+            py: '6px',
+            px: '12px',
+            gap: 2,
             '&:hover': {
               borderColor: '#A4A7AE',
               backgroundColor: '#FAFAFA',
             },
+            '&:disabled': {
+              backgroundColor: 'white',
+              borderColor: '#D5D7DA',
+            },
           }}
         >
-          {isLoading ? 'Generating...' : snapshot ? 'Regenerate snapshot' : 'Generate snapshot'}
+          {isLoading ? 'Updating...' : 'Update'}
         </Button>
       </Box>
     </Box>

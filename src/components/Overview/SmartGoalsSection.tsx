@@ -169,12 +169,14 @@ export function SmartGoalsSection({
         }}
       >
         <Typography
-          variant="h6"
+          variant="h3"
           sx={{
             fontFamily: '"Poppins", sans-serif',
-            fontWeight: 600,
-            fontSize: '16px',
-            color: '#062F29',
+            fontWeight: 500,
+            fontSize: '22px',
+            lineHeight: '28px',
+            letterSpacing: '-0.01em',
+            color: '#051D19',
           }}
         >
           SMART Goals

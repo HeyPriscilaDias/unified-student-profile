@@ -3,6 +3,7 @@ import { neutral, Slate, red, blue, yellow, successGreen, lavender, essentials, 
 
 // Import required fonts
 import "@fontsource/poppins/400.css"; // Regular weight
+import "@fontsource/poppins/500.css"; // Medium weight
 import "@fontsource/poppins/600.css"; // Semi-bold weight
 import "@fontsource/poppins/700.css"; // Bold weight
 import "@fontsource/inter/400.css"; // Regular weight
@@ -181,7 +182,7 @@ const themeOptions = {
       // Subsection heading
       fontSize: 22,
       fontFamily: "'Poppins', sans-serif",
-      fontWeight: 600, // Semi bold
+      fontWeight: 500, // Medium
       lineHeight: "28px",
       letterSpacing: "-0.01em", // -1%
       color: neutral[900],
