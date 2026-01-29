@@ -9,6 +9,7 @@ export interface Student {
   avatarUrl: string;
   missionStatement: string;
   gpa: number;
+  weightedGpa?: number;
   satScore: number | null;
   actScore: number | null;
   classRank: string;
@@ -282,7 +283,7 @@ export interface QualityFlag {
 }
 
 // Tab types
-export type TabType = 'overview' | 'profile' | 'postsecondary' | 'student-work' | 'notes' | 'meetings';
+export type TabType = 'overview' | 'profile' | 'purpose' | 'postsecondary' | 'student-work' | 'notes' | 'meetings';
 
 // Empty state types
 export type EmptyStateType =
