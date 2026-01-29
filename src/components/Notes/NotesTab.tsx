@@ -9,8 +9,7 @@ import {
   Checkbox,
   FormControlLabel,
 } from '@mui/material';
-import { Lock, Globe, StickyNote } from 'lucide-react';
-import { SectionCard } from '@/components/shared';
+import { Lock, Globe } from 'lucide-react';
 
 interface NotesTabProps {
   studentId: string;
@@ -40,10 +39,19 @@ export function NotesTab({ studentId: _studentId, studentFirstName }: NotesTabPr
   return (
     <Box sx={{ py: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
       {/* Note Input Form */}
-      <SectionCard
-        title="Add a Note"
-        icon={<StickyNote size={18} style={{ color: '#062F29' }} />}
-      >
+      <Box>
+        <Typography
+          component="h3"
+          sx={{
+            fontFamily: '"Poppins", sans-serif',
+            fontWeight: 600,
+            fontSize: '22px',
+            color: '#111827',
+            mb: 2,
+          }}
+        >
+          Add a Note
+        </Typography>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Typography sx={{ fontSize: '13px', color: '#6B7280' }}>
             Add notes to remember important context about {studentFirstName}.
@@ -157,7 +165,7 @@ export function NotesTab({ studentId: _studentId, studentFirstName }: NotesTabPr
             </Button>
           </Box>
         </Box>
-      </SectionCard>
+      </Box>
     </Box>
   );
 }

@@ -2,7 +2,6 @@
 
 import { Box, Typography } from '@mui/material';
 import { FileText } from 'lucide-react';
-import { SectionCard } from '@/components/shared';
 import { AttachmentItem } from './AttachmentItem';
 import type { StudentWork, Attachment } from '@/types/student';
 
@@ -58,7 +57,19 @@ export function StudentWorkList({
   onAttachmentAction,
 }: StudentWorkListProps) {
   return (
-    <SectionCard title="Student work">
+    <Box>
+      <Typography
+        component="h3"
+        sx={{
+          fontFamily: '"Poppins", sans-serif',
+          fontWeight: 600,
+          fontSize: '22px',
+          color: '#111827',
+          mb: 2,
+        }}
+      >
+        Student work
+      </Typography>
       {works.length === 0 ? (
         <Typography className="text-neutral-500 text-sm py-4">
           No student work added yet.
@@ -74,7 +85,7 @@ export function StudentWorkList({
           ))}
         </Box>
       )}
-    </SectionCard>
+    </Box>
   );
 }
 

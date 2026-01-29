@@ -150,33 +150,23 @@ export function SmartGoalsSection({
   const archivedCount = goals.filter((g) => g.status === 'archived').length;
 
   return (
-    <Box
-      sx={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        border: '1px solid #D5D7DA',
-      }}
-    >
+    <Box>
       {/* Header */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          px: 3,
-          py: 2,
-          borderBottom: '1px solid #E5E7EB',
+          mb: 2,
         }}
       >
         <Typography
-          variant="h3"
+          component="h3"
           sx={{
             fontFamily: '"Poppins", sans-serif',
-            fontWeight: 500,
+            fontWeight: 600,
             fontSize: '22px',
-            lineHeight: '28px',
-            letterSpacing: '-0.01em',
-            color: '#051D19',
+            color: '#111827',
           }}
         >
           SMART Goals
@@ -193,7 +183,7 @@ export function SmartGoalsSection({
       </Box>
 
       {/* Goals list */}
-      <Box sx={{ px: 3, py: 1 }}>
+      <Box>
         {filteredGoals.length === 0 ? (
           <EmptyState type="no_goals" />
         ) : (

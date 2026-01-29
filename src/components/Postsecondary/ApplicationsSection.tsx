@@ -1,7 +1,6 @@
 'use client';
 
 import { Box, Typography, Avatar, Chip } from '@mui/material';
-import { CollapsibleSection } from '@/components/shared';
 
 type FitCategory = 'Reach' | 'Target' | 'Safety';
 
@@ -252,7 +251,19 @@ function KanbanColumn({
 
 export function ApplicationsSection() {
   return (
-    <CollapsibleSection title="Applications" defaultExpanded={true}>
+    <Box>
+      <Typography
+        component="h3"
+        sx={{
+          fontFamily: '"Poppins", sans-serif',
+          fontWeight: 600,
+          fontSize: '22px',
+          color: '#111827',
+          mb: 2,
+        }}
+      >
+        Applications
+      </Typography>
       <Box
         sx={{
           display: 'flex',
@@ -275,7 +286,7 @@ export function ApplicationsSection() {
           count={acceptedColleges.length}
         />
       </Box>
-    </CollapsibleSection>
+    </Box>
   );
 }
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Box, Typography, Button } from '@mui/material';
-import { CollapsibleSection, EmptyState } from '@/components/shared';
+import { EmptyState } from '@/components/shared';
 import { AIReflectionItem } from './AIReflectionItem';
 import type { AIReflection } from '@/types/student';
 
@@ -22,37 +22,48 @@ export function AIReflectionsSection({
     : reflections.slice(0, pageSize);
   const hasMore = reflections.length > pageSize;
 
-  if (reflections.length === 0) {
-    return (
-      <CollapsibleSection title="AI Reflections">
-        <EmptyState type="no_reflections" />
-      </CollapsibleSection>
-    );
-  }
-
   return (
-    <CollapsibleSection title="AI Reflections">
-      <Box>
-        {displayedReflections.map((reflection) => (
-          <AIReflectionItem key={reflection.id} reflection={reflection} />
-        ))}
-      </Box>
+    <Box>
+      <Typography
+        component="h3"
+        sx={{
+          fontFamily: '"Poppins", sans-serif',
+          fontWeight: 600,
+          fontSize: '22px',
+          color: '#111827',
+          mb: 2,
+        }}
+      >
+        Guided Alma Reflections
+      </Typography>
 
-      {hasMore && (
-        <Box className="mt-4 text-center">
-          <Button
-            variant="text"
-            onClick={() => setShowAll(!showAll)}
-            className="text-slate-600 hover:text-slate-800"
-            sx={{ textTransform: 'none' }}
-          >
-            {showAll
-              ? 'Show less'
-              : `View all ${reflections.length} reflections`}
-          </Button>
-        </Box>
+      {reflections.length === 0 ? (
+        <EmptyState type="no_reflections" />
+      ) : (
+        <>
+          <Box>
+            {displayedReflections.map((reflection) => (
+              <AIReflectionItem key={reflection.id} reflection={reflection} />
+            ))}
+          </Box>
+
+          {hasMore && (
+            <Box className="mt-4 text-center">
+              <Button
+                variant="text"
+                onClick={() => setShowAll(!showAll)}
+                className="text-slate-600 hover:text-slate-800"
+                sx={{ textTransform: 'none' }}
+              >
+                {showAll
+                  ? 'Show less'
+                  : `View all ${reflections.length} reflections`}
+              </Button>
+            </Box>
+          )}
+        </>
       )}
-    </CollapsibleSection>
+    </Box>
   );
 }
 

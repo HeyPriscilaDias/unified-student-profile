@@ -2,7 +2,6 @@
 
 import { Box, Typography, Button } from '@mui/material';
 import { Plus, Mic, MessageSquare, ChevronRight, Calendar } from 'lucide-react';
-import { SectionCard } from '@/components/shared';
 import type { Interaction } from '@/types/student';
 
 interface MeetingsTabProps {
@@ -297,10 +296,30 @@ export function MeetingsTab({
 
   return (
     <Box sx={{ py: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <SectionCard
-        title="Meetings"
-        action={interactions.length > 0 ? AddMeetingButton : undefined}
-      >
+      <Box>
+        {/* Header */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            mb: 2,
+          }}
+        >
+          <Typography
+            component="h3"
+            sx={{
+              fontFamily: '"Poppins", sans-serif',
+              fontWeight: 600,
+              fontSize: '22px',
+              color: '#111827',
+            }}
+          >
+            Meetings
+          </Typography>
+          {interactions.length > 0 && AddMeetingButton}
+        </Box>
+
         {interactions.length === 0 ? (
           <MeetingsEmptyState onSchedule={onScheduleInteraction} />
         ) : (
@@ -365,7 +384,7 @@ export function MeetingsTab({
             )}
           </Box>
         )}
-      </SectionCard>
+      </Box>
     </Box>
   );
 }
