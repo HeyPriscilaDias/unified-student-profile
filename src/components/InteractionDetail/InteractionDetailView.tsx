@@ -14,6 +14,7 @@ import { useActiveMeetingContext } from '@/contexts/ActiveMeetingContext';
 import { usePersistentRightPanelTab } from '@/hooks/usePersistentRightPanelTab';
 import { InteractionHeader } from './InteractionHeader';
 import { TranscriptSection } from './TranscriptSection';
+import { AddAttendeesModal } from './AddAttendeesModal';
 import type { Task, SuggestedAction, Interaction, InteractionStatus } from '@/types/student';
 import type { BreadcrumbItem } from '@/components/Breadcrumbs';
 
@@ -40,9 +41,10 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const studentData = useStudentData(studentId);
   const showSummaryParam = searchParams.get('showSummary') === 'true';
   const [notes, setNotes] = useState('');
+  const [isAddAttendeesModalOpen, setIsAddAttendeesModalOpen] = useState(false);
   const [sidePanelTab, setSidePanelTab] = usePersistentRightPanelTab('alma');
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
-  const { updateInteraction, updateInteractionSummary, updateInteractionWithRecording, updateInteractionStatus, deleteInteraction, addInteraction } = useInteractionsContext();
+  const { updateInteraction, updateInteractionSummary, updateInteractionWithRecording, updateInteractionStatus, updateInteractionAttendees, deleteInteraction, addInteraction } = useInteractionsContext();
   const { addTask, updateTask, toggleTask, deleteTask } = useTasksContext();
   const { activeMeeting, startMeeting, endMeeting } = useActiveMeetingContext();
 
@@ -124,6 +126,10 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
       interactionDate: date,
     });
   }, [studentId, interactionId, updateInteraction]);
+
+  const handleSaveAttendees = useCallback((attendees: string[]) => {
+    updateInteractionAttendees(studentId, interactionId, attendees);
+  }, [studentId, interactionId, updateInteractionAttendees]);
 
   const handleStartRecording = useCallback(() => {
     if (!studentData || !interaction) return;
@@ -259,9 +265,13 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography sx={{ fontSize: '14px', color: '#374151' }}>
               You, {studentName}
+              {interaction.attendees && interaction.attendees.length > 0 && (
+                <>, {interaction.attendees.join(', ')}</>
+              )}
             </Typography>
             <Button
               startIcon={<Plus size={14} />}
+              onClick={() => setIsAddAttendeesModalOpen(true)}
               sx={{
                 textTransform: 'none',
                 fontSize: '14px',
@@ -309,7 +319,7 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
                 borderColor: '#9CA3AF',
               },
               '&:empty::before': {
-                content: '"Talking points:\\A• How things are going overall (school, stress, workload)\\A• What\'s top of mind right now\\A• Anything blocking progress (academic, personal, logistical)\\A• Short-term priorities (this week / next two weeks)\\A\\ANotes:"',
+                content: '"Talking points:\\A• How things are going overall (school, stress, workload)\\A• What\'s top of mind right now\\A• Anything blocking progress (academic, personal, logistical)"',
                 whiteSpace: 'pre-wrap',
                 color: '#9CA3AF',
               },
@@ -442,6 +452,14 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
           </Box>
         )}
       </Box>
+
+      {/* Add Attendees Modal */}
+      <AddAttendeesModal
+        open={isAddAttendeesModalOpen}
+        onClose={() => setIsAddAttendeesModalOpen(false)}
+        onSave={handleSaveAttendees}
+        currentAttendees={interaction.attendees || []}
+      />
     </AppLayout>
   );
 }

@@ -43,6 +43,7 @@ interface InteractionsContextType {
   updateInteractionWithRecording: (studentId: string, interactionId: string, data: RecordingData) => void;
   updateInteractionActionItems: (studentId: string, interactionId: string, actionItems: InteractionRecommendedAction[]) => void;
   updateInteractionStatus: (studentId: string, interactionId: string, status: 'draft' | 'completed') => void;
+  updateInteractionAttendees: (studentId: string, interactionId: string, attendees: string[]) => void;
   deleteInteraction: (studentId: string, interactionId: string) => void;
   initializeInteractions: (studentId: string, interactions: Interaction[]) => void;
 }
@@ -337,6 +338,29 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const updateInteractionAttendees = useCallback((studentId: string, interactionId: string, attendees: string[]) => {
+    setInteractions(prev => {
+      const newMap = new Map(prev);
+      const studentInteractions = newMap.get(studentId) || [];
+      const interactionIndex = studentInteractions.findIndex(m => m.id === interactionId);
+
+      if (interactionIndex === -1) return prev;
+
+      const existingInteraction = studentInteractions[interactionIndex];
+      const updatedInteraction = {
+        ...existingInteraction,
+        attendees,
+        updatedAt: new Date().toISOString(),
+      };
+
+      const newStudentInteractions = [...studentInteractions];
+      newStudentInteractions[interactionIndex] = updatedInteraction;
+      newMap.set(studentId, newStudentInteractions);
+
+      return newMap;
+    });
+  }, []);
+
   const deleteInteraction = useCallback((studentId: string, interactionId: string) => {
     setInteractions(prev => {
       const newMap = new Map(prev);
@@ -361,6 +385,7 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
       updateInteractionWithRecording,
       updateInteractionActionItems,
       updateInteractionStatus,
+      updateInteractionAttendees,
       deleteInteraction,
       initializeInteractions
     }}>

@@ -139,6 +139,7 @@ export interface StudentProfile {
   awards: Award[];
   microCredentials: MicroCredential[];
   courseHighlights: CourseHighlight[];
+  interests: string[];
   strengths: string[];
   languages: string[];
   experiences: Experience[];
@@ -252,6 +253,9 @@ export interface Interaction {
 
   // Custom prompt for "Other" meeting type (used to generate talking points)
   customPrompt?: string;
+
+  // Attendees (additional people beyond counselor and student)
+  attendees?: string[];
 
   // Metadata
   createdAt: string;
