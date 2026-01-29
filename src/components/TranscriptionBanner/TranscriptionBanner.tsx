@@ -57,7 +57,8 @@ export function TranscriptionBanner() {
         slotProps={{
           backdrop: {
             sx: {
-              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              backgroundColor: 'rgba(0, 0, 0, 0.75)',
+              backdropFilter: 'blur(4px)',
             },
           },
         }}
@@ -65,17 +66,20 @@ export function TranscriptionBanner() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          zIndex: 10001,
         }}
       >
         <Box
           sx={{
             width: 320,
-            backgroundColor: 'white',
+            backgroundColor: '#ffffff',
             borderRadius: '16px',
-            boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
             p: 4,
             textAlign: 'center',
             outline: 'none',
+            position: 'relative',
+            zIndex: 1,
           }}
         >
           <Box
