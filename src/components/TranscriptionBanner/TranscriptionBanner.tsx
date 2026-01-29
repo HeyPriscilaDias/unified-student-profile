@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, Typography, IconButton, Modal, CircularProgress } from '@mui/material';
-import { Pause, Play, Square, Maximize2 } from 'lucide-react';
+import { Box, Typography, Button, IconButton, Modal, CircularProgress, Avatar } from '@mui/material';
+import { Pause, Play, Maximize2, Mic } from 'lucide-react';
 import { Alma } from '@/components/icons/AlmaIcon';
 import { useActiveMeetingContext } from '@/contexts/ActiveMeetingContext';
 import { AudioWaveform } from './AudioWaveform';
 import { RecordingWidgetModal } from './RecordingWidgetModal';
-import { useWidgetDrag } from './useWidgetDrag';
 
 function formatElapsed(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -16,16 +15,11 @@ function formatElapsed(seconds: number): string {
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
-export function FloatingRecordingWidget() {
+export function TranscriptionBanner() {
   const router = useRouter();
   const { activeMeeting, togglePause, setPhase } = useActiveMeetingContext();
   const [isExpanded, setIsExpanded] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-
-  const { position, isDragging, handleMouseDown } = useWidgetDrag({
-    widgetWidth: 200,
-    widgetHeight: 72,
-  });
 
   // Update elapsed time
   useEffect(() => {
@@ -133,170 +127,170 @@ export function FloatingRecordingWidget() {
     );
   }
 
-  // Don't render recording widget if not in recording phase
+  // Don't render banner if not in recording phase
   if (activeMeeting.phase !== 'recording') {
     return null;
   }
 
   const isPaused = activeMeeting.isPaused;
 
+  const handleStop = () => {
+    setPhase('processing');
+    router.push(
+      `/students/${activeMeeting.studentId}/interactions/${activeMeeting.interactionId}?showSummary=true`
+    );
+  };
+
+  // Get initials for avatar fallback
+  const initials = activeMeeting.studentName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
     <>
-      {/* Floating Widget */}
+      {/* Fixed Banner */}
       <Box
-        onMouseDown={handleMouseDown}
         sx={{
           position: 'fixed',
-          left: position.x,
-          top: position.y,
-          width: 200,
-          backgroundColor: '#1F2937',
-          borderRadius: '12px',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 64,
+          backgroundColor: '#062F29',
           zIndex: 9999,
-          cursor: isDragging ? 'grabbing' : 'grab',
-          userSelect: 'none',
-          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          px: 3,
+          borderTop: '1px solid rgba(255,255,255,0.1)',
         }}
       >
-        {/* Header with indicator and timer */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            px: 1.5,
-            pt: 1.5,
-            pb: 1,
-          }}
-        >
-          {/* Pulsing red dot */}
-          <Box
-            sx={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              backgroundColor: isPaused ? '#6B7280' : '#EF4444',
-              flexShrink: 0,
-              animation: isPaused ? 'none' : 'pulse-recording 1.5s ease-in-out infinite',
-              '@keyframes pulse-recording': {
-                '0%': { opacity: 1, boxShadow: '0 0 0 0 rgba(239,68,68,0.5)' },
-                '50%': { opacity: 0.6, boxShadow: '0 0 0 4px rgba(239,68,68,0)' },
-                '100%': { opacity: 1, boxShadow: '0 0 0 0 rgba(239,68,68,0)' },
-              },
-            }}
-          />
+        {/* Left side: Meeting title + Student */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1 }}>
+          {/* Meeting Title */}
           <Typography
             sx={{
-              fontSize: '11px',
-              fontWeight: 500,
-              color: isPaused ? '#9CA3AF' : '#EF4444',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
+              fontSize: '14px',
+              fontWeight: 600,
+              color: '#fff',
+              whiteSpace: 'nowrap',
             }}
           >
-            {isPaused ? 'Paused' : 'Recording'}
+            {activeMeeting.interactionTitle}
           </Typography>
+
+          {/* Student Avatar + Name */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Avatar
+              sx={{
+                width: 28,
+                height: 28,
+                fontSize: '11px',
+                fontWeight: 600,
+                backgroundColor: '#155E4C',
+                color: '#fff',
+              }}
+            >
+              {initials}
+            </Avatar>
+            <Typography
+              sx={{
+                fontSize: '14px',
+                color: '#fff',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {activeMeeting.studentName}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Right side: Waveform + Timer + Controls */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Waveform */}
+          <AudioWaveform
+            isActive={!isPaused}
+            isPaused={isPaused}
+            width={160}
+            height={32}
+            barColor="rgba(255,255,255,0.6)"
+          />
+
+          {/* Timer */}
           <Typography
             sx={{
               fontFamily: 'monospace',
               fontSize: '14px',
-              fontWeight: 600,
+              fontWeight: 500,
               color: '#fff',
-              ml: 'auto',
+              minWidth: 45,
             }}
           >
             {formatElapsed(elapsed)}
           </Typography>
-        </Box>
 
-        {/* Waveform */}
-        <Box
-          sx={{
-            px: 1.5,
-            py: 0.5,
-          }}
-        >
-          <AudioWaveform
-            isActive={!isPaused}
-            isPaused={isPaused}
-            width={176}
-            height={24}
-          />
-        </Box>
-
-        {/* Controls */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 0.5,
-            px: 1.5,
-            pb: 1.5,
-            pt: 0.5,
-          }}
-        >
-          {/* Pause/Resume button */}
-          <IconButton
-            onClick={(e) => {
-              e.stopPropagation();
-              togglePause();
-            }}
-            size="small"
+          {/* Pause Button */}
+          <Button
+            variant="outlined"
+            onClick={togglePause}
             sx={{
-              backgroundColor: 'rgba(255,255,255,0.1)',
               color: '#fff',
+              borderColor: 'rgba(255,255,255,0.3)',
+              textTransform: 'none',
+              fontWeight: 500,
+              fontSize: '14px',
+              px: 2,
+              py: 0.75,
+              minWidth: 80,
               '&:hover': {
-                backgroundColor: 'rgba(255,255,255,0.2)',
+                borderColor: 'rgba(255,255,255,0.5)',
+                backgroundColor: 'rgba(255,255,255,0.1)',
               },
             }}
           >
-            {isPaused ? <Play size={16} /> : <Pause size={16} />}
-          </IconButton>
+            {isPaused ? 'Resume' : 'Pause'}
+          </Button>
 
-          {/* Stop button */}
-          <IconButton
-            onClick={(e) => {
-              e.stopPropagation();
-              if (activeMeeting) {
-                // Set phase to processing to show the modal
-                setPhase('processing');
-                // Navigate to meeting details page
-                router.push(
-                  `/students/${activeMeeting.studentId}/interactions/${activeMeeting.interactionId}?showSummary=true`
-                );
-              }
-            }}
-            size="small"
+          {/* Stop Button */}
+          <Button
+            variant="contained"
+            onClick={handleStop}
             sx={{
               backgroundColor: '#EF4444',
               color: '#fff',
+              textTransform: 'none',
+              fontWeight: 500,
+              fontSize: '14px',
+              px: 2,
+              py: 0.75,
+              minWidth: 64,
+              boxShadow: 'none',
               '&:hover': {
                 backgroundColor: '#DC2626',
+                boxShadow: 'none',
               },
             }}
           >
-            <Square size={14} fill="currentColor" />
-          </IconButton>
+            Stop
+          </Button>
 
-          {/* Expand button */}
+          {/* Expand Button */}
           <IconButton
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsExpanded(true);
-            }}
-            size="small"
+            onClick={() => setIsExpanded(true)}
             sx={{
-              backgroundColor: 'rgba(255,255,255,0.1)',
               color: '#fff',
-              ml: 'auto',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: '8px',
+              p: 1,
               '&:hover': {
-                backgroundColor: 'rgba(255,255,255,0.2)',
+                borderColor: 'rgba(255,255,255,0.5)',
+                backgroundColor: 'rgba(255,255,255,0.1)',
               },
             }}
           >
-            <Maximize2 size={16} />
+            <Maximize2 size={18} />
           </IconButton>
         </Box>
       </Box>
@@ -311,4 +305,4 @@ export function FloatingRecordingWidget() {
   );
 }
 
-export default FloatingRecordingWidget;
+export default TranscriptionBanner;
