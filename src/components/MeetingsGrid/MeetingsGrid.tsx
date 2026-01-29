@@ -7,14 +7,14 @@ import { Calendar, Plus } from 'lucide-react';
 import { useInteractionsContext } from '@/contexts/InteractionsContext';
 import { useActiveMeetingContext } from '@/contexts/ActiveMeetingContext';
 import { NewMeetingModal } from '@/components/SidePanel/StudentPickerModal';
-import { MEETING_TEMPLATES, templateToHTML } from '@/lib/meetingTemplates';
+import { MEETING_TEMPLATES, OTHER_MEETING_TEMPLATE, templateToHTML } from '@/lib/meetingTemplates';
 import { MeetingCard } from './MeetingCard';
 
 export function MeetingsGrid() {
   const router = useRouter();
   const [isNewMeetingModalOpen, setIsNewMeetingModalOpen] = useState(false);
 
-  const { getAllCounselorInteractions, addInteraction, updateInteractionTalkingPoints, updateInteractionTemplate } = useInteractionsContext();
+  const { getAllCounselorInteractions, addInteraction, updateInteractionTalkingPoints, updateInteractionTemplate, updateInteractionCustomPrompt } = useInteractionsContext();
   const { startMeeting } = useActiveMeetingContext();
   const meetings = getAllCounselorInteractions();
 
@@ -25,15 +25,18 @@ export function MeetingsGrid() {
   const handleStartMeeting = (
     selectedStudentId: string,
     studentName: string,
-    options?: { templateId?: string; customTalkingPoints?: string }
+    options?: { templateId?: string; customTalkingPoints?: string; customPrompt?: string }
   ) => {
     setIsNewMeetingModalOpen(false);
-    const template = options?.templateId ? MEETING_TEMPLATES.find(t => t.id === options.templateId) : undefined;
+    const isOther = options?.templateId === 'other';
+    const template = options?.templateId && !isOther ? MEETING_TEMPLATES.find(t => t.id === options.templateId) : undefined;
 
     // Determine meeting title
     let meetingTitle: string;
     if (template) {
       meetingTitle = `${template.name} — ${studentName.split(' ')[0]}`;
+    } else if (isOther) {
+      meetingTitle = `Meeting with ${studentName.split(' ')[0]}`;
     } else if (options?.customTalkingPoints) {
       meetingTitle = `Custom Meeting — ${studentName.split(' ')[0]}`;
     } else {
@@ -45,7 +48,7 @@ export function MeetingsGrid() {
       title: meetingTitle,
     });
 
-    // Set talking points from template OR custom
+    // Set talking points from template (not for "Other" - those are generated later)
     const talkingPoints = options?.customTalkingPoints || (template ? templateToHTML(template) : undefined);
 
     if (talkingPoints) {
@@ -53,6 +56,13 @@ export function MeetingsGrid() {
     }
     if (template) {
       updateInteractionTemplate(selectedStudentId, newInteraction.id, template.id);
+    }
+    // For "Other" template, store the template ID and custom prompt
+    if (isOther) {
+      updateInteractionTemplate(selectedStudentId, newInteraction.id, 'other');
+      if (options?.customPrompt) {
+        updateInteractionCustomPrompt(selectedStudentId, newInteraction.id, options.customPrompt);
+      }
     }
 
     startMeeting(selectedStudentId, studentName, newInteraction.id, newInteraction.title, talkingPoints);

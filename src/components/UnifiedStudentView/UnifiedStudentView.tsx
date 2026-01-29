@@ -19,6 +19,7 @@ import { useInteractions, useInteractionsContext } from '@/contexts/Interactions
 import { useTasks, useTasksContext } from '@/contexts/TasksContext';
 import { usePersistentRightPanelTab } from '@/hooks/usePersistentRightPanelTab';
 import type { TabType, Task, SuggestedAction, Interaction } from '@/types/student';
+import type { BreadcrumbItem } from '@/components/Breadcrumbs';
 
 interface UnifiedStudentViewProps {
   studentId: string;
@@ -204,6 +205,21 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     }
   };
 
+  // Map tab to display name for breadcrumbs
+  const tabDisplayNames: Record<TabType, string> = {
+    overview: 'Overview',
+    profile: 'Profile',
+    postsecondary: 'Planning',
+    'student-work': 'Work',
+    notes: 'Notes',
+    meetings: 'Meetings',
+  };
+
+  const breadcrumbs: BreadcrumbItem[] = [
+    { label: `${student.firstName} ${student.lastName}`, href: `/students/${studentId}` },
+    { label: tabDisplayNames[activeTab] },
+  ];
+
   return (
     <AppLayout
       rightPanel={
@@ -224,6 +240,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
         />
       }
       currentStudentId={studentId}
+      breadcrumbs={breadcrumbs}
     >
       <Box
         sx={{

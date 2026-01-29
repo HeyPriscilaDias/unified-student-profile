@@ -2,53 +2,110 @@
 
 import { Box } from '@mui/material';
 import { Sidebar } from '@/components/Sidebar';
+import { BreadcrumbsBar, BreadcrumbItem } from '@/components/Breadcrumbs';
 import type { ReactNode } from 'react';
 
 interface AppLayoutProps {
   children: ReactNode;
   rightPanel?: ReactNode;
   currentStudentId?: string;
+  breadcrumbs?: BreadcrumbItem[];
+  actionButton?: ReactNode;
 }
 
-export function AppLayout({ children, rightPanel, currentStudentId }: AppLayoutProps) {
+const GAP = 12; // Gap between surfaces in pixels
+
+export function AppLayout({
+  children,
+  rightPanel,
+  currentStudentId,
+  breadcrumbs = [],
+  actionButton,
+}: AppLayoutProps) {
   return (
     <Box
       sx={{
         display: 'flex',
         minHeight: '100vh',
-        backgroundColor: '#FBFBFB',
+        backgroundColor: '#F5F5F5', // Level 1 background
       }}
     >
-      {/* Sidebar */}
+      {/* Level 1: Sidebar */}
       <Sidebar currentStudentId={currentStudentId} />
 
-      {/* Main Content Area */}
+      {/* Level 2: Everything else - with gaps */}
       <Box
         sx={{
           marginLeft: '220px', // Sidebar width
-          marginRight: rightPanel ? '398px' : 0, // Right panel width (350px content + 48px tabs)
           flex: 1,
-          minWidth: 0, // Allow flex shrinking
-          overflow: 'hidden', // Prevent children from pushing out
           display: 'flex',
-          justifyContent: 'center',
+          minWidth: 0,
+          padding: `${GAP}px`,
+          gap: `${GAP}px`,
         }}
       >
-        {/* Centered Container with 32px margins */}
+        {/* Left Column: Breadcrumbs + Main Content */}
         <Box
           sx={{
-            width: '100%',
-            maxWidth: 'calc(100% - 64px)', // 32px margin on each side
-            mx: '32px',
-            minWidth: 0, // Allow content to shrink
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${GAP}px`,
+            minWidth: 0,
           }}
         >
-          {children}
-        </Box>
-      </Box>
+          {/* Breadcrumbs Bar */}
+          <Box
+            sx={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              flexShrink: 0,
+            }}
+          >
+            <BreadcrumbsBar items={breadcrumbs} actionButton={actionButton} />
+          </Box>
 
-      {/* Right Panel */}
-      {rightPanel}
+          {/* Main Content Area */}
+          <Box
+            sx={{
+              flex: 1,
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              minHeight: 0,
+              overflow: 'auto',
+            }}
+          >
+            <Box
+              sx={{
+                maxWidth: 900,
+                mx: 'auto',
+                px: 4,
+                py: 3,
+              }}
+            >
+              {children}
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Right Panel - Full height */}
+        {rightPanel && (
+          <Box
+            sx={{
+              width: 350,
+              flexShrink: 0,
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {rightPanel}
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 }

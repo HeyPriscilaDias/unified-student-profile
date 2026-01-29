@@ -249,6 +249,9 @@ export interface Interaction {
   // Template (for analytics)
   templateId?: string;
 
+  // Custom prompt for "Other" meeting type (used to generate talking points)
+  customPrompt?: string;
+
   // Metadata
   createdAt: string;
   updatedAt: string;

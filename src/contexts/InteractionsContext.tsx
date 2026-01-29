@@ -38,6 +38,7 @@ interface InteractionsContextType {
   updateInteraction: (data: UpdateInteractionData) => Interaction | null;
   updateInteractionTalkingPoints: (studentId: string, interactionId: string, talkingPoints: string) => void;
   updateInteractionTemplate: (studentId: string, interactionId: string, templateId: string) => void;
+  updateInteractionCustomPrompt: (studentId: string, interactionId: string, customPrompt: string) => void;
   updateInteractionSummary: (studentId: string, interactionId: string, summary: string) => void;
   updateInteractionWithRecording: (studentId: string, interactionId: string, data: RecordingData) => void;
   updateInteractionActionItems: (studentId: string, interactionId: string, actionItems: InteractionRecommendedAction[]) => void;
@@ -205,6 +206,29 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const updateInteractionCustomPrompt = useCallback((studentId: string, interactionId: string, customPrompt: string) => {
+    setInteractions(prev => {
+      const newMap = new Map(prev);
+      const studentInteractions = newMap.get(studentId) || [];
+      const interactionIndex = studentInteractions.findIndex(m => m.id === interactionId);
+
+      if (interactionIndex === -1) return prev;
+
+      const existingInteraction = studentInteractions[interactionIndex];
+      const updatedInteraction = {
+        ...existingInteraction,
+        customPrompt,
+        updatedAt: new Date().toISOString(),
+      };
+
+      const newStudentInteractions = [...studentInteractions];
+      newStudentInteractions[interactionIndex] = updatedInteraction;
+      newMap.set(studentId, newStudentInteractions);
+
+      return newMap;
+    });
+  }, []);
+
   const updateInteractionSummary = useCallback((studentId: string, interactionId: string, summary: string) => {
     setInteractions(prev => {
       const newMap = new Map(prev);
@@ -329,6 +353,7 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
       updateInteraction,
       updateInteractionTalkingPoints,
       updateInteractionTemplate,
+      updateInteractionCustomPrompt,
       updateInteractionSummary,
       updateInteractionWithRecording,
       updateInteractionActionItems,

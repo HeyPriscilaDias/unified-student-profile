@@ -16,8 +16,6 @@ import { usePersistentRightPanelTab } from '@/hooks/usePersistentRightPanelTab';
 import { InteractionHeader } from './InteractionHeader';
 import { NotesSection } from './NotesSection';
 import { TranscriptSection } from './TranscriptSection';
-import { MEETING_TEMPLATES, templateToHTML } from '@/lib/meetingTemplates';
-import { generateCustomTalkingPoints } from '@/lib/geminiService';
 import type { ExtractedActionItem } from '@/lib/geminiService';
 import type { Task, SuggestedAction, Interaction, InteractionStatus } from '@/types/student';
 import type { BreadcrumbItem } from '@/components/Breadcrumbs';
@@ -33,12 +31,11 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const studentData = useStudentData(studentId);
   const summaryModeParam = searchParams.get('mode') === 'summary';
   const showSummaryParam = searchParams.get('showSummary') === 'true';
-  const [isGeneratingTalkingPoints, setIsGeneratingTalkingPoints] = useState(false);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   const [isSummaryRevealed, setIsSummaryRevealed] = useState(false);
   const [sidePanelTab, setSidePanelTab] = usePersistentRightPanelTab('alma');
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
-  const { updateInteraction, updateInteractionSummary, updateInteractionTemplate, updateInteractionWithRecording, updateInteractionActionItems, updateInteractionStatus, deleteInteraction, addInteraction } = useInteractionsContext();
+  const { updateInteraction, updateInteractionSummary, updateInteractionWithRecording, updateInteractionActionItems, updateInteractionStatus, deleteInteraction, addInteraction } = useInteractionsContext();
   const { addTask, updateTask, toggleTask, deleteTask } = useTasksContext();
   const { activeMeeting, startMeeting, endMeeting } = useActiveMeetingContext();
 
@@ -138,50 +135,6 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
   const handleSummaryChange = useCallback((summary: string) => {
     updateInteractionSummary(studentId, interactionId, summary);
   }, [studentId, interactionId, updateInteractionSummary]);
-
-  const handleSelectTemplate = useCallback((templateId: string) => {
-    const template = MEETING_TEMPLATES.find((t) => t.id === templateId);
-    if (!template) return;
-
-    const currentNotes = interaction?.summary || '';
-    const isEmpty = !currentNotes || currentNotes.replace(/<[^>]*>/g, '').trim().length === 0;
-
-    if (!isEmpty) {
-      if (!confirm('This will replace your current notes. Continue?')) {
-        return;
-      }
-    }
-
-    handleSummaryChange(templateToHTML(template));
-    updateInteractionTemplate(studentId, interactionId, template.id);
-  }, [interaction?.summary, handleSummaryChange, updateInteractionTemplate, studentId, interactionId]);
-
-  const handleGenerateCustomTalkingPoints = useCallback(async (prompt: string) => {
-    if (!studentData || isGeneratingTalkingPoints) return;
-
-    const currentNotes = interaction?.summary || '';
-    const isEmpty = !currentNotes || currentNotes.replace(/<[^>]*>/g, '').trim().length === 0;
-
-    if (!isEmpty) {
-      if (!confirm('This will replace your current notes. Continue?')) {
-        return;
-      }
-    }
-
-    setIsGeneratingTalkingPoints(true);
-
-    try {
-      const generatedNotes = await generateCustomTalkingPoints(prompt, studentData);
-      handleSummaryChange(generatedNotes);
-      // Clear template selection since we're using custom
-      updateInteractionTemplate(studentId, interactionId, '');
-    } catch (error) {
-      console.error('Failed to generate notes:', error);
-      alert('Failed to generate notes. Please try again.');
-    } finally {
-      setIsGeneratingTalkingPoints(false);
-    }
-  }, [studentData, isGeneratingTalkingPoints, interaction?.summary, handleSummaryChange, updateInteractionTemplate, studentId, interactionId]);
 
   // Handle adding counselor tasks - creates a real task
   const handleAddCounselorTask = useCallback((title: string) => {
@@ -382,40 +335,33 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
           />
 
           {/* Notes - consolidated talking points and summary */}
-          {!isRecording && (
-            <Box sx={{ mt: 4 }}>
-              {isLoadingSummary ? (
-                <SectionCard title="Notes" icon={<FileText size={18} />}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    <Skeleton variant="text" width="90%" height={24} animation="wave" />
-                    <Skeleton variant="text" width="100%" height={20} animation="wave" />
-                    <Skeleton variant="text" width="85%" height={20} animation="wave" />
-                    <Skeleton variant="text" width="95%" height={20} animation="wave" />
-                    <Box sx={{ mt: 1 }}>
-                      <Skeleton variant="text" width="40%" height={24} animation="wave" />
-                      <Skeleton variant="text" width="80%" height={20} animation="wave" />
-                      <Skeleton variant="text" width="75%" height={20} animation="wave" />
-                    </Box>
+          <Box sx={{ mt: 4 }}>
+            {isLoadingSummary ? (
+              <SectionCard title="Notes" icon={<FileText size={18} />}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  <Skeleton variant="text" width="90%" height={24} animation="wave" />
+                  <Skeleton variant="text" width="100%" height={20} animation="wave" />
+                  <Skeleton variant="text" width="85%" height={20} animation="wave" />
+                  <Skeleton variant="text" width="95%" height={20} animation="wave" />
+                  <Box sx={{ mt: 1 }}>
+                    <Skeleton variant="text" width="40%" height={24} animation="wave" />
+                    <Skeleton variant="text" width="80%" height={20} animation="wave" />
+                    <Skeleton variant="text" width="75%" height={20} animation="wave" />
                   </Box>
-                </SectionCard>
-              ) : (
-                <Collapse in={true} timeout={isSummaryRevealed ? 500 : 0} appear={isSummaryRevealed}>
-                  <NotesSection
-                    notes={interaction.summary || ''}
-                    onNotesChange={handleSummaryChange}
-                    label="Notes"
-                    placeholder="Add talking points, meeting notes, or any other details..."
-                    readOnly={isCompleted}
-                    isGenerating={isGeneratingTalkingPoints}
-                    showTemplateSelector={!isCompleted}
-                    currentTemplateId={interaction.templateId}
-                    onSelectTemplate={handleSelectTemplate}
-                    onGenerateCustom={handleGenerateCustomTalkingPoints}
-                  />
-                </Collapse>
-              )}
-            </Box>
-          )}
+                </Box>
+              </SectionCard>
+            ) : (
+              <Collapse in={true} timeout={isSummaryRevealed ? 500 : 0} appear={isSummaryRevealed}>
+                <NotesSection
+                  notes={interaction.summary || ''}
+                  onNotesChange={handleSummaryChange}
+                  label="Notes"
+                  placeholder="Add talking points, meeting notes, or any other details..."
+                  readOnly={isCompleted}
+                />
+              </Collapse>
+            )}
+          </Box>
 
           {/* Action Items (if AI summary has recommended actions) */}
           {!isRecording && actionItemsForPanel.length > 0 && !isLoadingSummary && (

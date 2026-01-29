@@ -7,20 +7,20 @@ import {
   IconButton,
   Tooltip,
   CircularProgress,
-  Chip,
   Typography,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import { FileText, Bold, Italic, List, ListOrdered, Heading2, Sparkles } from 'lucide-react';
 import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Alma } from '@/components/icons/AlmaIcon';
 import { SectionCard } from '@/components/shared';
 import { Slate } from '@/theme/primitives';
-import { MEETING_TEMPLATES } from '@/lib/meetingTemplates';
+import { MEETING_TEMPLATES, OTHER_MEETING_TEMPLATE } from '@/lib/meetingTemplates';
 
 interface NotesSectionProps {
   notes?: string;
@@ -37,6 +37,8 @@ interface NotesSectionProps {
   currentTemplateId?: string;
   onSelectTemplate?: (templateId: string) => void;
   onGenerateCustom?: (prompt: string) => void;
+  // Initial custom prompt (pre-populated when "Other" was selected at creation)
+  initialCustomPrompt?: string;
 }
 
 function MenuBar({ editor }: { editor: Editor | null }) {
@@ -134,16 +136,18 @@ export function NotesSection({
   currentTemplateId,
   onSelectTemplate,
   onGenerateCustom,
+  initialCustomPrompt = '',
 }: NotesSectionProps) {
-  const [templateMode, setTemplateMode] = useState<'template' | 'custom'>('template');
-  const [customPrompt, setCustomPrompt] = useState('');
+  const [customPrompt, setCustomPrompt] = useState(initialCustomPrompt);
 
-  const handleModeChange = (
-    _event: React.MouseEvent<HTMLElement>,
-    newMode: 'template' | 'custom' | null
-  ) => {
-    if (newMode !== null) {
-      setTemplateMode(newMode);
+  // Whether "Other" is selected
+  const isOtherSelected = currentTemplateId === 'other';
+
+  const handleTemplateChange = (templateId: string) => {
+    onSelectTemplate?.(templateId);
+    // Clear custom prompt when switching away from "Other"
+    if (templateId !== 'other') {
+      setCustomPrompt('');
     }
   };
 
@@ -192,100 +196,84 @@ export function NotesSection({
       {/* Template Selector (when enabled) */}
       {showTemplateSelector && !readOnly && (
         <Box sx={{ mb: 3 }}>
-          {/* Mode Toggle */}
-          <ToggleButtonGroup
-            value={templateMode}
-            exclusive
-            onChange={handleModeChange}
-            size="small"
-            fullWidth
-            disabled={isGenerating}
-            sx={{
-              mb: 2,
-              '& .MuiToggleButtonGroup-grouped': {
-                border: '1px solid #E5E7EB',
-                borderRadius: '8px !important',
-                textTransform: 'none',
-                fontSize: '13px',
-                fontWeight: 500,
-                py: 0.75,
-                '&:not(:first-of-type)': {
-                  borderLeft: '1px solid #E5E7EB',
-                  marginLeft: '-1px',
+          {/* Meeting Type Dropdown */}
+          <Typography sx={{ fontSize: '14px', color: '#6B7280', mb: 1.5 }}>
+            Choose a meeting type to pre-fill your talking points.
+          </Typography>
+          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+            <InputLabel
+              sx={{
+                fontSize: '14px',
+                color: '#6B7280',
+                '&.Mui-focused': {
+                  color: '#062F29',
                 },
-                '&.Mui-selected': {
-                  backgroundColor: '#062F29',
-                  color: '#fff',
+              }}
+            >
+              Select meeting type
+            </InputLabel>
+            <Select
+              value={currentTemplateId || ''}
+              onChange={(e) => handleTemplateChange(e.target.value)}
+              label="Select meeting type"
+              disabled={isGenerating}
+              sx={{
+                fontSize: '14px',
+                borderRadius: '8px',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#E5E7EB',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#D1D5DB',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                   borderColor: '#062F29',
-                  '&:hover': {
-                    backgroundColor: '#0A4A40',
-                  },
                 },
-                '&:not(.Mui-selected)': {
-                  backgroundColor: '#fff',
-                  color: '#374151',
-                  '&:hover': {
-                    backgroundColor: '#F9FAFB',
-                  },
-                },
-              },
-            }}
-          >
-            <ToggleButton value="template">Templates</ToggleButton>
-            <ToggleButton value="custom">
-              <Sparkles size={14} style={{ marginRight: 6 }} />
-              Custom with AI
-            </ToggleButton>
-          </ToggleButtonGroup>
+              }}
+            >
+              {MEETING_TEMPLATES.map((template) => (
+                <MenuItem key={template.id} value={template.id}>
+                  <Box>
+                    <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#111827' }}>
+                      {template.name}
+                    </Typography>
+                    <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
+                      {template.description}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+              {/* Other option */}
+              <MenuItem value={OTHER_MEETING_TEMPLATE.id}>
+                <Box>
+                  <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#111827' }}>
+                    {OTHER_MEETING_TEMPLATE.name}
+                  </Typography>
+                  <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
+                    {OTHER_MEETING_TEMPLATE.description}
+                  </Typography>
+                </Box>
+              </MenuItem>
+            </Select>
+          </FormControl>
 
-          {/* Template chips - only show in template mode */}
-          {templateMode === 'template' && (
-            <>
-              <Typography sx={{ fontSize: '14px', color: '#6B7280', mb: 2 }}>
-                Choose a template to pre-fill your talking points.
-              </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {MEETING_TEMPLATES.map((template) => {
-                  const isActive = currentTemplateId === template.id;
-                  return (
-                    <Chip
-                      key={template.id}
-                      label={template.name}
-                      variant={isActive ? 'filled' : 'outlined'}
-                      onClick={() => onSelectTemplate?.(template.id)}
-                      disabled={isGenerating}
-                      sx={{
-                        fontFamily: '"Poppins", sans-serif',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        borderRadius: '8px',
-                        ...(isActive
-                          ? {
-                              backgroundColor: '#062F29',
-                              color: '#fff',
-                              '&:hover': { backgroundColor: '#0a4a40' },
-                            }
-                          : {
-                              borderColor: '#D1D5DB',
-                              color: '#374151',
-                              '&:hover': { backgroundColor: '#F3F4F6' },
-                            }),
-                      }}
-                    />
-                  );
-                })}
-              </Box>
-            </>
-          )}
-
-          {/* Custom prompt input - only show in custom mode */}
-          {templateMode === 'custom' && (
-            <>
-              <Typography sx={{ fontSize: '14px', color: '#6B7280', mb: 1.5 }}>
-                Describe what you want to discuss and AI will generate personalized talking points.
+          {/* Custom prompt input - only show when "Other" is selected */}
+          {isOtherSelected && (
+            <Box sx={{ mt: 2 }}>
+              <Typography
+                sx={{
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#6B7280',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  mb: 1,
+                }}
+              >
+                Meeting Purpose <span style={{ color: '#9CA3AF', fontWeight: 400, textTransform: 'none' }}>(optional)</span>
               </Typography>
               <TextField
-                placeholder="e.g., 'Focus on college application deadlines and financial aid options for this student'"
+                placeholder="Describe what you want to discuss... (e.g., 'Focus on college application deadlines and financial aid options')"
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
                 fullWidth
@@ -311,44 +299,46 @@ export function NotesSection({
                   },
                 }}
               />
-              <Button
-                variant="outlined"
-                onClick={handleGenerateCustom}
-                disabled={!canGenerateCustom}
-                startIcon={
-                  isGenerating ? (
-                    <CircularProgress size={14} color="inherit" />
-                  ) : (
-                    <Sparkles size={14} />
-                  )
-                }
-                fullWidth
-                sx={{
-                  textTransform: 'none',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  borderColor: '#D1D5DB',
-                  color: '#374151',
-                  borderRadius: '8px',
-                  py: 0.75,
-                  '&:hover': {
-                    borderColor: '#062F29',
-                    backgroundColor: '#F9FAFB',
-                  },
-                  '&.Mui-disabled': {
-                    borderColor: '#E5E7EB',
-                    color: '#9CA3AF',
-                  },
-                }}
-              >
-                {isGenerating ? 'Generating...' : 'Generate Talking Points'}
-              </Button>
-              {customPrompt.trim().length > 0 && customPrompt.trim().length < 10 && (
-                <Typography sx={{ fontSize: '12px', color: '#9CA3AF', mt: 1 }}>
-                  Please enter at least 10 characters to generate talking points.
-                </Typography>
+              {customPrompt.trim().length >= 10 && (
+                <Button
+                  variant="outlined"
+                  onClick={handleGenerateCustom}
+                  disabled={!canGenerateCustom}
+                  startIcon={
+                    isGenerating ? (
+                      <CircularProgress size={14} color="inherit" />
+                    ) : (
+                      <Sparkles size={14} />
+                    )
+                  }
+                  fullWidth
+                  sx={{
+                    textTransform: 'none',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    borderColor: '#D1D5DB',
+                    color: '#374151',
+                    borderRadius: '8px',
+                    py: 0.75,
+                    '&:hover': {
+                      borderColor: '#062F29',
+                      backgroundColor: '#F9FAFB',
+                    },
+                    '&.Mui-disabled': {
+                      borderColor: '#E5E7EB',
+                      color: '#9CA3AF',
+                    },
+                  }}
+                >
+                  {isGenerating ? 'Generating...' : 'Generate Talking Points'}
+                </Button>
               )}
-            </>
+              <Typography sx={{ fontSize: '12px', color: '#9CA3AF', mt: 1 }}>
+                {customPrompt.trim().length >= 10
+                  ? 'Click the button above to generate AI talking points based on your description.'
+                  : 'Enter at least 10 characters to generate AI talking points, or leave empty for a blank notes section.'}
+              </Typography>
+            </Box>
           )}
         </Box>
       )}
@@ -441,7 +431,7 @@ export function NotesSection({
                 isGenerating ? (
                   <CircularProgress size={16} sx={{ color: '#12B76A' }} />
                 ) : (
-                  <Alma size={16} color="#12B76A" />
+                  <Sparkles size={16} color="#12B76A" />
                 )
               }
               onClick={onGenerate}

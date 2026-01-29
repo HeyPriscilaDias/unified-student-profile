@@ -5,6 +5,13 @@ export interface MeetingTemplate {
   agendaItems: string[];
 }
 
+export const OTHER_MEETING_TEMPLATE: MeetingTemplate = {
+  id: 'other',
+  name: 'Other',
+  description: 'Custom meeting with optional AI-generated talking points.',
+  agendaItems: [],
+};
+
 export const MEETING_TEMPLATES: MeetingTemplate[] = [
   {
     id: 'general-checkin',

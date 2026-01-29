@@ -1,6 +1,5 @@
 'use client';
 
-import { Box } from '@mui/material';
 import { AppLayout } from '@/components/AppLayout';
 import { SidePanel } from '@/components/SidePanel';
 import { MeetingsGrid } from '@/components/MeetingsGrid';
@@ -17,17 +16,9 @@ export default function Home() {
           onTabChange={setSidePanelTab}
         />
       }
+      breadcrumbs={[]}
     >
-      <Box
-        sx={{
-          minHeight: '100vh',
-          backgroundColor: '#FBFBFB',
-          px: 4,
-          py: 4,
-        }}
-      >
-        <MeetingsGrid />
-      </Box>
+      <MeetingsGrid />
     </AppLayout>
   );
 }
