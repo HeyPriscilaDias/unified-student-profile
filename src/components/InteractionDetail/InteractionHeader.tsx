@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Box, Typography, Button, TextField, IconButton } from '@mui/material';
-import { Calendar, Check, X } from 'lucide-react';
+import { Box, Typography, Button, TextField } from '@mui/material';
+import { Calendar, Check } from 'lucide-react';
 import { formatDate } from '@/lib/dateUtils';
 import type { Interaction, InteractionStatus } from '@/types/student';
 
@@ -17,7 +17,6 @@ export function InteractionHeader({
   onStatusChange,
   onDateChange,
 }: InteractionHeaderProps) {
-  const isDraft = interaction.status === 'draft';
   const isCompleted = interaction.status === 'completed';
   const [isEditingDate, setIsEditingDate] = useState(false);
   const [dateValue, setDateValue] = useState(interaction.interactionDate || '');
@@ -33,18 +32,11 @@ export function InteractionHeader({
   };
 
   const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDateValue(e.target.value);
-  };
-
-  const handleDateSave = () => {
+    const newDate = e.target.value;
+    setDateValue(newDate);
     if (onDateChange) {
-      onDateChange(dateValue || undefined);
+      onDateChange(newDate || undefined);
     }
-    setIsEditingDate(false);
-  };
-
-  const handleDateCancel = () => {
-    setDateValue(interaction.interactionDate || '');
     setIsEditingDate(false);
   };
 
@@ -73,58 +65,31 @@ export function InteractionHeader({
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
         {/* Date pill button */}
         {isEditingDate ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TextField
-              type="date"
-              value={dateValue}
-              onChange={handleDateInputChange}
-              inputRef={dateInputRef}
-              size="small"
-              sx={{
-                width: 150,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  height: '36px',
-                  '& fieldset': {
-                    borderColor: '#E5E7EB',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#D1D5DB',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#062F29',
-                  },
+          <TextField
+            type="date"
+            value={dateValue}
+            onChange={handleDateInputChange}
+            onBlur={() => setIsEditingDate(false)}
+            inputRef={dateInputRef}
+            size="small"
+            sx={{
+              width: 150,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+                fontSize: '14px',
+                height: '36px',
+                '& fieldset': {
+                  borderColor: '#E5E7EB',
                 },
-              }}
-            />
-            <Button
-              size="small"
-              onClick={handleDateSave}
-              sx={{
-                minWidth: 'auto',
-                px: 1.5,
-                py: 0.5,
-                textTransform: 'none',
-                fontSize: '13px',
-                backgroundColor: '#062F29',
-                color: 'white',
-                borderRadius: '6px',
-                '&:hover': {
-                  backgroundColor: '#0a4a40',
+                '&:hover fieldset': {
+                  borderColor: '#D1D5DB',
                 },
-              }}
-            >
-              Save
-            </Button>
-            <IconButton
-              size="small"
-              onClick={handleDateCancel}
-              sx={{ p: 0.5 }}
-            >
-              <X size={16} />
-            </IconButton>
-          </Box>
+                '&.Mui-focused fieldset': {
+                  borderColor: '#062F29',
+                },
+              },
+            }}
+          />
         ) : (
           <Button
             onClick={handleDateClick}
