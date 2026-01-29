@@ -65,9 +65,21 @@ export function formatMonthYear(dateString: string): string {
 }
 
 /**
+ * Checks if a date string (YYYY-MM-DD) is today.
+ */
+export function isToday(dateString: string): boolean {
+  const today = new Date().toISOString().split('T')[0];
+  return dateString === today;
+}
+
+/**
  * Formats a date for display (e.g., "Jan 15, 2025").
+ * Returns "Today" if the date is today.
  */
 export function formatDate(dateString: string): string {
+  if (isToday(dateString)) {
+    return 'Today';
+  }
   const date = new Date(dateString);
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;

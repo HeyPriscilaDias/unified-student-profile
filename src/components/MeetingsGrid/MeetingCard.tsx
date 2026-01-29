@@ -2,21 +2,12 @@
 
 import { Box, Typography, Avatar, Chip } from '@mui/material';
 import { Calendar, Mic } from 'lucide-react';
+import { formatDate } from '@/lib/dateUtils';
 import type { InteractionWithStudent } from '@/contexts/InteractionsContext';
 
 interface MeetingCardProps {
   interaction: InteractionWithStudent;
   onClick: () => void;
-}
-
-function formatDate(dateStr?: string): string {
-  if (!dateStr) return 'No date';
-  const date = new Date(dateStr + 'T00:00:00');
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
 }
 
 export function MeetingCard({ interaction, onClick }: MeetingCardProps) {
@@ -122,7 +113,7 @@ export function MeetingCard({ interaction, onClick }: MeetingCardProps) {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
           <Calendar size={14} color="#9CA3AF" />
           <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
-            {formatDate(interaction.interactionDate)}
+            {interaction.interactionDate ? formatDate(interaction.interactionDate) : 'No date'}
           </Typography>
         </Box>
         {hasTranscript && (

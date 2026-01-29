@@ -108,13 +108,16 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
   }, [initialized]);
 
   const addInteraction = useCallback((data: NewInteractionData): Interaction => {
+    // Default to today's date if not provided
+    const today = new Date().toISOString().split('T')[0];
+
     const newInteraction: Interaction = {
       id: `interaction-new-${Date.now()}`,
       studentId: data.studentId,
       counselorId: 'counselor-rodriguez',
       counselorName: 'Ms. Rodriguez',
       title: data.title,
-      interactionDate: data.interactionDate,
+      interactionDate: data.interactionDate ?? today,
       status: 'draft',
       summary: data.summary,
       createdAt: new Date().toISOString(),
