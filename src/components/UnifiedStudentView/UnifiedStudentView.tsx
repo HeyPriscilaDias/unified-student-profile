@@ -7,7 +7,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { StudentHeader } from '@/components/StudentHeader';
 import { TabNavigation } from '@/components/TabNavigation';
 import { OverviewTab } from '@/components/Overview';
-import { ProfileTab } from '@/components/Profile';
+import { ProfileTab, PurposeTab } from '@/components/Profile';
 import { PostsecondaryTab } from '@/components/Postsecondary';
 import { StudentWorkTab } from '@/components/StudentWork';
 import { NotesTab } from '@/components/Notes';
@@ -48,7 +48,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   // Handle tab query parameter
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['overview', 'profile', 'postsecondary', 'student-work', 'notes', 'meetings'].includes(tabParam)) {
+    if (tabParam && ['overview', 'profile', 'purpose', 'postsecondary', 'student-work', 'notes', 'meetings'].includes(tabParam)) {
       setActiveTab(tabParam as TabType);
     }
   }, [searchParams]);
@@ -64,8 +64,8 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   if (!studentData) {
     return (
       <AppLayout>
-        <Box sx={{ backgroundColor: '#FBFBFB', minHeight: '100vh' }}>
-          <Box sx={{ backgroundColor: 'white', borderBottom: '1px solid #D5D7DA', px: 4, py: 3 }}>
+        <Box sx={{ minHeight: '100vh' }}>
+          <Box sx={{ borderBottom: '1px solid #D5D7DA', px: 4, py: 3 }}>
             <LoadingSection variant="card" />
           </Box>
           <Box sx={{ p: 3 }}>
@@ -170,6 +170,14 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
         );
       case 'profile':
         return <ProfileTab student={student} profile={profile} />;
+      case 'purpose':
+        return (
+          <PurposeTab
+            values={profile.values}
+            mission={profile.mission}
+            careerVision={profile.careerVision}
+          />
+        );
       case 'postsecondary':
         return (
           <PostsecondaryTab
@@ -209,6 +217,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   const tabDisplayNames: Record<TabType, string> = {
     overview: 'Overview',
     profile: 'Profile',
+    purpose: 'Purpose',
     postsecondary: 'Planning',
     'student-work': 'Work',
     notes: 'Notes',
@@ -244,7 +253,6 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     >
       <Box
         sx={{
-          backgroundColor: '#FBFBFB',
           minHeight: '100vh',
         }}
       >
@@ -262,7 +270,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
         />
 
         {/* Tab Content */}
-        <Box sx={{ backgroundColor: '#FBFBFB' }}>
+        <Box>
           {renderTabContent()}
         </Box>
       </Box>

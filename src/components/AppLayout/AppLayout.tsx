@@ -27,7 +27,6 @@ export function AppLayout({
       sx={{
         display: 'flex',
         minHeight: '100vh',
-        backgroundColor: '#F5F5F5', // Level 1 background
       }}
     >
       {/* Level 1: Sidebar */}
@@ -57,10 +56,9 @@ export function AppLayout({
           {/* Breadcrumbs Bar */}
           <Box
             sx={{
+              flexShrink: 0,
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
-              overflow: 'hidden',
-              flexShrink: 0,
             }}
           >
             <BreadcrumbsBar items={breadcrumbs} actionButton={actionButton} />
@@ -70,10 +68,10 @@ export function AppLayout({
           <Box
             sx={{
               flex: 1,
-              backgroundColor: '#FFFFFF',
-              borderRadius: '12px',
               minHeight: 0,
               overflow: 'auto',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
             }}
           >
             <Box
