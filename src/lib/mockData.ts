@@ -61,6 +61,7 @@ export const jessicaProfile: StudentProfile = {
     { id: 'course-3', name: 'Anatomy & Physiology' },
     { id: 'course-4', name: 'AP Calculus AB' },
   ],
+  interests: ['Technology', 'Education', 'Healthcare'],
   strengths: ['Critical Thinking', 'Problem Solving', 'Communication', 'Collaboration', 'Adaptability'],
   languages: ['English (Native)', 'Spanish (Fluent)', 'French (Intermediate)'],
   experiences: [
@@ -576,13 +577,6 @@ Counselor: Great. The FAFSA deadline for priority consideration is January 15th,
 <ul>
 <li>Mrs. Johnson (AP Bio)</li>
 <li>Mr. Chen (AP Calc)</li>
-</ul>
-
-<h3>Next Steps</h3>
-<ul>
-<li>Request recommendation letters by Sept 15</li>
-<li>Start Common App essay brainstorming</li>
-<li>Research Texas State early action requirements</li>
 </ul>`,
     createdAt: '2024-09-05T09:00:00Z',
     updatedAt: '2024-09-05T10:20:00Z',
@@ -614,8 +608,6 @@ Counselor: Great. The FAFSA deadline for priority consideration is January 15th,
 <li>Recommended: AP Calculus AB based on strong Precalculus performance</li>
 <li>Alternative: AP Statistics if workload becomes too heavy</li>
 </ul>
-
-<h3>Notes</h3>
 <p>Jessica expressed confidence in her math abilities. She mentioned wanting to keep math strong for nursing prerequisites.</p>`,
     createdAt: '2024-08-20T11:00:00Z',
     updatedAt: '2024-08-20T11:45:00Z',
@@ -634,12 +626,6 @@ Counselor: Great. The FAFSA deadline for priority consideration is January 15th,
 <li>Personal statement: Hospital volunteering experience as hook</li>
 <li>Why nursing: Combine empathy with science passion</li>
 <li>Diversity essay: Bilingual/bicultural background</li>
-</ul>
-
-<h3>Next Steps</h3>
-<ul>
-<li>First draft due October 25th</li>
-<li>Schedule follow-up review session</li>
 </ul>`,
     createdAt: '2024-10-15T14:00:00Z',
     updatedAt: '2024-10-15T15:30:00Z',
@@ -693,6 +679,7 @@ export const studentAData: StudentData = {
     awards: [],
     microCredentials: [],
     courseHighlights: [],
+    interests: [],
     strengths: [],
     languages: ['English (Native)'],
     experiences: [],
@@ -741,6 +728,7 @@ export const studentBData: StudentData = {
     awards: [],
     microCredentials: [],
     courseHighlights: [{ id: 'course-1', name: 'Art I' }],
+    interests: ['Art', 'Music'],
     strengths: ['Creativity', 'Persistence'],
     languages: ['English (Native)'],
     experiences: [],
@@ -844,6 +832,7 @@ export const studentCData: StudentData = {
     awards: [],
     microCredentials: [],
     courseHighlights: [],
+    interests: ['Business', 'Finance'],
     strengths: ['Organization', 'Detail-oriented'],
     languages: ['English (Native)'],
     experiences: [],
@@ -932,6 +921,7 @@ export const studentDData: StudentData = {
     awards: [{ id: 'award-1', name: 'Most Improved' }],
     microCredentials: [],
     courseHighlights: [],
+    interests: ['Science', 'Research'],
     strengths: ['Curiosity', 'Dedication'],
     languages: ['English (Native)'],
     experiences: [],
@@ -985,6 +975,7 @@ export const studentEData: StudentData = {
     awards: [],
     microCredentials: [],
     courseHighlights: [],
+    interests: ['Sports', 'Gaming'],
     strengths: ['Resilience'],
     languages: ['English (Native)'],
     experiences: [],
