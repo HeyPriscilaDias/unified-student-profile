@@ -11,8 +11,12 @@ import {
   styled,
   Avatar,
   IconButton,
+  FormControl,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
+import { getAllStudents } from '@/lib/mockData';
 import {
   Home,
   Sparkles,
@@ -55,7 +59,7 @@ const LogoContainer = styled(Box)({
 });
 
 const NavList = styled(List)({
-  flexGrow: 1,
+  flexGrow: 0,
   display: 'flex',
   flexDirection: 'column',
   padding: '0',
@@ -92,6 +96,22 @@ const UserProfileSection = styled(Box)({
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
+});
+
+const TestingSection = styled(Box)({
+  marginTop: 'auto',
+  borderTop: `1px solid ${neutral[200]}`,
+  padding: '12px',
+});
+
+const TestingSectionHeader = styled(Typography)({
+  fontSize: '10px',
+  color: neutral[500],
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  marginBottom: '8px',
+  paddingLeft: '4px',
 });
 
 // Navigation items matching the Figma design
@@ -183,6 +203,7 @@ function WillowLogo() {
 
 export function Sidebar({ currentStudentId }: SidebarProps) {
   const router = useRouter();
+  const students = getAllStudents();
 
   // For demo purposes, highlight 'home' as active
   const activePageId = 'home';
@@ -192,6 +213,10 @@ export function Sidebar({ currentStudentId }: SidebarProps) {
       router.push('/');
     }
     // Other nav items are non-functional for now
+  };
+
+  const handleStudentChange = (studentId: string) => {
+    router.push(`/student/${studentId}`);
   };
 
   return (
@@ -225,6 +250,70 @@ export function Sidebar({ currentStudentId }: SidebarProps) {
           );
         })}
       </NavList>
+
+      {/* Testing Section */}
+      <TestingSection>
+        <TestingSectionHeader>Testing</TestingSectionHeader>
+
+        {/* Student Picker */}
+        <Box sx={{ mb: 1.5 }}>
+          <Typography
+            sx={{
+              fontSize: '11px',
+              color: neutral[500],
+              mb: 0.5,
+              fontWeight: 500,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              px: 0.5,
+            }}
+          >
+            Test Student
+          </Typography>
+          <FormControl size="small" fullWidth>
+            <Select
+              value={currentStudentId || ''}
+              onChange={(e) => handleStudentChange(e.target.value as string)}
+              displayEmpty
+              sx={{
+                fontSize: '13px',
+                backgroundColor: 'rgba(255,255,255,0.8)',
+                '& .MuiSelect-select': {
+                  padding: '8px 12px',
+                },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: neutral[200],
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: neutral[500],
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: Slate[700],
+                },
+              }}
+            >
+              <MenuItem value="" disabled>
+                <Typography sx={{ fontSize: '13px', color: neutral[500] }}>
+                  Select a student...
+                </Typography>
+              </MenuItem>
+              {students.map((student) => (
+                <MenuItem key={student.id} value={student.id} sx={{ py: 1 }}>
+                  <Box>
+                    <Typography sx={{ fontSize: '13px', fontWeight: 500 }}>
+                      {student.firstName} {student.lastName}
+                    </Typography>
+                    <Typography sx={{ fontSize: '11px', color: neutral[500] }}>
+                      Grade {student.grade} •{' '}
+                      {student.onTrackStatus === 'on_track' ? 'On Track' : 'Off Track'}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      </TestingSection>
 
       {/* User Profile Section */}
       <UserProfileSection>
