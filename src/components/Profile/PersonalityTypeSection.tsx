@@ -56,7 +56,15 @@ export function PersonalityTypeSection({
           padding: '24px',
         }}
       >
-        <Typography sx={{ fontSize: '14px', color: '#6B7280' }}>
+        <Typography
+          component="h3"
+          sx={{
+            fontFamily: '"Poppins", sans-serif',
+            fontWeight: 600,
+            fontSize: '22px',
+            color: '#111827',
+          }}
+        >
           Personality type
         </Typography>
         <Typography sx={{ fontSize: '14px', color: '#9CA3AF', mt: 1 }}>
@@ -86,9 +94,12 @@ export function PersonalityTypeSection({
       >
         <Box>
           <Typography
+            component="h3"
             sx={{
-              fontSize: '14px',
-              color: '#6B7280',
+              fontFamily: '"Poppins", sans-serif',
+              fontWeight: 600,
+              fontSize: '22px',
+              color: '#111827',
               mb: 0.5,
             }}
           >
@@ -98,7 +109,7 @@ export function PersonalityTypeSection({
             sx={{
               fontFamily: '"Poppins", sans-serif',
               fontWeight: 600,
-              fontSize: '28px',
+              fontSize: '24px',
               color: '#111827',
             }}
           >

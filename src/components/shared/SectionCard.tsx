@@ -45,12 +45,12 @@ export function SectionCard({
             {icon}
             {title && (
               <Typography
-                variant="h6"
+                component="h3"
                 sx={{
                   fontFamily: '"Poppins", sans-serif',
                   fontWeight: 600,
-                  fontSize: '16px',
-                  color: '#062F29',
+                  fontSize: '22px',
+                  color: '#111827',
                 }}
               >
                 {title}

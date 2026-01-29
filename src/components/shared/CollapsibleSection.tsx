@@ -51,12 +51,12 @@ export function CollapsibleSection({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {icon}
           <Typography
-            variant="h6"
+            component="h3"
             sx={{
               fontFamily: '"Poppins", sans-serif',
               fontWeight: 600,
-              fontSize: '16px',
-              color: '#062F29',
+              fontSize: '22px',
+              color: '#111827',
             }}
           >
             {title}

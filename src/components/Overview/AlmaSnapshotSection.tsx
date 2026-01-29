@@ -28,14 +28,12 @@ export function AlmaSnapshotSection({
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       {/* Section Header - Outside container */}
       <Typography
-        variant="h3"
+        component="h3"
         sx={{
           fontFamily: '"Poppins", sans-serif',
-          fontWeight: 500,
+          fontWeight: 600,
           fontSize: '22px',
-          lineHeight: '28px',
-          letterSpacing: '-0.01em',
-          color: '#051D19',
+          color: '#111827',
         }}
       >
         Alma Snapshot

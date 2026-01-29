@@ -120,10 +120,11 @@ export function DurableSkillsSection({ durableSkills, onViewDetails }: DurableSk
         }}
       >
         <Typography
+          component="h3"
           sx={{
             fontFamily: '"Poppins", sans-serif',
             fontWeight: 600,
-            fontSize: '20px',
+            fontSize: '22px',
             color: '#111827',
           }}
         >
@@ -155,10 +156,11 @@ export function DurableSkillsSection({ durableSkills, onViewDetails }: DurableSk
         }}
       >
         <Typography
+          component="h3"
           sx={{
             fontFamily: '"Poppins", sans-serif',
             fontWeight: 600,
-            fontSize: '20px',
+            fontSize: '22px',
             color: '#111827',
           }}
         >

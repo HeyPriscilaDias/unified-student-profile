@@ -268,9 +268,6 @@ export function MeetingsTab({
     return a.interactionDate.localeCompare(b.interactionDate);
   });
 
-  const draftCount = interactions.filter((i) => i.status === 'draft').length;
-  const completedCount = interactions.filter((i) => i.status === 'completed').length;
-
   const AddMeetingButton = (
     <Button
       variant="contained"
@@ -355,33 +352,6 @@ export function MeetingsTab({
               ))}
             </Box>
 
-            {/* Show count summary if there are many meetings */}
-            {sortedMeetings.length > 0 && (
-              <Box
-                sx={{
-                  mt: 3,
-                  pt: 2,
-                  borderTop: '1px solid #E5E7EB',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <Typography sx={{ fontSize: '13px', color: '#6B7280' }}>
-                  {draftCount > 0 && (
-                    <Box component="span" sx={{ fontWeight: 500, color: '#6B7280' }}>
-                      {draftCount} draft
-                    </Box>
-                  )}
-                  {draftCount > 0 && completedCount > 0 && ' · '}
-                  {completedCount > 0 && (
-                    <Box component="span">
-                      {completedCount} completed
-                    </Box>
-                  )}
-                </Typography>
-              </Box>
-            )}
           </Box>
         )}
       </Box>

@@ -328,10 +328,11 @@ export function RecommendationsSection({ recommendations }: RecommendationsSecti
     return (
       <Box>
         <Typography
+          component="h3"
           sx={{
             fontFamily: '"Poppins", sans-serif',
             fontWeight: 600,
-            fontSize: '28px',
+            fontSize: '22px',
             color: '#111827',
             mb: 3,
           }}
@@ -347,10 +348,11 @@ export function RecommendationsSection({ recommendations }: RecommendationsSecti
     <Box>
       {/* Title */}
       <Typography
+        component="h3"
         sx={{
           fontFamily: '"Poppins", sans-serif',
           fontWeight: 600,
-          fontSize: '28px',
+          fontSize: '22px',
           color: '#111827',
           mb: 3,
         }}

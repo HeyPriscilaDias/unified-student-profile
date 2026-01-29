@@ -283,11 +283,16 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
         <Box sx={{ mt: 4 }}>
           <SectionHeader icon={<FileEdit size={18} />} title="Notes & talking points" />
           <Box
-            component="textarea"
-            value={notes}
-            onChange={handleNotesChange}
-            placeholder={`Talking points:\n• How things are going overall (school, stress, workload)\n• What's top of mind right now\n• Anything blocking progress (academic, personal, logistical)\n• Short-term priorities (this week / next two weeks)\n\nNotes:`}
-            disabled={isCompleted}
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={(e) => {
+              const newContent = e.currentTarget.innerHTML;
+              if (newContent !== notes) {
+                setNotes(newContent);
+                updateInteractionSummary(studentId, interactionId, newContent);
+              }
+            }}
+            dangerouslySetInnerHTML={{ __html: notes || '' }}
             sx={{
               width: '100%',
               minHeight: '200px',
@@ -296,20 +301,23 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
               fontFamily: 'inherit',
               lineHeight: 1.6,
               color: '#374151',
-              backgroundColor: isCompleted ? '#F9FAFB' : 'white',
+              backgroundColor: 'white',
               border: '1px solid #E5E7EB',
               borderRadius: '8px',
-              resize: 'vertical',
               outline: 'none',
               '&:focus': {
                 borderColor: '#9CA3AF',
               },
-              '&::placeholder': {
+              '&:empty::before': {
+                content: '"Talking points:\\A• How things are going overall (school, stress, workload)\\A• What\'s top of mind right now\\A• Anything blocking progress (academic, personal, logistical)\\A• Short-term priorities (this week / next two weeks)\\A\\ANotes:"',
+                whiteSpace: 'pre-wrap',
                 color: '#9CA3AF',
               },
-              '&:disabled': {
-                cursor: 'not-allowed',
-              },
+              '& h1, & h2, & h3, & h4': { fontSize: '15px', fontWeight: 600, mt: 2, mb: 1, '&:first-of-type': { mt: 0 } },
+              '& ul, & ol': { pl: 2.5, mb: 2 },
+              '& li': { mb: 0.5 },
+              '& p': { mb: 1.5 },
+              '& strong': { fontWeight: 600 },
             }}
           />
         </Box>
@@ -409,7 +417,7 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
                 } : {},
               }}
             >
-              {isCompleted ? 'No transcript available.' : 'Start transcribing.'}
+              {isCompleted ? 'This meeting was not transcribed.' : 'Start transcribing.'}
             </Typography>
           )}
         </Box>
