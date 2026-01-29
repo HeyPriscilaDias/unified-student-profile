@@ -3,7 +3,8 @@
 import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Box, Typography, Button } from '@mui/material';
-import { Users, FileEdit, Sparkles, CheckSquare, Mic, Plus, Trash2 } from 'lucide-react';
+import { Users, FileEdit, CheckSquare, Mic, Plus, Trash2, RefreshCw, Copy, Sparkles } from 'lucide-react';
+import { Alma } from '@/components/icons/AlmaIcon';
 import { AppLayout } from '@/components/AppLayout';
 import { LoadingSection } from '@/components/shared';
 import { SidePanel } from '@/components/SidePanel';
@@ -15,6 +16,7 @@ import { usePersistentRightPanelTab } from '@/hooks/usePersistentRightPanelTab';
 import { InteractionHeader } from './InteractionHeader';
 import { TranscriptSection } from './TranscriptSection';
 import { AddAttendeesModal } from './AddAttendeesModal';
+import { StartTranscribingBanner } from '@/components/TranscriptionBanner';
 import type { Task, SuggestedAction, Interaction, InteractionStatus } from '@/types/student';
 import type { BreadcrumbItem } from '@/components/Breadcrumbs';
 
@@ -44,6 +46,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const [isAddAttendeesModalOpen, setIsAddAttendeesModalOpen] = useState(false);
   const [sidePanelTab, setSidePanelTab] = usePersistentRightPanelTab('alma');
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const { updateInteraction, updateInteractionSummary, updateInteractionWithRecording, updateInteractionStatus, updateInteractionAttendees, deleteInteraction, addInteraction } = useInteractionsContext();
   const { addTask, updateTask, toggleTask, deleteTask } = useTasksContext();
   const { activeMeeting, startMeeting, endMeeting } = useActiveMeetingContext();
@@ -61,10 +64,11 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   // Handle showSummary param - triggered when recording stops from SidePanel
   useEffect(() => {
     if (showSummaryParam) {
-      const MOCK_SUMMARY = `<h3>Meeting Overview</h3>
+      const MOCK_SUMMARY = `Discussed the FAFSA application process and financial aid options with the student. Reviewed key deadlines and next steps for completing the application successfully.
+
 <ul>
-<li>Discussed the <strong>FAFSA application process</strong> and financial aid options</li>
-<li>Reviewed <strong>key deadlines</strong> including the <strong>March 2nd</strong> state priority deadline</li>
+<li>Discussed the <strong>FAFSA application process</strong> and financial aid options.</li>
+<li>Reviewed <strong>key deadlines</strong> including the <strong>March 2nd</strong> state priority deadline.</li>
 </ul>`;
 
       const MOCK_TRANSCRIPT = `Counselor: Good morning! Thanks for coming in today. I wanted to go over the FAFSA process with you since the application window is now open.
@@ -78,12 +82,17 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
         { id: 'action-2', title: 'Create FSA ID at studentaid.gov', priority: 'medium' as const, status: 'pending' as const, assignee: 'student' as const },
       ];
 
-      updateInteractionWithRecording(studentId, interactionId, {
-        summary: MOCK_SUMMARY,
-        transcript: MOCK_TRANSCRIPT,
-        actionItems: MOCK_ACTION_ITEMS,
-      });
-      endMeeting();
+      // Simulate processing delay so user can see the summarizing modal
+      const timer = setTimeout(() => {
+        updateInteractionWithRecording(studentId, interactionId, {
+          summary: MOCK_SUMMARY,
+          transcript: MOCK_TRANSCRIPT,
+          actionItems: MOCK_ACTION_ITEMS,
+        });
+        endMeeting();
+      }, 2500);
+
+      return () => clearTimeout(timer);
     }
   }, [showSummaryParam, studentId, interactionId, updateInteractionWithRecording, endMeeting]);
 
@@ -190,6 +199,41 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
       )
     );
   };
+
+  const handleGenerateSummary = useCallback(() => {
+    if (!notes.trim()) return;
+
+    setIsGeneratingSummary(true);
+
+    // Simulate AI processing delay
+    setTimeout(() => {
+      const MOCK_AI_SUMMARY = {
+        overview: `Student is making progress on their academic and career goals. Discussion covered current challenges, upcoming deadlines, and strategies for success. The student demonstrated engagement and willingness to follow through on action items.
+
+<ul>
+<li>Strong engagement with academic planning and goal-setting activities.</li>
+<li>Good progress on previously identified action items and next steps.</li>
+</ul>`,
+        keyPoints: [
+          'Student is making good progress on their goals',
+          'Several action items were identified for follow-up',
+        ],
+        recommendedActions: [
+          { id: `action-${Date.now()}-1`, title: 'Schedule follow-up meeting', priority: 'medium' as const, status: 'pending' as const, assignee: 'staff' as const },
+          { id: `action-${Date.now()}-2`, title: 'Review shared resources', priority: 'low' as const, status: 'pending' as const, assignee: 'student' as const },
+        ],
+        generatedAt: new Date().toISOString(),
+      };
+
+      updateInteraction({
+        id: interactionId,
+        studentId,
+        aiSummary: MOCK_AI_SUMMARY,
+      });
+
+      setIsGeneratingSummary(false);
+    }, 2000);
+  }, [notes, studentId, interactionId, updateInteraction]);
 
   // Loading state
   if (!studentData) {
@@ -333,20 +377,118 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
         </Box>
 
         {/* AI Summary Section */}
-        <Box sx={{ mt: 4 }}>
-          <SectionHeader icon={<Sparkles size={18} />} title="AI Summary" />
+        <Box sx={{ mt: 4, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ color: '#252B37', display: 'flex' }}><Alma size={16} /></Box>
+            <Typography sx={{ fontSize: '14px', fontWeight: 600, color: '#252B37' }}>
+              AI Summary
+            </Typography>
+          </Box>
           {hasAISummary ? (
             <Box
               sx={{
-                fontSize: '14px',
-                color: '#374151',
-                lineHeight: 1.6,
-                '& h3': { fontSize: '15px', fontWeight: 600, mt: 2, mb: 1 },
-                '& ul': { pl: 2.5, mb: 2 },
-                '& li': { mb: 0.5 },
+                backgroundColor: '#F5F8FF',
+                border: '1px solid #C6D7FD',
+                borderRadius: '12px',
+                p: 2,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
               }}
-              dangerouslySetInnerHTML={{ __html: interaction.summary || '' }}
-            />
+            >
+              <Box
+                sx={{
+                  fontSize: '14px',
+                  color: '#252B37',
+                  lineHeight: '20px',
+                  '& ul': { pl: 2.5, mt: 2, mb: 0 },
+                  '& li': { mb: 0.5 },
+                }}
+                dangerouslySetInnerHTML={{ __html: interaction.aiSummary?.overview || '' }}
+              />
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<RefreshCw size={16} style={isGeneratingSummary ? { animation: 'spin 1s linear infinite' } : undefined} />}
+                  onClick={handleGenerateSummary}
+                  disabled={isGeneratingSummary}
+                  sx={{
+                    textTransform: 'none',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#414651',
+                    borderColor: '#D5D7DA',
+                    borderRadius: '8px',
+                    px: 1.5,
+                    py: 0.5,
+                    minHeight: 32,
+                    '&:hover': {
+                      borderColor: '#9CA3AF',
+                      backgroundColor: 'white',
+                    },
+                    '&:disabled': {
+                      color: '#9CA3AF',
+                      borderColor: '#E5E7EB',
+                    },
+                  }}
+                >
+                  {isGeneratingSummary ? 'Updating...' : 'Update'}
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    const text = interaction.aiSummary?.overview?.replace(/<[^>]*>/g, '') || '';
+                    navigator.clipboard.writeText(text);
+                  }}
+                  sx={{
+                    minWidth: 32,
+                    width: 32,
+                    height: 32,
+                    p: 0,
+                    borderColor: '#D5D7DA',
+                    borderRadius: '8px',
+                    '&:hover': {
+                      borderColor: '#9CA3AF',
+                      backgroundColor: 'white',
+                    },
+                  }}
+                >
+                  <Copy size={16} color="#414651" />
+                </Button>
+              </Box>
+            </Box>
+          ) : notes.trim() ? (
+            <Box>
+              <Typography sx={{ fontSize: '14px', color: '#6B7280', mb: 2 }}>
+                Generate a summary based on your notes and talking points.
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<Sparkles size={16} />}
+                onClick={handleGenerateSummary}
+                disabled={isGeneratingSummary}
+                sx={{
+                  textTransform: 'none',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  backgroundColor: '#155E4C',
+                  color: '#fff',
+                  borderRadius: '8px',
+                  px: 3,
+                  py: 1,
+                  boxShadow: 'none',
+                  '&:hover': {
+                    backgroundColor: '#0E4A3B',
+                    boxShadow: 'none',
+                  },
+                  '&:disabled': {
+                    backgroundColor: '#9CA3AF',
+                  },
+                }}
+              >
+                {isGeneratingSummary ? 'Generating...' : 'Generate Summary'}
+              </Button>
+            </Box>
           ) : (
             <Typography sx={{ fontSize: '14px', color: '#6B7280' }}>
               Add notes above or transcribe the meeting so Alma generates a summary.
@@ -450,6 +592,11 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
               Delete meeting
             </Button>
           </Box>
+        )}
+
+        {/* Start Transcribing Banner */}
+        {!isCompleted && !hasTranscript && !isRecording && (
+          <StartTranscribingBanner onStartRecording={handleStartRecording} />
         )}
       </Box>
 

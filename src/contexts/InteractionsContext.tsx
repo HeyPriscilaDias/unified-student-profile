@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import type { Interaction, InteractionRecommendedAction } from '@/types/student';
+import type { Interaction, InteractionRecommendedAction, InteractionSummary } from '@/types/student';
 import { getAllStudents, getAllStudentInteractions } from '@/lib/mockData';
 
 interface NewInteractionData {
@@ -17,6 +17,7 @@ interface UpdateInteractionData {
   title?: string;
   interactionDate?: string;
   summary?: string;
+  aiSummary?: InteractionSummary;
 }
 
 interface RecordingData {
@@ -151,6 +152,7 @@ export function InteractionsProvider({ children }: { children: ReactNode }) {
         ...(data.title !== undefined && { title: data.title }),
         ...(data.interactionDate !== undefined && { interactionDate: data.interactionDate }),
         ...(data.summary !== undefined && { summary: data.summary }),
+        ...(data.aiSummary !== undefined && { aiSummary: data.aiSummary }),
         updatedAt: new Date().toISOString(),
       };
 

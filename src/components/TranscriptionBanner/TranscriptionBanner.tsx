@@ -269,7 +269,6 @@ export function TranscriptionBanner() {
               fontSize: '14px',
               px: 2,
               py: 0.75,
-              minWidth: 64,
               boxShadow: 'none',
               '&:hover': {
                 backgroundColor: '#DC2626',
@@ -277,7 +276,7 @@ export function TranscriptionBanner() {
               },
             }}
           >
-            Stop
+            Stop & Summarize
           </Button>
 
           {/* Expand Button */}
