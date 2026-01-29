@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Typography, Avatar, Chip } from '@mui/material';
-import { Calendar, MessageSquare } from 'lucide-react';
+import { Calendar, Mic } from 'lucide-react';
 import type { InteractionWithStudent } from '@/contexts/InteractionsContext';
 
 interface MeetingCardProps {
@@ -20,7 +20,7 @@ function formatDate(dateStr?: string): string {
 }
 
 export function MeetingCard({ interaction, onClick }: MeetingCardProps) {
-  const hasContent = !!(interaction.transcript || interaction.summary || interaction.aiSummary);
+  const hasTranscript = !!interaction.transcript;
 
   return (
     <Box
@@ -109,24 +109,6 @@ export function MeetingCard({ interaction, onClick }: MeetingCardProps) {
         {interaction.title}
       </Typography>
 
-      {/* Summary preview if available */}
-      {interaction.summary && (
-        <Typography
-          sx={{
-            fontSize: '13px',
-            color: '#6B7280',
-            mb: 2,
-            lineHeight: 1.5,
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {interaction.summary}
-        </Typography>
-      )}
-
       {/* Footer: Date and indicator */}
       <Box
         sx={{
@@ -143,11 +125,11 @@ export function MeetingCard({ interaction, onClick }: MeetingCardProps) {
             {formatDate(interaction.interactionDate)}
           </Typography>
         </Box>
-        {hasContent && (
+        {hasTranscript && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <MessageSquare size={14} color="#22C55E" />
-            <Typography sx={{ fontSize: '12px', color: '#22C55E', fontWeight: 500 }}>
-              Has notes
+            <Mic size={14} color="#9CA3AF" />
+            <Typography sx={{ fontSize: '12px', color: '#6B7280', fontWeight: 500 }}>
+              Transcribed
             </Typography>
           </Box>
         )}

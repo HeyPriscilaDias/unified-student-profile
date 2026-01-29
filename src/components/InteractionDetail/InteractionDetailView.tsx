@@ -3,8 +3,7 @@
 import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Box, Typography, Button, Collapse, Skeleton } from '@mui/material';
-import { ArrowLeft, Trash2, Mic, FileText } from 'lucide-react';
-import { Alma } from '@/components/icons/AlmaIcon';
+import { Trash2, Mic, FileText } from 'lucide-react';
 import { ActionItemsPanel } from '@/components/InteractionIntelligence';
 import { AppLayout } from '@/components/AppLayout';
 import { LoadingSection, SectionCard } from '@/components/shared';
@@ -21,6 +20,7 @@ import { MEETING_TEMPLATES, templateToHTML } from '@/lib/meetingTemplates';
 import { generateCustomTalkingPoints } from '@/lib/geminiService';
 import type { ExtractedActionItem } from '@/lib/geminiService';
 import type { Task, SuggestedAction, Interaction, InteractionStatus } from '@/types/student';
+import type { BreadcrumbItem } from '@/components/Breadcrumbs';
 
 interface InteractionDetailViewProps {
   studentId: string;
@@ -38,7 +38,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const [isSummaryRevealed, setIsSummaryRevealed] = useState(false);
   const [sidePanelTab, setSidePanelTab] = usePersistentRightPanelTab('alma');
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
-  const { updateInteraction, updateInteractionSummary, updateInteractionTalkingPoints, updateInteractionTemplate, updateInteractionWithRecording, updateInteractionActionItems, updateInteractionStatus, deleteInteraction, addInteraction } = useInteractionsContext();
+  const { updateInteraction, updateInteractionSummary, updateInteractionTemplate, updateInteractionWithRecording, updateInteractionActionItems, updateInteractionStatus, deleteInteraction, addInteraction } = useInteractionsContext();
   const { addTask, updateTask, toggleTask, deleteTask } = useTasksContext();
   const { activeMeeting, startMeeting, endMeeting } = useActiveMeetingContext();
 
@@ -135,10 +135,6 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
     return interactions.find((m) => m.id === interactionId) || null;
   }, [interactions, interactionId]);
 
-  const handleTalkingPointsChange = useCallback((talkingPoints: string) => {
-    updateInteractionTalkingPoints(studentId, interactionId, talkingPoints);
-  }, [studentId, interactionId, updateInteractionTalkingPoints]);
-
   const handleSummaryChange = useCallback((summary: string) => {
     updateInteractionSummary(studentId, interactionId, summary);
   }, [studentId, interactionId, updateInteractionSummary]);
@@ -147,27 +143,27 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
     const template = MEETING_TEMPLATES.find((t) => t.id === templateId);
     if (!template) return;
 
-    const currentTalkingPoints = interaction?.talkingPoints || '';
-    const isEmpty = !currentTalkingPoints || currentTalkingPoints.replace(/<[^>]*>/g, '').trim().length === 0;
+    const currentNotes = interaction?.summary || '';
+    const isEmpty = !currentNotes || currentNotes.replace(/<[^>]*>/g, '').trim().length === 0;
 
     if (!isEmpty) {
-      if (!confirm('This will replace your current talking points. Continue?')) {
+      if (!confirm('This will replace your current notes. Continue?')) {
         return;
       }
     }
 
-    handleTalkingPointsChange(templateToHTML(template));
+    handleSummaryChange(templateToHTML(template));
     updateInteractionTemplate(studentId, interactionId, template.id);
-  }, [interaction?.talkingPoints, handleTalkingPointsChange, updateInteractionTemplate, studentId, interactionId]);
+  }, [interaction?.summary, handleSummaryChange, updateInteractionTemplate, studentId, interactionId]);
 
   const handleGenerateCustomTalkingPoints = useCallback(async (prompt: string) => {
     if (!studentData || isGeneratingTalkingPoints) return;
 
-    const currentTalkingPoints = interaction?.talkingPoints || '';
-    const isEmpty = !currentTalkingPoints || currentTalkingPoints.replace(/<[^>]*>/g, '').trim().length === 0;
+    const currentNotes = interaction?.summary || '';
+    const isEmpty = !currentNotes || currentNotes.replace(/<[^>]*>/g, '').trim().length === 0;
 
     if (!isEmpty) {
-      if (!confirm('This will replace your current talking points. Continue?')) {
+      if (!confirm('This will replace your current notes. Continue?')) {
         return;
       }
     }
@@ -175,17 +171,17 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
     setIsGeneratingTalkingPoints(true);
 
     try {
-      const talkingPoints = await generateCustomTalkingPoints(prompt, studentData);
-      handleTalkingPointsChange(talkingPoints);
+      const generatedNotes = await generateCustomTalkingPoints(prompt, studentData);
+      handleSummaryChange(generatedNotes);
       // Clear template selection since we're using custom
       updateInteractionTemplate(studentId, interactionId, '');
     } catch (error) {
-      console.error('Failed to generate custom talking points:', error);
-      alert('Failed to generate talking points. Please try again.');
+      console.error('Failed to generate notes:', error);
+      alert('Failed to generate notes. Please try again.');
     } finally {
       setIsGeneratingTalkingPoints(false);
     }
-  }, [studentData, isGeneratingTalkingPoints, interaction?.talkingPoints, handleTalkingPointsChange, updateInteractionTemplate, studentId, interactionId]);
+  }, [studentData, isGeneratingTalkingPoints, interaction?.summary, handleSummaryChange, updateInteractionTemplate, studentId, interactionId]);
 
   // Handle adding counselor tasks - creates a real task
   const handleAddCounselorTask = useCallback((title: string) => {
@@ -222,7 +218,7 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
       studentName,
       interactionId,
       interaction.title,
-      interaction.talkingPoints
+      interaction.summary
     );
   }, [studentData, interaction, studentId, interactionId, startMeeting]);
 
@@ -316,100 +312,6 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
     updateInteractionActionItems(studentId, interactionId, recommendedActions);
   }, [studentId, interactionId, updateInteractionActionItems]);
 
-  const handleGenerateTalkingPoints = useCallback(() => {
-    if (!studentData || isGeneratingTalkingPoints) return;
-
-    const { student, profile, milestones, tasks, smartGoals, bookmarks } = studentData;
-    const html: string[] = [];
-
-    // Always start with a check-in section
-    html.push(`<h3>Check-in</h3>`);
-    html.push(`<ul><li>How have things been going since we last met?</li><li>Any challenges or concerns to discuss?</li></ul>`);
-
-    // Academic check-in
-    const academicItems: string[] = [];
-    if (student.gpa && student.gpa > 0) {
-      academicItems.push(`<li>Current GPA: <strong>${student.gpa}</strong> - How are classes going this semester?</li>`);
-    }
-    if (student.satScore || student.actScore) {
-      const scores = [];
-      if (student.satScore) scores.push(`SAT: ${student.satScore}`);
-      if (student.actScore) scores.push(`ACT: ${student.actScore}`);
-      academicItems.push(`<li>Test scores (<strong>${scores.join(', ')}</strong>) - Any plans to retake?</li>`);
-    }
-    if (academicItems.length > 0) {
-      html.push(`<h3>Academic Progress</h3>`);
-      html.push(`<ul>${academicItems.join('')}</ul>`);
-    }
-
-    // Milestones progress
-    const pendingMilestones = milestones.filter(m => m.status === 'not_done');
-    if (pendingMilestones.length > 0) {
-      html.push(`<h3>Upcoming Milestones</h3>`);
-      html.push(`<ul>${pendingMilestones.slice(0, 3).map(m =>
-        `<li>${m.title} (<strong>${m.progress}%</strong> complete)</li>`
-      ).join('')}</ul>`);
-    }
-
-    // Open tasks
-    const openTasks = tasks.filter(t => t.status === 'open');
-    if (openTasks.length > 0) {
-      html.push(`<h3>Tasks to Follow Up On</h3>`);
-      html.push(`<ul>${openTasks.slice(0, 3).map(t => `<li>${t.title}</li>`).join('')}</ul>`);
-    }
-
-    // Goals discussion
-    const activeGoals = smartGoals.filter(g => g.status === 'active');
-    if (activeGoals.length > 0) {
-      html.push(`<h3>Goals Progress</h3>`);
-      html.push(`<ul>${activeGoals.slice(0, 2).map(g => {
-        const completedSubtasks = g.subtasks.filter(s => s.completed).length;
-        return `<li>${g.title} (<strong>${completedSubtasks}/${g.subtasks.length}</strong> steps completed)</li>`;
-      }).join('')}</ul>`);
-    }
-
-    // Career/postsecondary interests
-    const careerBookmarks = bookmarks.filter(b => b.type === 'career' && b.isBookmarked);
-    const schoolBookmarks = bookmarks.filter(b => b.type === 'school' && b.isBookmarked);
-
-    if (careerBookmarks.length > 0 || schoolBookmarks.length > 0 || profile.careerVision) {
-      html.push(`<h3>Postsecondary Planning</h3>`);
-      const planningItems: string[] = [];
-      if (profile.careerVision) {
-        planningItems.push(`<li><strong>Career vision:</strong> ${profile.careerVision}</li>`);
-      }
-      if (careerBookmarks.length > 0) {
-        planningItems.push(`<li><strong>Interested careers:</strong> ${careerBookmarks.slice(0, 3).map(c => c.title).join(', ')}</li>`);
-      }
-      if (schoolBookmarks.length > 0) {
-        planningItems.push(`<li><strong>Schools of interest:</strong> ${schoolBookmarks.slice(0, 3).map(s => s.title).join(', ')}</li>`);
-      }
-      html.push(`<ul>${planningItems.join('')}</ul>`);
-    }
-
-    // Strengths to highlight
-    if (profile.strengths && profile.strengths.length > 0) {
-      html.push(`<h3>Strengths to Encourage</h3>`);
-      html.push(`<ul><li>${profile.strengths.slice(0, 3).join(', ')}</li></ul>`);
-    }
-
-    // Next steps placeholder
-    html.push(`<h3>Next Steps</h3>`);
-    html.push(`<ul><li>Action items from this meeting</li><li>Schedule follow-up if needed</li></ul>`);
-
-    const generatedContent = html.join('');
-
-    // Start the generation process with delay
-    setIsGeneratingTalkingPoints(true);
-
-    // 1.5 second fake delay to simulate AI processing
-    setTimeout(() => {
-      setIsGeneratingTalkingPoints(false);
-      // Directly set the talking points
-      handleTalkingPointsChange(generatedContent);
-    }, 1500);
-  }, [studentData, isGeneratingTalkingPoints, handleTalkingPointsChange]);
-
   // Loading state
   if (!studentData) {
     return (
@@ -424,85 +326,52 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
   // Interaction not found
   if (!interaction) {
     return (
-      <AppLayout>
-        <Box sx={{ backgroundColor: '#FBFBFB', minHeight: '100vh', p: 3 }}>
-          <Button
-            startIcon={<ArrowLeft size={18} />}
-            onClick={handleBack}
-            sx={{ mb: 3, textTransform: 'none' }}
-          >
-            Back to {studentData.student.firstName} {studentData.student.lastName}
-          </Button>
-          <Typography variant="h6" color="error">
-            Interaction not found
-          </Typography>
-        </Box>
+      <AppLayout
+        breadcrumbs={[
+          { label: `${studentData.student.firstName} ${studentData.student.lastName}`, href: `/students/${studentId}` },
+          { label: 'Meeting not found' },
+        ]}
+      >
+        <Typography variant="h6" color="error">
+          Interaction not found
+        </Typography>
       </AppLayout>
     );
   }
 
-  const isDraft = interaction.status === 'draft';
   const isCompleted = interaction.status === 'completed';
   const hasRecording = !!interaction.recordingUrl || !!interaction.transcript;
   const showStartRecordingButton = !isRecording && !hasRecording && !isCompleted;
 
-  // Helper to check if HTML content is actually empty (not just empty tags)
-  const isContentEmpty = (content: string | undefined | null): boolean => {
-    if (!content) return true;
-    const textContent = content.replace(/<[^>]*>/g, '').trim();
-    return textContent.length === 0;
-  };
-
-  const hasTalkingPoints = !isContentEmpty(interaction.talkingPoints);
-  const hasSummary = !isContentEmpty(interaction.summary);
+  const breadcrumbs: BreadcrumbItem[] = [
+    { label: `${studentData.student.firstName} ${studentData.student.lastName}`, href: `/students/${studentId}` },
+    { label: 'Meetings', href: `/students/${studentId}?tab=meetings` },
+    { label: interaction.title },
+  ];
 
   return (
     <AppLayout
       rightPanel={
-        studentData && (
-          <SidePanel
-            studentFirstName={studentData.student.firstName}
-            tasks={tasks}
-            suggestedActions={localSuggestedActions}
-            studentId={studentId}
-            currentStudentId={studentId}
-            activeTab={sidePanelTab}
-            onTabChange={setSidePanelTab}
-            onTaskToggle={handleTaskToggle}
-            onNewTask={handleNewTask}
-            onTaskEdit={handleTaskEdit}
-            onTaskDelete={handleTaskDelete}
-            onActionAccept={handleActionAccept}
-            onActionDismiss={handleActionDismiss}
-          />
-        )
+        <SidePanel
+          studentFirstName={studentData.student.firstName}
+          tasks={tasks}
+          suggestedActions={localSuggestedActions}
+          studentId={studentId}
+          currentStudentId={studentId}
+          activeTab={sidePanelTab}
+          onTabChange={setSidePanelTab}
+          onTaskToggle={handleTaskToggle}
+          onNewTask={handleNewTask}
+          onTaskEdit={handleTaskEdit}
+          onTaskDelete={handleTaskDelete}
+          onActionAccept={handleActionAccept}
+          onActionDismiss={handleActionDismiss}
+        />
       }
       currentStudentId={studentId}
+      breadcrumbs={breadcrumbs}
     >
-      <Box sx={{ backgroundColor: '#FBFBFB', minHeight: '100vh' }}>
-        {/* Top Bar */}
-        <Box
-          sx={{
-            backgroundColor: 'white',
-            borderBottom: '1px solid #E5E7EB',
-            px: 4,
-            py: 2,
-          }}
-        >
-          <Box className="flex items-center justify-between">
-            <Button
-              startIcon={<ArrowLeft size={18} />}
-              onClick={handleBack}
-              sx={{ textTransform: 'none', color: 'text.secondary' }}
-            >
-              Back to {studentData.student.firstName} {studentData.student.lastName}
-            </Button>
-
-          </Box>
-        </Box>
-
-        {/* Content */}
-        <Box sx={{ maxWidth: 900, mx: 'auto', p: 4 }}>
+      <Box>
           {/* Interaction Header */}
           <InteractionHeader
             interaction={interaction}
@@ -512,37 +381,11 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
             onDateChange={handleDateChange}
           />
 
-          {/* Talking points - show when not recording */}
-          {!isRecording && (
-            <Box sx={{ mt: 4 }}>
-              {isCompleted && !hasTalkingPoints ? (
-                <SectionCard title="Talking points" icon={<FileText size={18} />}>
-                  <Typography sx={{ fontSize: '14px', color: '#6B7280', fontStyle: 'italic' }}>
-                    No talking points were added to this interaction.
-                  </Typography>
-                </SectionCard>
-              ) : (
-                <NotesSection
-                  notes={interaction.talkingPoints || ''}
-                  onNotesChange={handleTalkingPointsChange}
-                  label="Talking points"
-                  placeholder="Plan what you want to talk about..."
-                  readOnly={isCompleted}
-                  isGenerating={isGeneratingTalkingPoints}
-                  showTemplateSelector={!isCompleted}
-                  currentTemplateId={interaction.templateId}
-                  onSelectTemplate={handleSelectTemplate}
-                  onGenerateCustom={handleGenerateCustomTalkingPoints}
-                />
-              )}
-            </Box>
-          )}
-
-          {/* Summary - show when not in interaction mode */}
+          {/* Notes - consolidated talking points and summary */}
           {!isRecording && (
             <Box sx={{ mt: 4 }}>
               {isLoadingSummary ? (
-                <SectionCard title="Summary" icon={<Alma size={18} color="#12B76A" />}>
+                <SectionCard title="Notes" icon={<FileText size={18} />}>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     <Skeleton variant="text" width="90%" height={24} animation="wave" />
                     <Skeleton variant="text" width="100%" height={20} animation="wave" />
@@ -560,9 +403,14 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
                   <NotesSection
                     notes={interaction.summary || ''}
                     onNotesChange={handleSummaryChange}
-                    label="Summary"
-                    placeholder="Enter your notes on this interaction..."
-                    icon={<Alma size={18} color="#12B76A" />}
+                    label="Notes"
+                    placeholder="Add talking points, meeting notes, or any other details..."
+                    readOnly={isCompleted}
+                    isGenerating={isGeneratingTalkingPoints}
+                    showTemplateSelector={!isCompleted}
+                    currentTemplateId={interaction.templateId}
+                    onSelectTemplate={handleSelectTemplate}
+                    onGenerateCustom={handleGenerateCustomTalkingPoints}
                   />
                 </Collapse>
               )}
@@ -622,8 +470,6 @@ Counselor: The FSA ID is your electronic signature for the FAFSA. Both you and o
             </Box>
           )}
         </Box>
-      </Box>
-
     </AppLayout>
   );
 }
