@@ -648,7 +648,7 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
           ) : (
             <>
               <Typography sx={{ fontSize: '14px', color: '#535862', mb: 2 }}>
-                Add tasks or transcribe the meeting so Alma generates tasks.
+                Add tasks or transcribe the meeting so Alma generates them for you.
               </Typography>
               <Button
                 startIcon={<Plus size={14} />}
@@ -679,17 +679,12 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
             <>
             <SectionHeader icon={<Mic size={18} />} title="Transcript" />
             <Typography
-              onClick={!isCompleted && !isRecording ? handleStartRecording : undefined}
               sx={{
                 fontSize: '14px',
-                color: !isCompleted && !isRecording ? '#155E4C' : '#6B7280',
-                cursor: !isCompleted && !isRecording ? 'pointer' : 'default',
-                '&:hover': !isCompleted && !isRecording ? {
-                  textDecoration: 'underline',
-                } : {},
+                color: '#6B7280',
               }}
             >
-              {isCompleted ? 'This meeting was not transcribed.' : 'Start transcribing.'}
+              {isCompleted ? 'This meeting was not transcribed.' : "When you transcribe a meeting, you'll find its transcript here."}
             </Typography>
             </>
           )}
