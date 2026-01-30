@@ -1000,6 +1000,259 @@ export const studentEData: StudentData = {
 };
 
 // =============================================================================
+// ADDITIONAL STUDENTS (to ensure 15+ for dashboard testing)
+// =============================================================================
+
+export const studentFMaria: Student = {
+  id: 'student-f-maria',
+  firstName: 'Maria',
+  lastName: 'Garcia',
+  grade: 12,
+  email: 'maria.garcia@student.edu',
+  location: 'Austin, TX',
+  avatarUrl: '/avatars/default.jpg',
+  missionStatement: 'Pursuing excellence in engineering.',
+  gpa: 3.9,
+  satScore: 1450,
+  actScore: 32,
+  classRank: 'Top 5%',
+  readinessScore: 85,
+  onTrackStatus: 'on_track',
+};
+
+export const studentGJames: Student = {
+  id: 'student-g-james',
+  firstName: 'James',
+  lastName: 'Wilson',
+  grade: 11,
+  email: 'james.wilson@student.edu',
+  location: 'Houston, TX',
+  avatarUrl: '/avatars/default.jpg',
+  missionStatement: 'Building a future in technology.',
+  gpa: 3.4,
+  satScore: 1280,
+  actScore: 27,
+  classRank: 'Top 20%',
+  readinessScore: 62,
+  onTrackStatus: 'on_track',
+};
+
+export const studentHSophia: Student = {
+  id: 'student-h-sophia',
+  firstName: 'Sophia',
+  lastName: 'Chen',
+  grade: 10,
+  email: 'sophia.chen@student.edu',
+  location: 'Dallas, TX',
+  avatarUrl: '/avatars/default.jpg',
+  missionStatement: 'Exploring the world through art and science.',
+  gpa: 3.7,
+  satScore: null,
+  actScore: null,
+  classRank: 'Top 15%',
+  readinessScore: 58,
+  onTrackStatus: 'on_track',
+};
+
+export const studentIMarcus: Student = {
+  id: 'student-i-marcus',
+  firstName: 'Marcus',
+  lastName: 'Johnson',
+  grade: 12,
+  email: 'marcus.johnson@student.edu',
+  location: 'San Antonio, TX',
+  avatarUrl: '/avatars/default.jpg',
+  missionStatement: 'Aspiring to make a difference in healthcare.',
+  gpa: 3.1,
+  satScore: 1150,
+  actScore: 24,
+  classRank: 'Top 35%',
+  readinessScore: 48,
+  onTrackStatus: 'on_track',
+};
+
+export const studentJEmily: Student = {
+  id: 'student-j-emily',
+  firstName: 'Emily',
+  lastName: 'Brown',
+  grade: 9,
+  email: 'emily.brown@student.edu',
+  location: 'Austin, TX',
+  avatarUrl: '/avatars/default.jpg',
+  missionStatement: 'Just starting my high school journey.',
+  gpa: 3.6,
+  satScore: null,
+  actScore: null,
+  classRank: 'Top 20%',
+  readinessScore: 42,
+  onTrackStatus: 'on_track',
+};
+
+export const studentKDavid: Student = {
+  id: 'student-k-david',
+  firstName: 'David',
+  lastName: 'Martinez',
+  grade: 11,
+  email: 'david.martinez@student.edu',
+  location: 'El Paso, TX',
+  avatarUrl: '/avatars/default.jpg',
+  missionStatement: 'Passionate about business and entrepreneurship.',
+  gpa: 2.8,
+  satScore: 1100,
+  actScore: 22,
+  classRank: 'Top 40%',
+  readinessScore: 38,
+  onTrackStatus: 'off_track',
+};
+
+export const studentLOlivia: Student = {
+  id: 'student-l-olivia',
+  firstName: 'Olivia',
+  lastName: 'Taylor',
+  grade: 10,
+  email: 'olivia.taylor@student.edu',
+  location: 'Fort Worth, TX',
+  avatarUrl: '/avatars/default.jpg',
+  missionStatement: 'Dreaming of a career in veterinary medicine.',
+  gpa: 3.8,
+  satScore: null,
+  actScore: null,
+  classRank: 'Top 10%',
+  readinessScore: 65,
+  onTrackStatus: 'on_track',
+};
+
+export const studentMNoah: Student = {
+  id: 'student-m-noah',
+  firstName: 'Noah',
+  lastName: 'Anderson',
+  grade: 12,
+  email: 'noah.anderson@student.edu',
+  location: 'Plano, TX',
+  avatarUrl: '/avatars/default.jpg',
+  missionStatement: 'Combining creativity with computer science.',
+  gpa: 3.3,
+  satScore: 1320,
+  actScore: 28,
+  classRank: 'Top 25%',
+  readinessScore: 72,
+  onTrackStatus: 'on_track',
+};
+
+export const studentNAva: Student = {
+  id: 'student-n-ava',
+  firstName: 'Ava',
+  lastName: 'Thomas',
+  grade: 9,
+  email: 'ava.thomas@student.edu',
+  location: 'Irving, TX',
+  avatarUrl: '/avatars/default.jpg',
+  missionStatement: 'Excited to explore new opportunities.',
+  gpa: 3.2,
+  satScore: null,
+  actScore: null,
+  classRank: 'Top 30%',
+  readinessScore: 28,
+  onTrackStatus: 'on_track',
+};
+
+export const studentOEthan: Student = {
+  id: 'student-o-ethan',
+  firstName: 'Ethan',
+  lastName: 'Jackson',
+  grade: 11,
+  email: 'ethan.jackson@student.edu',
+  location: 'Arlington, TX',
+  avatarUrl: '/avatars/default.jpg',
+  missionStatement: 'Working toward a future in law.',
+  gpa: 3.5,
+  satScore: 1250,
+  actScore: 26,
+  classRank: 'Top 22%',
+  readinessScore: 55,
+  onTrackStatus: 'on_track',
+};
+
+export const studentPIsabella: Student = {
+  id: 'student-p-isabella',
+  firstName: 'Isabella',
+  lastName: 'White',
+  grade: 10,
+  email: 'isabella.white@student.edu',
+  location: 'Corpus Christi, TX',
+  avatarUrl: '/avatars/default.jpg',
+  missionStatement: 'Passionate about environmental science.',
+  gpa: 3.6,
+  satScore: null,
+  actScore: null,
+  classRank: 'Top 18%',
+  readinessScore: 52,
+  onTrackStatus: 'on_track',
+};
+
+export const studentQLiam: Student = {
+  id: 'student-q-liam',
+  firstName: 'Liam',
+  lastName: 'Harris',
+  grade: 12,
+  email: 'liam.harris@student.edu',
+  location: 'Laredo, TX',
+  avatarUrl: '/avatars/default.jpg',
+  missionStatement: 'Focused on mechanical engineering.',
+  gpa: 3.0,
+  satScore: 1180,
+  actScore: 25,
+  classRank: 'Top 38%',
+  readinessScore: 44,
+  onTrackStatus: 'off_track',
+};
+
+// Minimal data for additional students
+const createMinimalStudentData = (student: Student): StudentData => ({
+  student,
+  profile: {
+    academicAchievements: { gpa: student.gpa, gpaMax: 5, actScore: student.actScore, satScore: student.satScore, classRank: student.classRank || 'N/A' },
+    awards: [],
+    microCredentials: [],
+    courseHighlights: [],
+    interests: [],
+    strengths: [],
+    languages: ['English (Native)'],
+    experiences: [],
+    durableSkills: { summary: '', topSkills: [] },
+    personalityType: { name: '', traits: [] },
+    values: '',
+    mission: student.missionStatement,
+    careerVision: '',
+  },
+  milestones: [],
+  tasks: [],
+  suggestedActions: [],
+  smartGoals: [],
+  almaSnapshot: null,
+  bookmarks: [],
+  recommendations: [],
+  studentWork: [],
+  activityHistory: [],
+  aiReflections: [],
+  qualityFlags: [],
+  interactions: [],
+});
+
+export const studentFData = createMinimalStudentData(studentFMaria);
+export const studentGData = createMinimalStudentData(studentGJames);
+export const studentHData = createMinimalStudentData(studentHSophia);
+export const studentIData = createMinimalStudentData(studentIMarcus);
+export const studentJData = createMinimalStudentData(studentJEmily);
+export const studentKData = createMinimalStudentData(studentKDavid);
+export const studentLData = createMinimalStudentData(studentLOlivia);
+export const studentMData = createMinimalStudentData(studentMNoah);
+export const studentNData = createMinimalStudentData(studentNAva);
+export const studentOData = createMinimalStudentData(studentOEthan);
+export const studentPData = createMinimalStudentData(studentPIsabella);
+export const studentQData = createMinimalStudentData(studentQLiam);
+
+// =============================================================================
 // DATA LOOKUP FUNCTIONS
 // =============================================================================
 
@@ -1010,6 +1263,18 @@ const allStudentData: Record<string, StudentData> = {
   'student-c-missed': studentCData,
   'student-d-active': studentDData,
   'student-e-borderline': studentEData,
+  'student-f-maria': studentFData,
+  'student-g-james': studentGData,
+  'student-h-sophia': studentHData,
+  'student-i-marcus': studentIData,
+  'student-j-emily': studentJData,
+  'student-k-david': studentKData,
+  'student-l-olivia': studentLData,
+  'student-m-noah': studentMData,
+  'student-n-ava': studentNData,
+  'student-o-ethan': studentOData,
+  'student-p-isabella': studentPData,
+  'student-q-liam': studentQData,
 };
 
 export function getStudentData(studentId: string): StudentData | null {
