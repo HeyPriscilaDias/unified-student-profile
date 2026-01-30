@@ -2,8 +2,8 @@
 
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Box, Typography, Button } from '@mui/material';
-import { Users, FileEdit, CheckSquare, Mic, Plus, Trash2, RefreshCw, Copy, Sparkles } from 'lucide-react';
+import { Box, Typography, Button, Menu, MenuItem, IconButton, TextField } from '@mui/material';
+import { Users, FileEdit, CheckSquare, Mic, Plus, Trash2, RefreshCw, Copy, Sparkles, Calendar, MoreVertical, CheckCheck, Target, ChevronRight } from 'lucide-react';
 import { Alma } from '@/components/icons/AlmaIcon';
 import { AppLayout } from '@/components/AppLayout';
 import { LoadingSection } from '@/components/shared';
@@ -17,7 +17,7 @@ import { InteractionHeader } from './InteractionHeader';
 import { TranscriptSection } from './TranscriptSection';
 import { AddAttendeesModal } from './AddAttendeesModal';
 import { TranscriptionBanner } from '@/components/TranscriptionBanner';
-import type { Task, SuggestedAction, Interaction, InteractionStatus } from '@/types/student';
+import type { Task, SuggestedAction, Interaction, InteractionStatus, InteractionRecommendedAction } from '@/types/student';
 import type { BreadcrumbItem } from '@/components/Breadcrumbs';
 
 interface InteractionDetailViewProps {
@@ -47,6 +47,11 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const [sidePanelTab, setSidePanelTab] = usePersistentRightPanelTab('alma');
   const [localSuggestedActions, setLocalSuggestedActions] = useState<SuggestedAction[]>([]);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [acceptedActionIds, setAcceptedActionIds] = useState<Set<string>>(new Set());
+  const [meetingTasks, setMeetingTasks] = useState<Array<{ id: string; title: string; assignee: 'staff' | 'student'; dueDate?: string; isEditing?: boolean; smartGoalId?: string }>>([]);
+  const [taskMenuAnchor, setTaskMenuAnchor] = useState<{ element: HTMLElement; taskId: string } | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [goalSubmenuAnchor, setGoalSubmenuAnchor] = useState<HTMLElement | null>(null);
   const { updateInteraction, updateInteractionSummary, updateInteractionWithRecording, updateInteractionStatus, updateInteractionAttendees, deleteInteraction, addInteraction } = useInteractionsContext();
   const { addTask, updateTask, toggleTask, deleteTask } = useTasksContext();
   const { activeMeeting, startMeeting, setPhase } = useActiveMeetingContext();
@@ -201,6 +206,104 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
       )
     );
   };
+
+  const handleAcceptRecommendedAction = useCallback((action: InteractionRecommendedAction) => {
+    // Add task to the tasks context
+    addTask({
+      studentId,
+      title: action.title,
+      source: 'interaction',
+      taskType: action.assignee,
+    });
+    // Track this action as accepted locally
+    setAcceptedActionIds(prev => new Set(prev).add(action.id));
+    // Also add to meeting tasks for display
+    setMeetingTasks(prev => [...prev, {
+      id: `meeting-task-${Date.now()}`,
+      title: action.title,
+      assignee: action.assignee,
+    }]);
+  }, [addTask, studentId]);
+
+  const handleAddMeetingTask = useCallback((assignee: 'staff' | 'student') => {
+    const newTaskId = `meeting-task-${Date.now()}`;
+    setMeetingTasks(prev => [...prev, {
+      id: newTaskId,
+      title: '',
+      assignee,
+      isEditing: true,
+    }]);
+    setEditingTaskId(newTaskId);
+  }, []);
+
+  const handleSaveTaskTitle = useCallback((taskId: string, newTitle: string) => {
+    const trimmedTitle = newTitle.trim();
+    if (!trimmedTitle) {
+      // Remove task if title is empty
+      setMeetingTasks(prev => prev.filter(t => t.id !== taskId));
+    } else {
+      // Save the title and add to tasks context
+      setMeetingTasks(prev => prev.map(t =>
+        t.id === taskId ? { ...t, title: trimmedTitle, isEditing: false } : t
+      ));
+      const task = meetingTasks.find(t => t.id === taskId);
+      if (task && !task.title) {
+        // Only add to context if it's a new task (empty title before)
+        addTask({
+          studentId,
+          title: trimmedTitle,
+          source: 'manual',
+          taskType: task.assignee,
+        });
+      }
+    }
+    setEditingTaskId(null);
+  }, [addTask, studentId, meetingTasks]);
+
+  const handleTaskTitleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>, taskId: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveTaskTitle(taskId, (e.target as HTMLInputElement).value);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      // Cancel editing - remove if new (empty title), otherwise revert
+      const task = meetingTasks.find(t => t.id === taskId);
+      if (task && !task.title) {
+        setMeetingTasks(prev => prev.filter(t => t.id !== taskId));
+      } else {
+        setMeetingTasks(prev => prev.map(t =>
+          t.id === taskId ? { ...t, isEditing: false } : t
+        ));
+      }
+      setEditingTaskId(null);
+    }
+  }, [handleSaveTaskTitle, meetingTasks]);
+
+  const handleDeleteMeetingTask = useCallback((taskId: string) => {
+    setMeetingTasks(prev => prev.filter(t => t.id !== taskId));
+    setTaskMenuAnchor(null);
+  }, []);
+
+  const handleLinkTaskToGoal = useCallback((taskId: string, goalId: string) => {
+    setMeetingTasks(prev => prev.map(t =>
+      t.id === taskId ? { ...t, smartGoalId: goalId } : t
+    ));
+    setGoalSubmenuAnchor(null);
+    setTaskMenuAnchor(null);
+  }, []);
+
+  const handleUnlinkTaskFromGoal = useCallback((taskId: string) => {
+    setMeetingTasks(prev => prev.map(t =>
+      t.id === taskId ? { ...t, smartGoalId: undefined } : t
+    ));
+    setGoalSubmenuAnchor(null);
+    setTaskMenuAnchor(null);
+  }, []);
+
+  // Get active goals for linking
+  const activeGoals = useMemo(() => {
+    return studentData?.smartGoals?.filter(g => g.status === 'active') || [];
+  }, [studentData?.smartGoals]);
 
   const handleGenerateSummary = useCallback(() => {
     if (!notes.trim()) return;
@@ -500,177 +603,633 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
 
         {/* Tasks Section */}
         <Box sx={{ mt: 4 }}>
-          <SectionHeader icon={<CheckSquare size={18} />} title="Tasks" />
-          {interaction.aiSummary?.recommendedActions && interaction.aiSummary.recommendedActions.length > 0 ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {/* Staff Tasks ("Yours") */}
-              {(() => {
-                const staffTasks = interaction.aiSummary.recommendedActions.filter(a => a.assignee === 'staff');
-                return staffTasks.length > 0 ? (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <Typography sx={{ fontSize: '14px', color: '#252B37' }}>
-                      Yours
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {staffTasks.map((action) => (
-                        <Box
-                          key={action.id}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            backgroundColor: '#F5F5F5',
-                            borderRadius: '8px',
-                            px: 1.5,
-                            py: 1,
-                          }}
-                        >
-                          <Typography sx={{ flex: 1, fontSize: '14px', color: '#252B37', lineHeight: '20px' }}>
-                            {action.title}
-                          </Typography>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                              textTransform: 'none',
-                              fontSize: '14px',
-                              fontWeight: 600,
-                              color: '#414651',
-                              backgroundColor: 'white',
-                              borderColor: '#D5D7DA',
-                              borderRadius: '8px',
-                              px: 1.5,
-                              py: 0.5,
-                              minHeight: 32,
-                              whiteSpace: 'nowrap',
-                              '&:hover': {
-                                borderColor: '#9CA3AF',
-                                backgroundColor: 'white',
-                              },
-                            }}
-                          >
-                            Add to my tasks
-                          </Button>
-                        </Box>
-                      ))}
-                    </Box>
-                    <Button
-                      startIcon={<Plus size={14} />}
-                      sx={{
-                        textTransform: 'none',
-                        fontSize: '14px',
-                        color: '#535862',
-                        p: 0,
-                        justifyContent: 'flex-start',
-                        minWidth: 'auto',
-                        '&:hover': {
-                          backgroundColor: 'transparent',
-                          color: '#374151',
-                        },
-                      }}
-                    >
-                      Add task
-                    </Button>
-                  </Box>
-                ) : null;
-              })()}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <CheckSquare size={16} color="#252B37" />
+            <Typography
+              sx={{
+                fontFamily: '"Poppins", sans-serif',
+                fontSize: '18px',
+                fontWeight: 500,
+                color: '#252B37',
+                letterSpacing: '-0.5px',
+                lineHeight: '24px',
+              }}
+            >
+              Tasks
+            </Typography>
+          </Box>
 
-              {/* Student Tasks */}
-              {(() => {
-                const studentTasks = interaction.aiSummary!.recommendedActions!.filter(a => a.assignee === 'student');
-                return studentTasks.length > 0 ? (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <Typography sx={{ fontSize: '14px', color: '#252B37' }}>
-                      {studentData.student.firstName}&apos;s
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {studentTasks.map((action) => (
-                        <Box
-                          key={action.id}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            backgroundColor: '#F5F5F5',
-                            borderRadius: '8px',
-                            px: 1.5,
-                            py: 1,
-                          }}
-                        >
-                          <Typography sx={{ flex: 1, fontSize: '14px', color: '#252B37', lineHeight: '20px' }}>
-                            {action.title}
-                          </Typography>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                              textTransform: 'none',
-                              fontSize: '14px',
-                              fontWeight: 600,
-                              color: '#414651',
-                              backgroundColor: 'white',
-                              borderColor: '#D5D7DA',
-                              borderRadius: '8px',
-                              px: 1.5,
-                              py: 0.5,
-                              minHeight: 32,
-                              whiteSpace: 'nowrap',
-                              '&:hover': {
-                                borderColor: '#9CA3AF',
-                                backgroundColor: 'white',
-                              },
-                            }}
-                          >
-                            Add to student tasks
-                          </Button>
-                        </Box>
-                      ))}
-                    </Box>
-                    <Button
-                      startIcon={<Plus size={14} />}
-                      sx={{
-                        textTransform: 'none',
-                        fontSize: '14px',
-                        color: '#535862',
-                        p: 0,
-                        justifyContent: 'flex-start',
-                        minWidth: 'auto',
-                        '&:hover': {
-                          backgroundColor: 'transparent',
-                          color: '#374151',
-                        },
-                      }}
-                    >
-                      Add task
-                    </Button>
-                  </Box>
-                ) : null;
-              })()}
-            </Box>
-          ) : (
-            <>
-              <Typography sx={{ fontSize: '14px', color: '#535862', mb: 2 }}>
-                Add tasks or transcribe the meeting so Alma generates them for you.
-              </Typography>
-              <Button
-                startIcon={<Plus size={14} />}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* For you (Staff) Section */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Typography
                 sx={{
-                  textTransform: 'none',
                   fontSize: '14px',
-                  color: '#535862',
-                  p: 0,
-                  justifyContent: 'flex-start',
-                  minWidth: 'auto',
-                  '&:hover': {
-                    backgroundColor: 'transparent',
-                    color: '#374151',
-                  },
+                  fontWeight: 600,
+                  color: '#252B37',
+                  lineHeight: '20px',
                 }}
               >
-                Add task
-              </Button>
-            </>
-          )}
+                For you
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {/* Pending suggested tasks (lavender) */}
+                {interaction.aiSummary?.recommendedActions
+                  ?.filter(a => a.assignee === 'staff' && !acceptedActionIds.has(a.id))
+                  .map((action) => (
+                    <Box
+                      key={action.id}
+                      sx={{
+                        display: 'flex',
+                        gap: 1,
+                        alignItems: 'flex-start',
+                        p: 2,
+                        backgroundColor: '#F5F8FF',
+                        border: '1px solid #C6D7FD',
+                        borderRadius: '12px',
+                      }}
+                    >
+                      {/* Radio button */}
+                      <Box sx={{ p: '2px', flexShrink: 0 }}>
+                        <Box
+                          sx={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '100px',
+                            border: '1.5px solid #A4A7AE',
+                            backgroundColor: 'white',
+                          }}
+                        />
+                      </Box>
+                      {/* Task info */}
+                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Typography
+                          sx={{
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            color: '#252B37',
+                            lineHeight: '20px',
+                          }}
+                        >
+                          {action.title}
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Calendar size={20} color="#717680" />
+                          <Typography
+                            sx={{
+                              fontSize: '14px',
+                              color: '#717680',
+                              lineHeight: '20px',
+                              cursor: 'pointer',
+                              '&:hover': { color: '#414651' },
+                            }}
+                          >
+                            Add deadline
+                          </Typography>
+                        </Box>
+                      </Box>
+                      {/* Accept button */}
+                      <Button
+                        variant="outlined"
+                        startIcon={<CheckCheck size={20} />}
+                        onClick={() => handleAcceptRecommendedAction(action)}
+                        sx={{
+                          textTransform: 'none',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: '#414651',
+                          backgroundColor: 'white',
+                          borderColor: '#D5D7DA',
+                          borderRadius: '8px',
+                          px: 1.5,
+                          py: 0.75,
+                          minHeight: 32,
+                          flexShrink: 0,
+                          '&:hover': {
+                            borderColor: '#9CA3AF',
+                            backgroundColor: 'white',
+                          },
+                        }}
+                      >
+                        Accept
+                      </Button>
+                    </Box>
+                  ))}
+
+                {/* Accepted/manual tasks (white) */}
+                {meetingTasks
+                  .filter(t => t.assignee === 'staff')
+                  .map((task) => (
+                    <Box
+                      key={task.id}
+                      sx={{
+                        display: 'flex',
+                        gap: 1,
+                        alignItems: 'flex-start',
+                        p: 2,
+                        backgroundColor: 'white',
+                        border: '1px solid #D5D7DA',
+                        borderRadius: '12px',
+                      }}
+                    >
+                      {/* Radio button */}
+                      <Box sx={{ p: '2px', flexShrink: 0 }}>
+                        <Box
+                          sx={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '100px',
+                            border: '1.5px solid #A4A7AE',
+                            backgroundColor: 'white',
+                          }}
+                        />
+                      </Box>
+                      {/* Task info */}
+                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {editingTaskId === task.id ? (
+                          <TextField
+                            autoFocus
+                            defaultValue={task.title}
+                            placeholder="Enter task title..."
+                            variant="standard"
+                            fullWidth
+                            onBlur={(e) => handleSaveTaskTitle(task.id, e.target.value)}
+                            onKeyDown={(e) => handleTaskTitleKeyDown(e as React.KeyboardEvent<HTMLInputElement>, task.id)}
+                            InputProps={{
+                              disableUnderline: true,
+                              sx: {
+                                fontSize: '14px',
+                                color: '#252B37',
+                                lineHeight: '20px',
+                              },
+                            }}
+                            sx={{
+                              '& .MuiInputBase-input': {
+                                padding: 0,
+                              },
+                            }}
+                          />
+                        ) : (
+                          <Typography
+                            sx={{
+                              fontSize: '14px',
+                              fontWeight: 400,
+                              color: '#252B37',
+                              lineHeight: '20px',
+                            }}
+                          >
+                            {task.title}
+                          </Typography>
+                        )}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Calendar size={20} color="#717680" />
+                            <Typography
+                              sx={{
+                                fontSize: '14px',
+                                color: '#717680',
+                                lineHeight: '20px',
+                                cursor: 'pointer',
+                                '&:hover': { color: '#414651' },
+                              }}
+                            >
+                              {task.dueDate || 'Add deadline'}
+                            </Typography>
+                          </Box>
+                          {task.smartGoalId && (() => {
+                            const linkedGoal = activeGoals.find(g => g.id === task.smartGoalId);
+                            return linkedGoal ? (
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 0.5,
+                                  backgroundColor: '#FEF3C7',
+                                  borderRadius: '4px',
+                                  px: 1,
+                                  py: 0.25,
+                                }}
+                              >
+                                <Target size={12} color="#D97706" />
+                                <Typography
+                                  sx={{
+                                    fontSize: '12px',
+                                    color: '#92400E',
+                                    lineHeight: '16px',
+                                    maxWidth: 120,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {linkedGoal.title}
+                                </Typography>
+                              </Box>
+                            ) : null;
+                          })()}
+                        </Box>
+                      </Box>
+                      {/* Kebab menu */}
+                      {!editingTaskId || editingTaskId !== task.id ? (
+                        <IconButton
+                          size="small"
+                          onClick={(e) => setTaskMenuAnchor({ element: e.currentTarget, taskId: task.id })}
+                          sx={{
+                            width: 36,
+                            height: 36,
+                            color: '#414651',
+                          }}
+                        >
+                          <MoreVertical size={24} />
+                        </IconButton>
+                      ) : null}
+                    </Box>
+                  ))}
+              </Box>
+              {/* Add a task link */}
+              <Box
+                onClick={() => handleAddMeetingTask('staff')}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  cursor: 'pointer',
+                  '&:hover': { '& p': { color: '#414651' }, '& svg': { color: '#414651' } },
+                }}
+              >
+                <Plus size={16} color="#717680" />
+                <Typography
+                  sx={{
+                    fontSize: '14px',
+                    color: '#717680',
+                    lineHeight: '20px',
+                  }}
+                >
+                  Add a task
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* For your student Section */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Typography
+                sx={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: '#252B37',
+                  lineHeight: '20px',
+                }}
+              >
+                For your student
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {/* Pending suggested tasks (lavender) */}
+                {interaction.aiSummary?.recommendedActions
+                  ?.filter(a => a.assignee === 'student' && !acceptedActionIds.has(a.id))
+                  .map((action) => (
+                    <Box
+                      key={action.id}
+                      sx={{
+                        display: 'flex',
+                        gap: 1,
+                        alignItems: 'flex-start',
+                        p: 2,
+                        backgroundColor: '#F5F8FF',
+                        border: '1px solid #C6D7FD',
+                        borderRadius: '12px',
+                      }}
+                    >
+                      {/* Radio button */}
+                      <Box sx={{ p: '2px', flexShrink: 0 }}>
+                        <Box
+                          sx={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '100px',
+                            border: '1.5px solid #A4A7AE',
+                            backgroundColor: 'white',
+                          }}
+                        />
+                      </Box>
+                      {/* Task info */}
+                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Typography
+                          sx={{
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            color: '#252B37',
+                            lineHeight: '20px',
+                          }}
+                        >
+                          {action.title}
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Calendar size={20} color="#717680" />
+                          <Typography
+                            sx={{
+                              fontSize: '14px',
+                              color: '#717680',
+                              lineHeight: '20px',
+                              cursor: 'pointer',
+                              '&:hover': { color: '#414651' },
+                            }}
+                          >
+                            Add deadline
+                          </Typography>
+                        </Box>
+                      </Box>
+                      {/* Accept button */}
+                      <Button
+                        variant="outlined"
+                        startIcon={<CheckCheck size={20} />}
+                        onClick={() => handleAcceptRecommendedAction(action)}
+                        sx={{
+                          textTransform: 'none',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: '#414651',
+                          backgroundColor: 'white',
+                          borderColor: '#D5D7DA',
+                          borderRadius: '8px',
+                          px: 1.5,
+                          py: 0.75,
+                          minHeight: 32,
+                          flexShrink: 0,
+                          '&:hover': {
+                            borderColor: '#9CA3AF',
+                            backgroundColor: 'white',
+                          },
+                        }}
+                      >
+                        Accept
+                      </Button>
+                    </Box>
+                  ))}
+
+                {/* Accepted/manual tasks (white) */}
+                {meetingTasks
+                  .filter(t => t.assignee === 'student')
+                  .map((task) => (
+                    <Box
+                      key={task.id}
+                      sx={{
+                        display: 'flex',
+                        gap: 1,
+                        alignItems: 'flex-start',
+                        p: 2,
+                        backgroundColor: 'white',
+                        border: '1px solid #D5D7DA',
+                        borderRadius: '12px',
+                      }}
+                    >
+                      {/* Radio button */}
+                      <Box sx={{ p: '2px', flexShrink: 0 }}>
+                        <Box
+                          sx={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '100px',
+                            border: '1.5px solid #A4A7AE',
+                            backgroundColor: 'white',
+                          }}
+                        />
+                      </Box>
+                      {/* Task info */}
+                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {editingTaskId === task.id ? (
+                          <TextField
+                            autoFocus
+                            defaultValue={task.title}
+                            placeholder="Enter task title..."
+                            variant="standard"
+                            fullWidth
+                            onBlur={(e) => handleSaveTaskTitle(task.id, e.target.value)}
+                            onKeyDown={(e) => handleTaskTitleKeyDown(e as React.KeyboardEvent<HTMLInputElement>, task.id)}
+                            InputProps={{
+                              disableUnderline: true,
+                              sx: {
+                                fontSize: '14px',
+                                color: '#252B37',
+                                lineHeight: '20px',
+                              },
+                            }}
+                            sx={{
+                              '& .MuiInputBase-input': {
+                                padding: 0,
+                              },
+                            }}
+                          />
+                        ) : (
+                          <Typography
+                            sx={{
+                              fontSize: '14px',
+                              fontWeight: 400,
+                              color: '#252B37',
+                              lineHeight: '20px',
+                            }}
+                          >
+                            {task.title}
+                          </Typography>
+                        )}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Calendar size={20} color="#717680" />
+                            <Typography
+                              sx={{
+                                fontSize: '14px',
+                                color: '#717680',
+                                lineHeight: '20px',
+                                cursor: 'pointer',
+                                '&:hover': { color: '#414651' },
+                              }}
+                            >
+                              {task.dueDate || 'Add deadline'}
+                            </Typography>
+                          </Box>
+                          {task.smartGoalId && (() => {
+                            const linkedGoal = activeGoals.find(g => g.id === task.smartGoalId);
+                            return linkedGoal ? (
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 0.5,
+                                  backgroundColor: '#FEF3C7',
+                                  borderRadius: '4px',
+                                  px: 1,
+                                  py: 0.25,
+                                }}
+                              >
+                                <Target size={12} color="#D97706" />
+                                <Typography
+                                  sx={{
+                                    fontSize: '12px',
+                                    color: '#92400E',
+                                    lineHeight: '16px',
+                                    maxWidth: 120,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {linkedGoal.title}
+                                </Typography>
+                              </Box>
+                            ) : null;
+                          })()}
+                        </Box>
+                      </Box>
+                      {/* Kebab menu */}
+                      {!editingTaskId || editingTaskId !== task.id ? (
+                        <IconButton
+                          size="small"
+                          onClick={(e) => setTaskMenuAnchor({ element: e.currentTarget, taskId: task.id })}
+                          sx={{
+                            width: 36,
+                            height: 36,
+                            color: '#414651',
+                          }}
+                        >
+                          <MoreVertical size={24} />
+                        </IconButton>
+                      ) : null}
+                    </Box>
+                  ))}
+              </Box>
+              {/* Add a task link */}
+              <Box
+                onClick={() => handleAddMeetingTask('student')}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  cursor: 'pointer',
+                  '&:hover': { '& p': { color: '#414651' }, '& svg': { color: '#414651' } },
+                }}
+              >
+                <Plus size={16} color="#717680" />
+                <Typography
+                  sx={{
+                    fontSize: '14px',
+                    color: '#717680',
+                    lineHeight: '20px',
+                  }}
+                >
+                  Add a task
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Task Menu */}
+          <Menu
+            anchorEl={taskMenuAnchor?.element}
+            open={Boolean(taskMenuAnchor)}
+            onClose={() => {
+              setTaskMenuAnchor(null);
+              setGoalSubmenuAnchor(null);
+            }}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            PaperProps={{
+              sx: {
+                borderRadius: '8px',
+                boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.12)',
+                minWidth: 180,
+              },
+            }}
+          >
+            {/* Link to goal option */}
+            {activeGoals.length > 0 && (
+              <MenuItem
+                onClick={(e) => setGoalSubmenuAnchor(e.currentTarget)}
+                sx={{
+                  fontSize: '14px',
+                  color: '#374151',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  '&:hover': { backgroundColor: '#F9FAFB' },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Target size={16} style={{ marginRight: 8, color: '#D97706' }} />
+                  Link to goal
+                </Box>
+                <ChevronRight size={16} color="#9CA3AF" />
+              </MenuItem>
+            )}
+            {/* Unlink from goal option - only show if task has a goal */}
+            {taskMenuAnchor && meetingTasks.find(t => t.id === taskMenuAnchor.taskId)?.smartGoalId && (
+              <MenuItem
+                onClick={() => taskMenuAnchor && handleUnlinkTaskFromGoal(taskMenuAnchor.taskId)}
+                sx={{
+                  fontSize: '14px',
+                  color: '#374151',
+                  '&:hover': { backgroundColor: '#F9FAFB' },
+                }}
+              >
+                <Target size={16} style={{ marginRight: 8, color: '#9CA3AF' }} />
+                Unlink from goal
+              </MenuItem>
+            )}
+            <MenuItem
+              onClick={() => taskMenuAnchor && handleDeleteMeetingTask(taskMenuAnchor.taskId)}
+              sx={{
+                fontSize: '14px',
+                color: '#DC2626',
+                '&:hover': { backgroundColor: '#FEF2F2' },
+              }}
+            >
+              <Trash2 size={16} style={{ marginRight: 8 }} />
+              Delete task
+            </MenuItem>
+          </Menu>
+
+          {/* Goal Submenu */}
+          <Menu
+            anchorEl={goalSubmenuAnchor}
+            open={Boolean(goalSubmenuAnchor)}
+            onClose={() => setGoalSubmenuAnchor(null)}
+            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+            PaperProps={{
+              sx: {
+                borderRadius: '8px',
+                boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.12)',
+                minWidth: 200,
+                maxWidth: 300,
+                ml: 0.5,
+              },
+            }}
+          >
+            {activeGoals.map((goal) => {
+              const isLinked = taskMenuAnchor && meetingTasks.find(t => t.id === taskMenuAnchor.taskId)?.smartGoalId === goal.id;
+              return (
+                <MenuItem
+                  key={goal.id}
+                  onClick={() => taskMenuAnchor && handleLinkTaskToGoal(taskMenuAnchor.taskId, goal.id)}
+                  sx={{
+                    fontSize: '14px',
+                    color: '#374151',
+                    backgroundColor: isLinked ? '#FEF3C7' : 'transparent',
+                    '&:hover': { backgroundColor: isLinked ? '#FDE68A' : '#F9FAFB' },
+                  }}
+                >
+                  <Target size={16} style={{ marginRight: 8, color: '#D97706', flexShrink: 0 }} />
+                  <Typography
+                    sx={{
+                      fontSize: '14px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {goal.title}
+                  </Typography>
+                </MenuItem>
+              );
+            })}
+          </Menu>
         </Box>
 
         {/* Transcript Section */}
