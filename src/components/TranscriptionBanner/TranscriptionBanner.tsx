@@ -153,6 +153,8 @@ export function TranscriptionBanner() {
     .slice(0, 2)
     .toUpperCase();
 
+  const avatarUrl = activeMeeting.studentAvatarUrl;
+
   return (
     <>
       {/* Fixed Banner - hidden when modal is expanded */}
@@ -189,6 +191,7 @@ export function TranscriptionBanner() {
           {/* Student Avatar + Name */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Avatar
+              src={avatarUrl}
               sx={{
                 width: 28,
                 height: 28,

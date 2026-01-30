@@ -9,6 +9,7 @@ interface StartTranscribingBannerProps {
   hasTranscript?: boolean;
   meetingTitle?: string;
   studentName?: string;
+  studentAvatarUrl?: string;
 }
 
 export function StartTranscribingBanner({
@@ -16,6 +17,7 @@ export function StartTranscribingBanner({
   hasTranscript,
   meetingTitle,
   studentName,
+  studentAvatarUrl,
 }: StartTranscribingBannerProps) {
   // Get initials for avatar
   const initials = studentName
@@ -60,6 +62,7 @@ export function StartTranscribingBanner({
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Avatar
+              src={studentAvatarUrl}
               sx={{
                 width: 28,
                 height: 28,

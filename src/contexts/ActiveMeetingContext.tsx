@@ -7,6 +7,7 @@ export type ActiveMeetingPhase = 'recording' | 'processing' | 'results';
 export interface ActiveMeetingState {
   studentId: string;
   studentName: string;
+  studentAvatarUrl?: string;
   interactionId: string;
   interactionTitle: string;
   phase: ActiveMeetingPhase;
@@ -22,6 +23,7 @@ interface ActiveMeetingContextType {
   startMeeting: (
     studentId: string,
     studentName: string,
+    studentAvatarUrl: string | undefined,
     interactionId: string,
     interactionTitle: string,
     talkingPoints?: string
@@ -72,6 +74,7 @@ export function ActiveMeetingProvider({ children }: { children: ReactNode }) {
   const startMeeting = useCallback((
     studentId: string,
     studentName: string,
+    studentAvatarUrl: string | undefined,
     interactionId: string,
     interactionTitle: string,
     talkingPoints?: string
@@ -79,6 +82,7 @@ export function ActiveMeetingProvider({ children }: { children: ReactNode }) {
     setActiveMeeting({
       studentId,
       studentName,
+      studentAvatarUrl,
       interactionId,
       interactionTitle,
       phase: 'recording',

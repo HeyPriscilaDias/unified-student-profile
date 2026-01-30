@@ -146,6 +146,7 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
     startMeeting(
       studentId,
       studentName,
+      studentData.student.avatarUrl,
       interactionId,
       interaction.title,
       interaction.summary
@@ -717,6 +718,7 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
             hasTranscript={hasTranscript}
             meetingTitle={interaction.title}
             studentName={studentName}
+            studentAvatarUrl={studentData.student.avatarUrl}
           />
         )}
       </Box>
