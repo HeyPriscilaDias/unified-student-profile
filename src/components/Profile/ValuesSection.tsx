@@ -1,7 +1,6 @@
 'use client';
 
-import { Typography } from '@mui/material';
-import { SectionCard } from '@/components/shared';
+import { Box, Typography } from '@mui/material';
 
 interface ValuesSectionProps {
   values: string;
@@ -9,7 +8,19 @@ interface ValuesSectionProps {
 
 export function ValuesSection({ values }: ValuesSectionProps) {
   return (
-    <SectionCard title="Values">
+    <Box>
+      <Typography
+        component="h3"
+        sx={{
+          fontFamily: '"Poppins", sans-serif',
+          fontWeight: 600,
+          fontSize: '22px',
+          color: '#111827',
+          mb: 1.5,
+        }}
+      >
+        Values
+      </Typography>
       {values ? (
         <Typography className="text-neutral-600 italic leading-relaxed">
           &ldquo;{values}&rdquo;
@@ -19,7 +30,7 @@ export function ValuesSection({ values }: ValuesSectionProps) {
           No values statement added yet.
         </Typography>
       )}
-    </SectionCard>
+    </Box>
   );
 }
 

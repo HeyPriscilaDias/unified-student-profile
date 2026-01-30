@@ -1,30 +1,44 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Typography, Checkbox, Collapse, IconButton } from '@mui/material';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Box, Typography, Checkbox, Collapse, IconButton, Chip } from '@mui/material';
+import { ChevronDown, ChevronUp, Plus, Archive } from 'lucide-react';
 import { SubTabNavigation, EmptyState } from '@/components/shared';
-import type { SmartGoal, SmartGoalSubtask } from '@/types/student';
+import type { SmartGoal, Task } from '@/types/student';
 
 interface SmartGoalsSectionProps {
   goals: SmartGoal[];
+  tasks?: Task[];
   onGoalToggle?: (goal: SmartGoal) => void;
-  onSubtaskToggle?: (goal: SmartGoal, subtask: SmartGoalSubtask) => void;
+  onCreateTaskForGoal?: (goalId: string) => void;
+  onTaskToggle?: (task: Task) => void;
+  onArchiveGoal?: (goal: SmartGoal) => void;
 }
 
 function GoalItem({
   goal,
+  linkedTasks = [],
   onToggle,
-  onSubtaskToggle,
+  onCreateTask,
+  onTaskToggle,
+  onArchiveGoal,
 }: {
   goal: SmartGoal;
+  linkedTasks?: Task[];
   onToggle?: () => void;
-  onSubtaskToggle?: (subtask: SmartGoalSubtask) => void;
+  onCreateTask?: () => void;
+  onTaskToggle?: (task: Task) => void;
+  onArchiveGoal?: () => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const completedSubtasks = goal.subtasks.filter((s) => s.completed).length;
-  const totalSubtasks = goal.subtasks.length;
+
+  // Filter out archived linked tasks for display and counting
+  const activeLinkedTasks = linkedTasks.filter(t => t.status !== 'archived');
+  const completedLinkedTasks = activeLinkedTasks.filter(t => t.status === 'completed').length;
+  const totalLinkedTasks = activeLinkedTasks.length;
+
   const isCompleted = goal.status === 'completed';
+  const isArchived = goal.status === 'archived';
 
   return (
     <Box
@@ -73,11 +87,13 @@ function GoalItem({
             >
               {goal.title}
             </Typography>
-            {totalSubtasks > 0 && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {totalLinkedTasks > 0 && (
                 <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
-                  {completedSubtasks}/{totalSubtasks}
+                  {completedLinkedTasks}/{totalLinkedTasks}
                 </Typography>
+              )}
+              {totalLinkedTasks > 0 && (
                 <IconButton
                   size="small"
                   onClick={() => setIsExpanded(!isExpanded)}
@@ -85,8 +101,34 @@ function GoalItem({
                 >
                   {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </IconButton>
-              </Box>
-            )}
+              )}
+              {!isArchived && !isCompleted && (
+                <IconButton
+                  size="small"
+                  onClick={onCreateTask}
+                  sx={{
+                    color: '#9CA3AF',
+                    '&:hover': { color: '#155E4C', backgroundColor: '#EFF6F4' },
+                  }}
+                  title="Add task to this goal"
+                >
+                  <Plus size={16} />
+                </IconButton>
+              )}
+              {!isArchived && (
+                <IconButton
+                  size="small"
+                  onClick={onArchiveGoal}
+                  sx={{
+                    color: '#9CA3AF',
+                    '&:hover': { color: '#DC2626', backgroundColor: '#FEE2E2' },
+                  }}
+                  title="Archive goal"
+                >
+                  <Archive size={16} />
+                </IconButton>
+              )}
+            </Box>
           </Box>
           {goal.description && (
             <Typography sx={{ fontSize: '12px', color: '#6B7280', mt: 0.5 }}>
@@ -96,7 +138,7 @@ function GoalItem({
         </Box>
       </Box>
 
-      {/* Subtasks */}
+      {/* Linked Tasks */}
       <Collapse in={isExpanded}>
         <Box
           sx={{
@@ -107,12 +149,13 @@ function GoalItem({
             gap: 1,
           }}
         >
-          {goal.subtasks.map((subtask) => (
-            <Box key={subtask.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {activeLinkedTasks.map((task) => (
+            <Box key={task.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Checkbox
-                checked={subtask.completed}
-                onChange={() => onSubtaskToggle?.(subtask)}
+                checked={task.status === 'completed'}
+                onChange={() => onTaskToggle?.(task)}
                 size="small"
+                disabled={isArchived}
                 sx={{
                   padding: 0,
                   '&.Mui-checked': {
@@ -123,12 +166,23 @@ function GoalItem({
               <Typography
                 sx={{
                   fontSize: '12px',
-                  color: subtask.completed ? '#9CA3AF' : '#374151',
-                  textDecoration: subtask.completed ? 'line-through' : 'none',
+                  color: task.status === 'completed' ? '#9CA3AF' : '#374151',
+                  textDecoration: task.status === 'completed' ? 'line-through' : 'none',
+                  flex: 1,
                 }}
               >
-                {subtask.title}
+                {task.title}
               </Typography>
+              <Chip
+                label={task.taskType === 'staff' ? 'Staff' : 'Student'}
+                size="small"
+                sx={{
+                  height: '18px',
+                  fontSize: '10px',
+                  backgroundColor: task.taskType === 'staff' ? '#EFF6F4' : '#E0E7FF',
+                  color: task.taskType === 'staff' ? '#155E4C' : '#4338CA',
+                }}
+              />
             </Box>
           ))}
         </Box>
@@ -139,8 +193,11 @@ function GoalItem({
 
 export function SmartGoalsSection({
   goals,
+  tasks = [],
   onGoalToggle,
-  onSubtaskToggle,
+  onCreateTaskForGoal,
+  onTaskToggle,
+  onArchiveGoal,
 }: SmartGoalsSectionProps) {
   const [filter, setFilter] = useState<'active' | 'completed' | 'archived'>('active');
 
@@ -148,6 +205,9 @@ export function SmartGoalsSection({
   const activeCount = goals.filter((g) => g.status === 'active').length;
   const completedCount = goals.filter((g) => g.status === 'completed').length;
   const archivedCount = goals.filter((g) => g.status === 'archived').length;
+
+  // Helper to get linked tasks for a goal
+  const getLinkedTasks = (goalId: string) => tasks.filter(t => t.smartGoalId === goalId);
 
   return (
     <Box>
@@ -191,8 +251,11 @@ export function SmartGoalsSection({
             <GoalItem
               key={goal.id}
               goal={goal}
+              linkedTasks={getLinkedTasks(goal.id)}
               onToggle={() => onGoalToggle?.(goal)}
-              onSubtaskToggle={(subtask) => onSubtaskToggle?.(goal, subtask)}
+              onCreateTask={() => onCreateTaskForGoal?.(goal.id)}
+              onTaskToggle={onTaskToggle}
+              onArchiveGoal={() => onArchiveGoal?.(goal)}
             />
           ))
         )}

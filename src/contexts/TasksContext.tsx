@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import type { Task } from '@/types/student';
 import { getAllStudents, getAllStudentTasks } from '@/lib/mockData';
+import { setArchiveTasksForGoalCallback } from './SmartGoalsContext';
 
 export interface TaskWithStudent extends Task {
   studentId?: string;
@@ -16,6 +17,7 @@ interface NewTaskData {
   dueDate?: string | null;
   source?: Task['source'];
   taskType?: Task['taskType'];
+  smartGoalId?: string;
 }
 
 const GLOBAL_TASKS_KEY = '__global__';
@@ -23,11 +25,15 @@ const GLOBAL_TASKS_KEY = '__global__';
 interface TasksContextType {
   tasks: Map<string, Task[]>; // studentId -> tasks (GLOBAL_TASKS_KEY for student-independent)
   getTasksForStudent: (studentId: string) => Task[];
+  getTasksForGoal: (studentId: string, goalId: string) => Task[];
   getAllCounselorTasks: () => TaskWithStudent[];
   addTask: (data: NewTaskData) => Task;
   updateTask: (studentId: string | undefined, taskId: string, updates: Partial<Task>) => void;
   toggleTask: (studentId: string | undefined, taskId: string) => void;
   deleteTask: (studentId: string | undefined, taskId: string) => void;
+  linkTaskToGoal: (studentId: string, taskId: string, goalId: string) => void;
+  unlinkTaskFromGoal: (studentId: string, taskId: string) => void;
+  archiveTasksForGoal: (studentId: string, goalId: string) => void;
   initializeTasks: (studentId: string, tasks: Task[]) => void;
 }
 
@@ -51,6 +57,11 @@ export function TasksProvider({ children }: { children: ReactNode }) {
 
   const getTasksForStudent = useCallback((studentId: string): Task[] => {
     return tasks.get(studentId) || [];
+  }, [tasks]);
+
+  const getTasksForGoal = useCallback((studentId: string, goalId: string): Task[] => {
+    const studentTasks = tasks.get(studentId) || [];
+    return studentTasks.filter(t => t.smartGoalId === goalId);
   }, [tasks]);
 
   const getAllCounselorTasks = useCallback((): TaskWithStudent[] => {
@@ -93,6 +104,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
       status: 'open',
       source: data.source || 'manual',
       taskType: data.taskType || 'staff',
+      smartGoalId: data.smartGoalId,
     };
 
     const key = data.studentId || GLOBAL_TASKS_KEY;
@@ -164,15 +176,84 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const linkTaskToGoal = useCallback((studentId: string, taskId: string, goalId: string) => {
+    setTasks(prev => {
+      const newMap = new Map(prev);
+      const existingTasks = newMap.get(studentId) || [];
+      const taskIndex = existingTasks.findIndex(t => t.id === taskId);
+
+      if (taskIndex === -1) return prev;
+
+      const existingTask = existingTasks[taskIndex];
+      const updatedTask = {
+        ...existingTask,
+        smartGoalId: goalId,
+      };
+
+      const newTasks = [...existingTasks];
+      newTasks[taskIndex] = updatedTask;
+      newMap.set(studentId, newTasks);
+
+      return newMap;
+    });
+  }, []);
+
+  const unlinkTaskFromGoal = useCallback((studentId: string, taskId: string) => {
+    setTasks(prev => {
+      const newMap = new Map(prev);
+      const existingTasks = newMap.get(studentId) || [];
+      const taskIndex = existingTasks.findIndex(t => t.id === taskId);
+
+      if (taskIndex === -1) return prev;
+
+      const existingTask = existingTasks[taskIndex];
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { smartGoalId: _removed, ...taskWithoutGoal } = existingTask;
+      const updatedTask = taskWithoutGoal as Task;
+
+      const newTasks = [...existingTasks];
+      newTasks[taskIndex] = updatedTask;
+      newMap.set(studentId, newTasks);
+
+      return newMap;
+    });
+  }, []);
+
+  const archiveTasksForGoal = useCallback((studentId: string, goalId: string) => {
+    setTasks(prev => {
+      const newMap = new Map(prev);
+      const existingTasks = newMap.get(studentId) || [];
+
+      const updatedTasks = existingTasks.map(task => {
+        if (task.smartGoalId === goalId) {
+          return { ...task, status: 'archived' as const };
+        }
+        return task;
+      });
+
+      newMap.set(studentId, updatedTasks);
+      return newMap;
+    });
+  }, []);
+
+  // Register the archiveTasksForGoal callback with SmartGoalsContext
+  useEffect(() => {
+    setArchiveTasksForGoalCallback(archiveTasksForGoal);
+  }, [archiveTasksForGoal]);
+
   return (
     <TasksContext.Provider value={{
       tasks,
       getTasksForStudent,
+      getTasksForGoal,
       getAllCounselorTasks,
       addTask,
       updateTask,
       toggleTask,
       deleteTask,
+      linkTaskToGoal,
+      unlinkTaskFromGoal,
+      archiveTasksForGoal,
       initializeTasks,
     }}>
       {children}

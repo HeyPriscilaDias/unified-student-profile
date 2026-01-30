@@ -1,22 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Typography, Checkbox, Button } from '@mui/material';
-import { Plus } from 'lucide-react';
+import { Box, Typography, Checkbox, Button, Chip } from '@mui/material';
+import { Plus, Target } from 'lucide-react';
 import { SubTabNavigation, EmptyState } from '@/components/shared';
-import type { Task } from '@/types/student';
+import type { Task, SmartGoal } from '@/types/student';
 
 interface TasksSectionProps {
   tasks: Task[];
+  goals?: SmartGoal[];
   onTaskToggle?: (task: Task) => void;
   onNewTask?: () => void;
 }
 
 function TaskItem({
   task,
+  goalName,
   onToggle,
 }: {
   task: Task;
+  goalName?: string;
   onToggle?: () => void;
 }) {
   return (
@@ -45,26 +48,60 @@ function TaskItem({
         }}
       />
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography
-          sx={{
-            fontSize: '14px',
-            color: task.status === 'completed' ? '#9CA3AF' : '#062F29',
-            textDecoration: task.status === 'completed' ? 'line-through' : 'none',
-          }}
-        >
-          {task.title}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Typography
+            sx={{
+              fontSize: '14px',
+              color: task.status === 'completed' ? '#9CA3AF' : '#062F29',
+              textDecoration: task.status === 'completed' ? 'line-through' : 'none',
+            }}
+          >
+            {task.title}
+          </Typography>
+          {goalName && (
+            <Chip
+              icon={<Target size={12} style={{ color: '#D97706' }} />}
+              label={goalName}
+              size="small"
+              sx={{
+                height: '20px',
+                fontSize: '11px',
+                backgroundColor: '#FEF3C7',
+                color: '#92400E',
+                maxWidth: '150px',
+                '& .MuiChip-icon': {
+                  marginLeft: '4px',
+                  marginRight: '-2px',
+                },
+                '& .MuiChip-label': {
+                  paddingLeft: '4px',
+                  paddingRight: '6px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                },
+              }}
+            />
+          )}
+        </Box>
       </Box>
     </Box>
   );
 }
 
-export function TasksSection({ tasks, onTaskToggle, onNewTask }: TasksSectionProps) {
+export function TasksSection({ tasks, goals = [], onTaskToggle, onNewTask }: TasksSectionProps) {
   const [filter, setFilter] = useState<'open' | 'completed'>('open');
 
-  const filteredTasks = tasks.filter((t) => t.status === filter);
-  const openCount = tasks.filter((t) => t.status === 'open').length;
-  const completedCount = tasks.filter((t) => t.status === 'completed').length;
+  // Filter out archived tasks from all displays
+  const activeTasks = tasks.filter((t) => t.status !== 'archived');
+
+  const filteredTasks = activeTasks.filter((t) => t.status === filter);
+  const openCount = activeTasks.filter((t) => t.status === 'open').length;
+  const completedCount = activeTasks.filter((t) => t.status === 'completed').length;
+
+  // Create a map of goal IDs to goal titles for quick lookup
+  const goalNameMap = new Map(goals.map(g => [g.id, g.title]));
+  const getGoalName = (goalId?: string) => goalId ? goalNameMap.get(goalId) : undefined;
 
   return (
     <Box
@@ -115,6 +152,7 @@ export function TasksSection({ tasks, onTaskToggle, onNewTask }: TasksSectionPro
             <TaskItem
               key={task.id}
               task={task}
+              goalName={getGoalName(task.smartGoalId)}
               onToggle={() => onTaskToggle?.(task)}
             />
           ))

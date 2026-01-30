@@ -21,10 +21,10 @@ import {
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { Search, X, User, Users } from 'lucide-react';
-import { getAllStudents } from '@/lib/mockData';
-import type { Student } from '@/types/student';
-import dayjs, { Dayjs } from 'dayjs';
+import { Search, X, User, Users, Target } from 'lucide-react';
+import { getAllStudents, getStudentData } from '@/lib/mockData';
+import type { Student, SmartGoal } from '@/types/student';
+import type { Dayjs } from 'dayjs';
 
 interface AddTaskModalProps {
   open: boolean;
@@ -35,19 +35,45 @@ interface AddTaskModalProps {
     dueDate?: string;
     studentId?: string;
     taskType: 'staff' | 'student';
+    smartGoalId?: string;
   }) => void;
+  preselectedStudentId?: string;
+  preselectedGoalId?: string;
+  goals?: SmartGoal[];
 }
 
-export function AddTaskModal({ open, onClose, onCreateTask }: AddTaskModalProps) {
+export function AddTaskModal({
+  open,
+  onClose,
+  onCreateTask,
+  preselectedStudentId,
+  preselectedGoalId,
+  goals: externalGoals,
+}: AddTaskModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState<Dayjs | null>(null);
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(preselectedStudentId || null);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(preselectedGoalId || null);
   const [assignee, setAssignee] = useState<'staff' | 'student'>('staff');
   const [searchQuery, setSearchQuery] = useState('');
   const [showStudentPicker, setShowStudentPicker] = useState(false);
+  const [showGoalPicker, setShowGoalPicker] = useState(false);
 
   const students = useMemo(() => getAllStudents(), []);
+
+  // Get goals for the selected student
+  const studentGoals = useMemo(() => {
+    if (externalGoals) return externalGoals.filter(g => g.status === 'active');
+    if (!selectedStudentId) return [];
+    const studentData = getStudentData(selectedStudentId);
+    return studentData?.smartGoals.filter(g => g.status === 'active') || [];
+  }, [selectedStudentId, externalGoals]);
+
+  const selectedGoal = useMemo(
+    () => studentGoals.find(g => g.id === selectedGoalId) ?? null,
+    [studentGoals, selectedGoalId]
+  );
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery.trim()) return students;
@@ -72,6 +98,7 @@ export function AddTaskModal({ open, onClose, onCreateTask }: AddTaskModalProps)
       dueDate: dueDate ? dueDate.format('YYYY-MM-DD') : undefined,
       studentId: selectedStudentId || undefined,
       taskType: selectedStudentId ? assignee : 'staff',
+      smartGoalId: selectedGoalId || undefined,
     });
 
     handleClose();
@@ -81,10 +108,12 @@ export function AddTaskModal({ open, onClose, onCreateTask }: AddTaskModalProps)
     setTitle('');
     setDescription('');
     setDueDate(null);
-    setSelectedStudentId(null);
+    setSelectedStudentId(preselectedStudentId || null);
+    setSelectedGoalId(preselectedGoalId || null);
     setAssignee('staff');
     setSearchQuery('');
     setShowStudentPicker(false);
+    setShowGoalPicker(false);
     onClose();
   };
 
@@ -92,11 +121,23 @@ export function AddTaskModal({ open, onClose, onCreateTask }: AddTaskModalProps)
     setSelectedStudentId(studentId);
     setShowStudentPicker(false);
     setSearchQuery('');
+    // Clear goal selection when student changes
+    setSelectedGoalId(null);
   };
 
   const handleRemoveStudent = () => {
     setSelectedStudentId(null);
+    setSelectedGoalId(null);
     setAssignee('staff');
+  };
+
+  const handleSelectGoal = (goalId: string) => {
+    setSelectedGoalId(goalId);
+    setShowGoalPicker(false);
+  };
+
+  const handleRemoveGoal = () => {
+    setSelectedGoalId(null);
   };
 
   const canCreate = title.trim().length > 0;
@@ -500,6 +541,144 @@ export function AddTaskModal({ open, onClose, onCreateTask }: AddTaskModalProps)
             </>
           )}
         </Box>
+
+        {/* Goal Picker - only show when student is selected */}
+        {selectedStudentId && studentGoals.length > 0 && (
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              sx={{
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#374151',
+                mb: 1,
+              }}
+            >
+              Link to SMART Goal
+            </Typography>
+
+            {selectedGoal ? (
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  p: 1.5,
+                  borderRadius: '8px',
+                  backgroundColor: '#FEF3C7',
+                  border: '1px solid #F59E0B',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Target size={18} style={{ color: '#D97706', flexShrink: 0 }} />
+                  <Typography
+                    sx={{
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: '#111827',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {selectedGoal.title}
+                  </Typography>
+                </Box>
+                <Box
+                  onClick={handleRemoveGoal}
+                  sx={{
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 28,
+                    height: 28,
+                    borderRadius: '6px',
+                    color: '#6B7280',
+                    flexShrink: 0,
+                    '&:hover': {
+                      backgroundColor: '#FDE68A',
+                      color: '#111827',
+                    },
+                  }}
+                >
+                  <X size={16} />
+                </Box>
+              </Box>
+            ) : (
+              <>
+                <Button
+                  onClick={() => setShowGoalPicker(!showGoalPicker)}
+                  fullWidth
+                  sx={{
+                    textTransform: 'none',
+                    justifyContent: 'flex-start',
+                    fontSize: '14px',
+                    color: '#6B7280',
+                    borderRadius: '8px',
+                    backgroundColor: '#F9FAFB',
+                    border: '1px solid #E5E7EB',
+                    py: 1,
+                    px: 1.5,
+                    '&:hover': {
+                      backgroundColor: '#F3F4F6',
+                      borderColor: '#D1D5DB',
+                    },
+                  }}
+                  startIcon={<Target size={16} style={{ color: '#9CA3AF' }} />}
+                >
+                  Select a goal (optional)
+                </Button>
+
+                {showGoalPicker && (
+                  <List
+                    sx={{
+                      mt: 1,
+                      py: 0,
+                      maxHeight: '150px',
+                      overflowY: 'auto',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      '&::-webkit-scrollbar': {
+                        width: '6px',
+                      },
+                      '&::-webkit-scrollbar-thumb': {
+                        backgroundColor: '#D1D5DB',
+                        borderRadius: '3px',
+                      },
+                    }}
+                  >
+                    {studentGoals.map((goal) => (
+                      <ListItemButton
+                        key={goal.id}
+                        onClick={() => handleSelectGoal(goal.id)}
+                        sx={{
+                          py: 1,
+                          px: 1.5,
+                          '&:hover': {
+                            backgroundColor: '#FEF3C7',
+                          },
+                        }}
+                      >
+                        <Target size={16} style={{ color: '#D97706', marginRight: 12, flexShrink: 0 }} />
+                        <Typography
+                          sx={{
+                            fontSize: '14px',
+                            color: '#111827',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {goal.title}
+                        </Typography>
+                      </ListItemButton>
+                    ))}
+                  </List>
+                )}
+              </>
+            )}
+          </Box>
+        )}
 
         {/* Assignee Toggle - only show when student is selected */}
         {selectedStudentId && (

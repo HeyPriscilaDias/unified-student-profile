@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { InteractionsProvider } from "../contexts/InteractionsContext";
 import { TasksProvider } from "../contexts/TasksContext";
+import { SmartGoalsProvider } from "../contexts/SmartGoalsContext";
 import { NotesProvider } from "../contexts/NotesContext";
 import { AlmaChatProvider } from "../contexts/AlmaChatContext";
 import { ActiveMeetingProvider } from "../contexts/ActiveMeetingContext";
@@ -19,22 +20,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <ThemeProvider>
           <InteractionsProvider>
-            <TasksProvider>
-              <NotesProvider>
-                <ActiveMeetingProvider>
-                  <AlmaChatProvider>
-                  <ContentWrapper>
-                    {children}
-                  </ContentWrapper>
-                  <TranscriptionBannerWrapper />
-                </AlmaChatProvider>
-                </ActiveMeetingProvider>
-              </NotesProvider>
-            </TasksProvider>
+            <SmartGoalsProvider>
+              <TasksProvider>
+                <NotesProvider>
+                  <ActiveMeetingProvider>
+                    <AlmaChatProvider>
+                    <ContentWrapper>
+                      {children}
+                    </ContentWrapper>
+                    <TranscriptionBannerWrapper />
+                  </AlmaChatProvider>
+                  </ActiveMeetingProvider>
+                </NotesProvider>
+              </TasksProvider>
+            </SmartGoalsProvider>
           </InteractionsProvider>
         </ThemeProvider>
       </body>

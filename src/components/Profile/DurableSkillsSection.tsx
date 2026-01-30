@@ -232,9 +232,12 @@ export function DurableSkillsSection({ durableSkills, onViewDetails }: DurableSk
               gap: 2,
             }}
           >
-            {durableSkills.topSkills.slice(0, 4).map((skill, index) => (
-              <SkillCard key={index} skill={skill} />
-            ))}
+            {[...durableSkills.topSkills]
+              .sort((a, b) => b.level - a.level)
+              .slice(0, 4)
+              .map((skill, index) => (
+                <SkillCard key={index} skill={skill} />
+              ))}
           </Box>
         </Box>
       )}

@@ -176,6 +176,7 @@ export const jessicaTasks: Task[] = [
     status: 'open',
     source: 'manual',
     taskType: 'staff',
+    smartGoalId: 'goal-1', // Linked to "Complete all college applications"
   },
   {
     id: 'task-2',
@@ -192,6 +193,24 @@ export const jessicaTasks: Task[] = [
     status: 'completed',
     source: 'manual',
     taskType: 'staff',
+  },
+  {
+    id: 'task-4',
+    title: 'Complete Khan Academy SAT practice module',
+    dueDate: '2025-01-25',
+    status: 'open',
+    source: 'manual',
+    taskType: 'student',
+    smartGoalId: 'goal-2', // Linked to "Improve SAT score"
+  },
+  {
+    id: 'task-5',
+    title: 'Review SAT math formulas',
+    dueDate: '2025-01-18',
+    status: 'completed',
+    source: 'manual',
+    taskType: 'student',
+    smartGoalId: 'goal-2', // Linked to "Improve SAT score"
   },
 ];
 

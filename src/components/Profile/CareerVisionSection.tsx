@@ -1,7 +1,6 @@
 'use client';
 
-import { Typography } from '@mui/material';
-import { SectionCard } from '@/components/shared';
+import { Box, Typography } from '@mui/material';
 
 interface CareerVisionSectionProps {
   careerVision: string;
@@ -9,7 +8,19 @@ interface CareerVisionSectionProps {
 
 export function CareerVisionSection({ careerVision }: CareerVisionSectionProps) {
   return (
-    <SectionCard title="Career vision">
+    <Box>
+      <Typography
+        component="h3"
+        sx={{
+          fontFamily: '"Poppins", sans-serif',
+          fontWeight: 600,
+          fontSize: '22px',
+          color: '#111827',
+          mb: 1.5,
+        }}
+      >
+        Career vision
+      </Typography>
       {careerVision ? (
         <Typography className="text-neutral-600 italic leading-relaxed">
           &ldquo;{careerVision}&rdquo;
@@ -19,7 +30,7 @@ export function CareerVisionSection({ careerVision }: CareerVisionSectionProps) 
           No career vision statement added yet.
         </Typography>
       )}
-    </SectionCard>
+    </Box>
   );
 }
 

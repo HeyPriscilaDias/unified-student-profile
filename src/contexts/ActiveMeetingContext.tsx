@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 
-export type ActiveMeetingPhase = 'recording' | 'processing' | 'results';
+export type ActiveMeetingPhase = 'recording' | 'stopped' | 'processing' | 'results';
 
 export interface ActiveMeetingState {
   studentId: string;
@@ -16,6 +16,7 @@ export interface ActiveMeetingState {
   isPaused: boolean;
   pausedAt?: number; // timestamp when paused
   totalPausedDuration: number; // accumulated paused time in ms
+  stoppedElapsed?: number; // elapsed seconds when stopped (for resume state)
 }
 
 interface ActiveMeetingContextType {
@@ -31,6 +32,8 @@ interface ActiveMeetingContextType {
   setPhase: (phase: ActiveMeetingPhase) => void;
   updateTalkingPoints: (talkingPoints: string) => void;
   togglePause: () => void;
+  stopMeeting: (elapsedSeconds: number) => void;
+  resumeMeeting: () => void;
   endMeeting: () => void;
 }
 
@@ -96,7 +99,10 @@ export function ActiveMeetingProvider({ children }: { children: ReactNode }) {
   const setPhase = useCallback((phase: ActiveMeetingPhase) => {
     setActiveMeeting(prev => {
       if (!prev) return null;
-      return { ...prev, phase };
+      const updated = { ...prev, phase };
+      // Sync localStorage immediately to avoid race conditions with navigation
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
     });
   }, []);
 
@@ -130,6 +136,39 @@ export function ActiveMeetingProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const stopMeeting = useCallback((elapsedSeconds: number) => {
+    setActiveMeeting(prev => {
+      if (!prev) return null;
+      const updated = {
+        ...prev,
+        phase: 'stopped' as ActiveMeetingPhase,
+        stoppedElapsed: elapsedSeconds,
+        isPaused: true,
+        pausedAt: Date.now(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const resumeMeeting = useCallback(() => {
+    setActiveMeeting(prev => {
+      if (!prev) return null;
+      // Calculate how long we were stopped and add to paused duration
+      const stoppedDuration = prev.pausedAt ? Date.now() - prev.pausedAt : 0;
+      const updated = {
+        ...prev,
+        phase: 'recording' as ActiveMeetingPhase,
+        isPaused: false,
+        pausedAt: undefined,
+        stoppedElapsed: undefined,
+        totalPausedDuration: prev.totalPausedDuration + stoppedDuration,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   const endMeeting = useCallback(() => {
     setActiveMeeting(null);
   }, []);
@@ -141,6 +180,8 @@ export function ActiveMeetingProvider({ children }: { children: ReactNode }) {
       setPhase,
       updateTalkingPoints,
       togglePause,
+      stopMeeting,
+      resumeMeeting,
       endMeeting,
     }}>
       {children}

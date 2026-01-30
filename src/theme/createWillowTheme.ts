@@ -72,7 +72,7 @@ const themeOptions = {
       main: blue[600],
     },
     background: {
-      default: ui.background, // "#FBFBFB"
+      default: '#F5F5F5',
       paper: neutral[25],
     },
     text: {

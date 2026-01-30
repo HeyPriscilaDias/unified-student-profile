@@ -32,7 +32,7 @@
   --color-secondary: var(--slate-900);
   --color-accent: var(--slate-400);
   --color-surface: var(--slate-25);
-  --color-background: #FFFFFF;
+  --color-background: red;
   --color-border: var(--neutral-300);
 
   /* Status Colors */

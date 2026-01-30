@@ -36,9 +36,10 @@ export interface Task {
   title: string;
   description?: string;
   dueDate: string | null;
-  status: 'open' | 'completed';
+  status: 'open' | 'completed' | 'archived';
   source: 'manual' | 'suggested_action' | 'interaction';
   taskType: 'staff' | 'student';
+  smartGoalId?: string;  // Link to parent goal
 }
 
 // Suggested Action types

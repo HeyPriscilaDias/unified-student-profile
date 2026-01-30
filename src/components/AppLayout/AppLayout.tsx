@@ -26,7 +26,7 @@ export function AppLayout({
   actionButton,
 }: AppLayoutProps) {
   const { activeMeeting } = useActiveMeetingContext();
-  const isBannerVisible = activeMeeting?.phase === 'recording';
+  const isBannerVisible = activeMeeting?.phase === 'recording' || activeMeeting?.phase === 'stopped';
 
   // When banner is visible, reduce height to make room for it
   // The content area's padding (GAP) already creates the 12px gap above the banner

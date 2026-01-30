@@ -1,7 +1,6 @@
 'use client';
 
-import { Typography } from '@mui/material';
-import { SectionCard } from '@/components/shared';
+import { Box, Typography } from '@mui/material';
 
 interface MissionSectionProps {
   mission: string;
@@ -9,7 +8,19 @@ interface MissionSectionProps {
 
 export function MissionSection({ mission }: MissionSectionProps) {
   return (
-    <SectionCard title="Mission statement">
+    <Box>
+      <Typography
+        component="h3"
+        sx={{
+          fontFamily: '"Poppins", sans-serif',
+          fontWeight: 600,
+          fontSize: '22px',
+          color: '#111827',
+          mb: 1.5,
+        }}
+      >
+        Mission statement
+      </Typography>
       {mission ? (
         <Typography className="text-neutral-600 italic leading-relaxed">
           &ldquo;{mission}&rdquo;
@@ -19,7 +30,7 @@ export function MissionSection({ mission }: MissionSectionProps) {
           No mission statement added yet.
         </Typography>
       )}
-    </SectionCard>
+    </Box>
   );
 }
 

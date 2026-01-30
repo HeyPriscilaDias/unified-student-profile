@@ -14,11 +14,13 @@ import { NotesTab } from '@/components/Notes';
 import { MeetingsTab } from '@/components/Meetings';
 import { LoadingSection } from '@/components/shared';
 import { SidePanel, SidePanelTabType } from '@/components/SidePanel';
+import { AddTaskModal } from '@/components/SidePanel/AddTaskModal';
 import { useStudentData } from '@/hooks/useStudentData';
 import { useInteractions, useInteractionsContext } from '@/contexts/InteractionsContext';
 import { useTasks, useTasksContext } from '@/contexts/TasksContext';
+import { useSmartGoals, useSmartGoalsContext } from '@/contexts/SmartGoalsContext';
 import { usePersistentRightPanelTab } from '@/hooks/usePersistentRightPanelTab';
-import type { TabType, Task, SuggestedAction, Interaction } from '@/types/student';
+import type { TabType, Task, SuggestedAction, Interaction, SmartGoal } from '@/types/student';
 import type { BreadcrumbItem } from '@/components/Breadcrumbs';
 
 interface UnifiedStudentViewProps {
@@ -37,6 +39,7 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
   const studentData = useStudentData(studentId);
   const { addInteraction } = useInteractionsContext();
   const { addTask, updateTask, toggleTask, deleteTask } = useTasksContext();
+  const { toggleGoal, archiveGoal } = useSmartGoalsContext();
 
   // Use interactions from context (allows adding new interactions)
   // Must be called before any conditional returns to follow rules of hooks
@@ -44,6 +47,13 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
 
   // Use tasks from context (allows real-time updates from interaction recordings)
   const tasks = useTasks(studentId, studentData?.tasks ?? []);
+
+  // Use goals from context (allows toggling, archiving)
+  const smartGoals = useSmartGoals(studentId, studentData?.smartGoals ?? []);
+
+  // State for task creation modal (when creating from goal)
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [preselectedGoalId, setPreselectedGoalId] = useState<string | undefined>(undefined);
 
   // Handle tab query parameter
   useEffect(() => {
@@ -80,7 +90,6 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     student,
     profile,
     milestones,
-    smartGoals,
     almaSnapshot,
     bookmarks,
     recommendations,
@@ -156,6 +165,44 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
     );
   };
 
+  // Toggle goal between active and completed
+  const handleGoalToggle = (goal: SmartGoal) => {
+    toggleGoal(studentId, goal.id);
+  };
+
+  // Archive goal (and cascading archive linked tasks)
+  const handleArchiveGoal = (goal: SmartGoal) => {
+    archiveGoal(studentId, goal.id);
+  };
+
+  // Open task modal with goal pre-selected
+  const handleCreateTaskForGoal = (goalId: string) => {
+    setPreselectedGoalId(goalId);
+    setTaskModalOpen(true);
+  };
+
+  // Handle task creation from goal modal
+  const handleCreateTaskFromModal = (data: {
+    title: string;
+    description?: string;
+    dueDate?: string;
+    studentId?: string;
+    taskType: 'staff' | 'student';
+    smartGoalId?: string;
+  }) => {
+    addTask({
+      studentId: data.studentId || studentId,
+      title: data.title,
+      description: data.description,
+      dueDate: data.dueDate,
+      source: 'manual',
+      taskType: data.taskType,
+      smartGoalId: data.smartGoalId,
+    });
+    setTaskModalOpen(false);
+    setPreselectedGoalId(undefined);
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
@@ -163,9 +210,14 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
           <OverviewTab
             milestones={milestones}
             smartGoals={smartGoals}
+            tasks={tasks}
             almaSnapshot={almaSnapshot}
             onGenerateSnapshot={handleGenerateSnapshot}
             isGeneratingSnapshot={isGeneratingSnapshot}
+            onGoalToggle={handleGoalToggle}
+            onCreateTaskForGoal={handleCreateTaskForGoal}
+            onTaskToggle={handleTaskToggle}
+            onArchiveGoal={handleArchiveGoal}
           />
         );
       case 'profile':
@@ -290,6 +342,19 @@ export function UnifiedStudentView({ studentId }: UnifiedStudentViewProps) {
           Interaction created successfully
         </Alert>
       </Snackbar>
+
+      {/* Task Creation Modal (for creating tasks from goals) */}
+      <AddTaskModal
+        open={taskModalOpen}
+        onClose={() => {
+          setTaskModalOpen(false);
+          setPreselectedGoalId(undefined);
+        }}
+        onCreateTask={handleCreateTaskFromModal}
+        preselectedStudentId={studentId}
+        preselectedGoalId={preselectedGoalId}
+        goals={smartGoals}
+      />
     </AppLayout>
   );
 }
