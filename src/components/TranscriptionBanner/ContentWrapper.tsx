@@ -17,7 +17,7 @@ export function ContentWrapper({ children }: ContentWrapperProps) {
     <Box
       sx={{
         minHeight: '100vh',
-        paddingBottom: hasBanner ? '64px' : 0,
+        paddingBottom: hasBanner ? '80px' : 0, // 56px banner + 12px bottom margin + 12px extra
         transition: 'padding-bottom 0.2s ease',
       }}
     >

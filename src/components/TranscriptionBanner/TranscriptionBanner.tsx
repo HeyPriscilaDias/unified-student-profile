@@ -160,16 +160,16 @@ export function TranscriptionBanner() {
       <Box
         sx={{
           position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 64,
-          backgroundColor: '#062F29',
+          bottom: 12,
+          left: 232, // 220px sidebar + 12px gap
+          right: 12,
+          height: 56,
+          backgroundColor: '#041D1A',
           zIndex: 9999,
           display: 'flex',
           alignItems: 'center',
-          px: 3,
-          borderTop: '1px solid rgba(255,255,255,0.1)',
+          px: 2,
+          borderRadius: '12px',
         }}
       >
         {/* Left side: Meeting title + Student */}
