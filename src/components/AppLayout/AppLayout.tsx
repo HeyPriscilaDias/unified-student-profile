@@ -29,7 +29,8 @@ export function AppLayout({
   const isBannerVisible = activeMeeting?.phase === 'recording';
 
   // When banner is visible, reduce height to make room for it
-  const bannerSpace = isBannerVisible ? BANNER_HEIGHT + BANNER_BOTTOM_MARGIN + GAP : 0;
+  // The content area's padding (GAP) already creates the 12px gap above the banner
+  const bannerSpace = isBannerVisible ? BANNER_HEIGHT + BANNER_BOTTOM_MARGIN : 0;
 
   return (
     <Box
@@ -72,7 +73,6 @@ export function AppLayout({
               flexShrink: 0,
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
-              boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)',
             }}
           >
             <BreadcrumbsBar items={breadcrumbs} actionButton={actionButton} />
@@ -86,7 +86,6 @@ export function AppLayout({
               overflow: 'auto',
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
-              boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)',
             }}
           >
             <Box
@@ -110,7 +109,6 @@ export function AppLayout({
               flexShrink: 0,
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
-              boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
