@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, Typography, Button, IconButton, Modal, CircularProgress, Avatar } from '@mui/material';
 import { Pause, Play, Maximize2, Mic } from 'lucide-react';
@@ -8,6 +8,7 @@ import { Alma } from '@/components/icons/AlmaIcon';
 import { useActiveMeetingContext } from '@/contexts/ActiveMeetingContext';
 import { AudioWaveform } from './AudioWaveform';
 import { RecordingWidgetModal } from './RecordingWidgetModal';
+import { getStudentData } from '@/lib/mockData';
 
 function formatElapsed(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -153,7 +154,15 @@ export function TranscriptionBanner() {
     .slice(0, 2)
     .toUpperCase();
 
-  const avatarUrl = activeMeeting.studentAvatarUrl;
+  // Get avatar URL from active meeting or look it up from student data
+  const avatarUrl = useMemo(() => {
+    if (activeMeeting.studentAvatarUrl) {
+      return activeMeeting.studentAvatarUrl;
+    }
+    // Fallback: look up from student data for older meetings without avatarUrl
+    const studentData = getStudentData(activeMeeting.studentId);
+    return studentData?.student.avatarUrl;
+  }, [activeMeeting.studentAvatarUrl, activeMeeting.studentId]);
 
   return (
     <>
