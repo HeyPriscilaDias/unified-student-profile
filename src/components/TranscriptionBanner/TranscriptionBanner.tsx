@@ -45,6 +45,16 @@ export function TranscriptionBanner() {
     return () => clearInterval(interval);
   }, [activeMeeting]);
 
+  // Get avatar URL - must be called unconditionally (Rules of Hooks)
+  const avatarUrl = useMemo(() => {
+    if (!activeMeeting) return undefined;
+    if (activeMeeting.studentAvatarUrl) {
+      return activeMeeting.studentAvatarUrl;
+    }
+    const studentData = getStudentData(activeMeeting.studentId);
+    return studentData?.student.avatarUrl;
+  }, [activeMeeting]);
+
   // Don't render if no active meeting
   if (!activeMeeting) {
     return null;
@@ -153,16 +163,6 @@ export function TranscriptionBanner() {
     .join('')
     .slice(0, 2)
     .toUpperCase();
-
-  // Get avatar URL from active meeting or look it up from student data
-  const avatarUrl = useMemo(() => {
-    if (activeMeeting.studentAvatarUrl) {
-      return activeMeeting.studentAvatarUrl;
-    }
-    // Fallback: look up from student data for older meetings without avatarUrl
-    const studentData = getStudentData(activeMeeting.studentId);
-    return studentData?.student.avatarUrl;
-  }, [activeMeeting.studentAvatarUrl, activeMeeting.studentId]);
 
   return (
     <>
@@ -275,7 +275,7 @@ export function TranscriptionBanner() {
             variant="contained"
             onClick={handleStop}
             sx={{
-              backgroundColor: '#EF4444',
+              backgroundColor: '#EF4444 !important',
               color: '#fff',
               textTransform: 'none',
               fontWeight: 500,
@@ -284,7 +284,7 @@ export function TranscriptionBanner() {
               py: 0.75,
               boxShadow: 'none',
               '&:hover': {
-                backgroundColor: '#DC2626',
+                backgroundColor: '#DC2626 !important',
                 boxShadow: 'none',
               },
             }}

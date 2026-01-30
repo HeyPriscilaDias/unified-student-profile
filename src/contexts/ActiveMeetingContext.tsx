@@ -39,37 +39,37 @@ const STORAGE_KEY = 'willow-active-meeting';
 const ActiveMeetingContext = createContext<ActiveMeetingContextType | null>(null);
 
 export function ActiveMeetingProvider({ children }: { children: ReactNode }) {
-  const [activeMeeting, setActiveMeeting] = useState<ActiveMeetingState | null>(() => {
-    // Initialize from localStorage if available (client-side only)
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          // Don't restore 'processing' phase - it shouldn't survive page reloads
-          if (parsed.phase === 'processing') {
-            localStorage.removeItem(STORAGE_KEY);
-            return null;
-          }
-          return parsed;
-        } catch {
-          return null;
-        }
-      }
-    }
-    return null;
-  });
+  const [activeMeeting, setActiveMeeting] = useState<ActiveMeetingState | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  // Persist to localStorage whenever activeMeeting changes
+  // Hydrate from localStorage after mount to avoid SSR mismatch
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (activeMeeting) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(activeMeeting));
-      } else {
-        localStorage.removeItem(STORAGE_KEY);
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        // Don't restore 'processing' phase - it shouldn't survive page reloads
+        if (parsed.phase === 'processing') {
+          localStorage.removeItem(STORAGE_KEY);
+        } else {
+          setActiveMeeting(parsed);
+        }
+      } catch {
+        // Invalid JSON, ignore
       }
     }
-  }, [activeMeeting]);
+    setIsHydrated(true);
+  }, []);
+
+  // Persist to localStorage whenever activeMeeting changes (after hydration)
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (activeMeeting) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(activeMeeting));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [activeMeeting, isHydrated]);
 
   const startMeeting = useCallback((
     studentId: string,

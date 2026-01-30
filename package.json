@@ -20,6 +20,8 @@
     "@fontsource/inter": "^5.2.8",
     "@fontsource/poppins": "^5.2.7",
     "@mui/material": "^7.3.6",
+    "@mui/material-nextjs": "^7.3.7",
+    "@mui/x-data-grid": "^8.25.0",
     "@mui/x-date-pickers": "^8.25.0",
     "@tiptap/extension-placeholder": "^3.16.0",
     "@tiptap/pm": "^3.16.0",
