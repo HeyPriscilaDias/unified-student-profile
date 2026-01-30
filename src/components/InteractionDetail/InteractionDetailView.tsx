@@ -16,7 +16,7 @@ import { usePersistentRightPanelTab } from '@/hooks/usePersistentRightPanelTab';
 import { InteractionHeader } from './InteractionHeader';
 import { TranscriptSection } from './TranscriptSection';
 import { AddAttendeesModal } from './AddAttendeesModal';
-import { StartTranscribingBanner } from '@/components/TranscriptionBanner';
+import { TranscriptionBanner } from '@/components/TranscriptionBanner';
 import type { Task, SuggestedAction, Interaction, InteractionStatus } from '@/types/student';
 import type { BreadcrumbItem } from '@/components/Breadcrumbs';
 
@@ -49,7 +49,7 @@ export function InteractionDetailView({ studentId, interactionId }: InteractionD
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const { updateInteraction, updateInteractionSummary, updateInteractionWithRecording, updateInteractionStatus, updateInteractionAttendees, deleteInteraction, addInteraction } = useInteractionsContext();
   const { addTask, updateTask, toggleTask, deleteTask } = useTasksContext();
-  const { activeMeeting, startMeeting, endMeeting } = useActiveMeetingContext();
+  const { activeMeeting, startMeeting, setPhase } = useActiveMeetingContext();
 
   // Check if this interaction is currently being recorded
   const isRecording = activeMeeting?.interactionId === interactionId && activeMeeting?.phase === 'recording';
@@ -90,11 +90,12 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
           transcript: MOCK_TRANSCRIPT,
           actionItems: MOCK_ACTION_ITEMS,
         });
-        endMeeting();
+        // Keep banner in stopped state so user can resume if needed
+        setPhase('stopped');
         isProcessingRef.current = false;
       }, 2500);
     }
-  }, [showSummaryParam, studentId, interactionId, updateInteractionWithRecording, endMeeting, router]);
+  }, [showSummaryParam, studentId, interactionId, updateInteractionWithRecording, setPhase, router]);
 
   // Use interactions from context
   const interactions = useInteractions(studentId, studentData?.interactions || []);
@@ -711,14 +712,15 @@ Counselor: Great question. The FAFSA opened on December 31st, and I always recom
           </Box>
         )}
 
-        {/* Start Transcribing Banner */}
+        {/* Transcription Banner */}
         {!isCompleted && !isRecording && (
-          <StartTranscribingBanner
-            onStartRecording={handleStartRecording}
-            hasTranscript={hasTranscript}
-            meetingTitle={interaction.title}
-            studentName={studentName}
-            studentAvatarUrl={studentData.student.avatarUrl}
+          <TranscriptionBanner
+            interactionContext={{
+              onStartRecording: handleStartRecording,
+              meetingTitle: interaction.title,
+              studentName: studentName,
+              studentAvatarUrl: studentData.student.avatarUrl,
+            }}
           />
         )}
       </Box>

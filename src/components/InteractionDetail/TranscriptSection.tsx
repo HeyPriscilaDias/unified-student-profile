@@ -9,7 +9,7 @@ interface TranscriptSectionProps {
 }
 
 export function TranscriptSection({ transcript }: TranscriptSectionProps) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   // Parse transcript and convert to "You:" / "Them:" format
   const renderTranscript = () => {

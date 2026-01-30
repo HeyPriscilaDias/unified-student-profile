@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, Typography, Button, IconButton, Modal, CircularProgress, Avatar } from '@mui/material';
-import { Pause, Play, Maximize2, Mic } from 'lucide-react';
-import { Alma } from '@/components/icons/AlmaIcon';
+import { Box, Typography, Button, IconButton, CircularProgress, Avatar } from '@mui/material';
+import { Play, Maximize2 } from 'lucide-react';
 import { useActiveMeetingContext } from '@/contexts/ActiveMeetingContext';
 import { AudioWaveform } from './AudioWaveform';
 import { RecordingWidgetModal } from './RecordingWidgetModal';
@@ -16,11 +15,23 @@ function formatElapsed(seconds: number): string {
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
-export function TranscriptionBanner() {
+interface InteractionContext {
+  onStartRecording: () => void;
+  meetingTitle: string;
+  studentName: string;
+  studentAvatarUrl?: string;
+}
+
+interface TranscriptionBannerProps {
+  interactionContext?: InteractionContext;
+}
+
+export function TranscriptionBanner({ interactionContext }: TranscriptionBannerProps) {
   const router = useRouter();
-  const { activeMeeting, togglePause, setPhase } = useActiveMeetingContext();
+  const { activeMeeting, togglePause, stopMeeting, resumeMeeting, setPhase } = useActiveMeetingContext();
   const [isExpanded, setIsExpanded] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [isSummarizing, setIsSummarizing] = useState(false);
 
   // Update elapsed time
   useEffect(() => {
@@ -45,8 +56,8 @@ export function TranscriptionBanner() {
     return () => clearInterval(interval);
   }, [activeMeeting]);
 
-  // Get avatar URL - must be called unconditionally (Rules of Hooks)
-  const avatarUrl = useMemo(() => {
+  // Get avatar URL for active meeting
+  const activeMeetingAvatarUrl = useMemo(() => {
     if (!activeMeeting) return undefined;
     if (activeMeeting.studentAvatarUrl) {
       return activeMeeting.studentAvatarUrl;
@@ -55,137 +66,45 @@ export function TranscriptionBanner() {
     return studentData?.student.avatarUrl;
   }, [activeMeeting]);
 
-  // Don't render if no active meeting
-  if (!activeMeeting) {
+  // Determine which state to render
+  const isActiveRecording = activeMeeting && (activeMeeting.phase === 'recording' || activeMeeting.phase === 'stopped');
+  const showIdleBanner = !isActiveRecording && interactionContext;
+
+  // Don't render anything if no active meeting and no interaction context
+  if (!isActiveRecording && !showIdleBanner) {
     return null;
   }
 
-  // Show processing modal when summarizing
-  if (activeMeeting.phase === 'processing') {
+  // === IDLE STATE (on interaction page, not recording) ===
+  if (showIdleBanner && interactionContext) {
+    const { onStartRecording, meetingTitle, studentName, studentAvatarUrl } = interactionContext;
+
+    const initials = studentName
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+
     return (
-      <Modal
-        open={true}
-        slotProps={{
-          backdrop: {
-            sx: {
-              backgroundColor: 'rgba(0, 0, 0, 0.75)',
-              backdropFilter: 'blur(4px)',
-            },
-          },
-        }}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10001,
-        }}
-      >
-        <Box
-          sx={{
-            width: 320,
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
-            p: 4,
-            textAlign: 'center',
-            outline: 'none',
-            position: 'relative',
-            zIndex: 1,
-          }}
-        >
-          <Box
-            sx={{
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              backgroundColor: '#F0FDF4',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mx: 'auto',
-              mb: 3,
-              position: 'relative',
-            }}
-          >
-            <Alma size={32} color="#12B76A" />
-            <CircularProgress
-              size={72}
-              thickness={2}
-              sx={{
-                color: '#12B76A',
-                position: 'absolute',
-                top: -4,
-                left: -4,
-              }}
-            />
-          </Box>
-          <Typography
-            sx={{
-              fontSize: '18px',
-              fontWeight: 600,
-              color: '#062F29',
-              mb: 1,
-            }}
-          >
-            Summarizing meeting...
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: '14px',
-              color: '#6B7280',
-            }}
-          >
-            Alma is analyzing your conversation and generating a summary.
-          </Typography>
-        </Box>
-      </Modal>
-    );
-  }
-
-  // Don't render banner if not in recording phase
-  if (activeMeeting.phase !== 'recording') {
-    return null;
-  }
-
-  const isPaused = activeMeeting.isPaused;
-
-  const handleStop = () => {
-    setPhase('processing');
-    router.push(
-      `/students/${activeMeeting.studentId}/interactions/${activeMeeting.interactionId}?showSummary=true`
-    );
-  };
-
-  // Get initials for avatar fallback
-  const initials = activeMeeting.studentName
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-
-  return (
-    <>
-      {/* Fixed Banner - hidden when modal is expanded */}
-      {!isExpanded && (
       <Box
         sx={{
           position: 'fixed',
           bottom: 12,
-          left: 232, // 220px sidebar + 12px gap
+          left: 232,
           right: 12,
           height: 56,
           backgroundColor: '#041D1A',
           zIndex: 9999,
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'space-between',
           px: 2,
           borderRadius: '12px',
         }}
       >
         {/* Left side: Meeting title + Student */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1 }}>
-          {/* Meeting Title */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
           <Typography
             sx={{
               fontSize: '14px',
@@ -194,13 +113,12 @@ export function TranscriptionBanner() {
               whiteSpace: 'nowrap',
             }}
           >
-            {activeMeeting.interactionTitle}
+            {meetingTitle}
           </Typography>
 
-          {/* Student Avatar + Name */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Avatar
-              src={avatarUrl}
+              src={studentAvatarUrl}
               sx={{
                 width: 28,
                 height: 28,
@@ -219,97 +137,323 @@ export function TranscriptionBanner() {
                 whiteSpace: 'nowrap',
               }}
             >
-              {activeMeeting.studentName}
+              {studentName}
             </Typography>
           </Box>
         </Box>
 
-        {/* Right side: Waveform + Timer + Controls */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Waveform */}
+        {/* Right side: Waveform + Timer + Start button */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
           <AudioWaveform
-            isActive={!isPaused}
-            isPaused={isPaused}
+            isActive={false}
+            isPaused={true}
             width={160}
-            height={32}
-            barColor="rgba(255,255,255,0.6)"
+            height={8}
+            barColor="rgba(255,255,255,0.3)"
           />
 
-          {/* Timer */}
           <Typography
             sx={{
               fontFamily: 'monospace',
               fontSize: '14px',
-              fontWeight: 500,
-              color: '#fff',
+              color: 'rgba(255,255,255,0.5)',
               minWidth: 45,
             }}
           >
-            {formatElapsed(elapsed)}
+            00:00
           </Typography>
 
-          {/* Pause Button */}
           <Button
             variant="outlined"
-            onClick={togglePause}
+            startIcon={<Play size={14} fill="#414651" />}
+            onClick={onStartRecording}
             sx={{
-              color: '#fff',
-              borderColor: 'rgba(255,255,255,0.3)',
+              backgroundColor: '#fff',
+              color: '#414651',
+              borderColor: '#D5D7DA',
               textTransform: 'none',
-              fontWeight: 500,
+              fontWeight: 600,
               fontSize: '14px',
-              px: 2,
+              px: 1.5,
               py: 0.75,
-              minWidth: 80,
-              '&:hover': {
-                borderColor: 'rgba(255,255,255,0.5)',
-                backgroundColor: 'rgba(255,255,255,0.1)',
-              },
-            }}
-          >
-            {isPaused ? 'Resume' : 'Pause'}
-          </Button>
-
-          {/* Stop Button */}
-          <Button
-            variant="contained"
-            onClick={handleStop}
-            sx={{
-              backgroundColor: '#EF4444 !important',
-              color: '#fff',
-              textTransform: 'none',
-              fontWeight: 500,
-              fontSize: '14px',
-              px: 2,
-              py: 0.75,
-              boxShadow: 'none',
-              '&:hover': {
-                backgroundColor: '#DC2626 !important',
-                boxShadow: 'none',
-              },
-            }}
-          >
-            Stop & Summarize
-          </Button>
-
-          {/* Expand Button */}
-          <IconButton
-            onClick={() => setIsExpanded(true)}
-            sx={{
-              color: '#fff',
-              border: '1px solid rgba(255,255,255,0.3)',
               borderRadius: '8px',
-              p: 1,
+              whiteSpace: 'nowrap',
               '&:hover': {
-                borderColor: 'rgba(255,255,255,0.5)',
-                backgroundColor: 'rgba(255,255,255,0.1)',
+                backgroundColor: '#f9fafb',
+                borderColor: '#D5D7DA',
               },
             }}
           >
-            <Maximize2 size={18} />
-          </IconButton>
+            Start transcribing
+          </Button>
         </Box>
       </Box>
+    );
+  }
+
+  // === ACTIVE STATES (recording, paused, stopped) ===
+  if (!activeMeeting) return null;
+
+  const isPaused = activeMeeting.isPaused;
+  const isStopped = activeMeeting.phase === 'stopped';
+  const isRecording = activeMeeting.phase === 'recording';
+
+  const handleStop = () => {
+    if (isSummarizing) return;
+    setIsSummarizing(true);
+
+    setTimeout(() => {
+      stopMeeting(elapsed);
+      setPhase('processing');
+      // Navigate to trigger summary generation
+      router.push(
+        `/students/${activeMeeting.studentId}/interactions/${activeMeeting.interactionId}?showSummary=true`
+      );
+      setIsSummarizing(false);
+    }, 1500);
+  };
+
+  const handleContinueRecording = () => {
+    resumeMeeting();
+  };
+
+  // Get initials for avatar fallback
+  const initials = activeMeeting.studentName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  return (
+    <>
+      {/* Fixed Banner - hidden when modal is expanded */}
+      {!isExpanded && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 12,
+            left: 232,
+            right: 12,
+            height: 56,
+            backgroundColor: '#041D1A',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 2,
+            borderRadius: '12px',
+          }}
+        >
+          {/* Left side: Meeting title + Student (consistent across all states) */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+            {/* Meeting Title */}
+            <Typography
+              sx={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#fff',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {activeMeeting.interactionTitle}
+            </Typography>
+
+            {/* Student Avatar + Name */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Avatar
+                src={activeMeetingAvatarUrl}
+                sx={{
+                  width: 28,
+                  height: 28,
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  backgroundColor: '#155E4C',
+                  color: '#fff',
+                }}
+              >
+                {initials}
+              </Avatar>
+              <Typography
+                sx={{
+                  fontSize: '14px',
+                  color: '#fff',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {activeMeeting.studentName}
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Right side: Controls based on state */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {isStopped ? (
+              <>
+                {/* Stopped state: Same as paused but with View summary instead of Stop & summarize */}
+                <AudioWaveform
+                  isActive={false}
+                  isPaused={true}
+                  width={120}
+                  height={32}
+                  barColor="rgba(255,255,255,0.6)"
+                />
+
+                <Typography
+                  sx={{
+                    fontFamily: 'monospace',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#fff',
+                    minWidth: 45,
+                  }}
+                >
+                  {formatElapsed(activeMeeting.stoppedElapsed ?? 0)}
+                </Typography>
+
+                {/* Resume Button */}
+                <Button
+                  variant="outlined"
+                  onClick={handleContinueRecording}
+                  sx={{
+                    color: '#fff',
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    fontSize: '14px',
+                    px: 2,
+                    py: 0.75,
+                    minWidth: 80,
+                    '&:hover': {
+                      borderColor: 'rgba(255,255,255,0.5)',
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                    },
+                  }}
+                >
+                  Resume
+                </Button>
+
+                {/* Expand Button */}
+                <IconButton
+                  onClick={() => setIsExpanded(true)}
+                  sx={{
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    borderRadius: '8px',
+                    p: 1,
+                    '&:hover': {
+                      borderColor: 'rgba(255,255,255,0.5)',
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                    },
+                  }}
+                >
+                  <Maximize2 size={18} />
+                </IconButton>
+              </>
+            ) : (
+              <>
+                {/* Recording state: Waveform + Timer + Pause/Stop */}
+                <AudioWaveform
+                  isActive={!isPaused}
+                  isPaused={isPaused}
+                  width={120}
+                  height={32}
+                  barColor="rgba(255,255,255,0.6)"
+                />
+
+                {/* Timer */}
+                <Typography
+                  sx={{
+                    fontFamily: 'monospace',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#fff',
+                    minWidth: 45,
+                  }}
+                >
+                  {formatElapsed(elapsed)}
+                </Typography>
+
+                {/* Pause/Resume Button */}
+                <Button
+                  variant="outlined"
+                  onClick={togglePause}
+                  disabled={isSummarizing}
+                  sx={{
+                    color: '#fff',
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    fontSize: '14px',
+                    px: 2,
+                    py: 0.75,
+                    minWidth: 80,
+                    '&:hover': {
+                      borderColor: 'rgba(255,255,255,0.5)',
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                    },
+                    '&.Mui-disabled': {
+                      color: 'rgba(255,255,255,0.5)',
+                      borderColor: 'rgba(255,255,255,0.2)',
+                    },
+                  }}
+                >
+                  {isPaused ? 'Resume' : 'Pause'}
+                </Button>
+
+                {/* Stop Button */}
+                <Button
+                  variant="contained"
+                  onClick={handleStop}
+                  disabled={isSummarizing}
+                  startIcon={isSummarizing ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : undefined}
+                  sx={{
+                    backgroundColor: isSummarizing ? '#155E4C !important' : '#EF4444 !important',
+                    color: '#fff',
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    fontSize: '14px',
+                    px: 2,
+                    py: 0.75,
+                    minWidth: isSummarizing ? 150 : 'auto',
+                    boxShadow: 'none',
+                    '&:hover': {
+                      backgroundColor: isSummarizing ? '#155E4C !important' : '#DC2626 !important',
+                      boxShadow: 'none',
+                    },
+                    '&:disabled': {
+                      color: '#fff',
+                    },
+                  }}
+                >
+                  {isSummarizing ? 'Summarizing...' : 'Stop & summarize'}
+                </Button>
+
+                {/* Expand Button */}
+                <IconButton
+                  onClick={() => setIsExpanded(true)}
+                  disabled={isSummarizing}
+                  sx={{
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    borderRadius: '8px',
+                    p: 1,
+                    '&:hover': {
+                      borderColor: 'rgba(255,255,255,0.5)',
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                    },
+                    '&.Mui-disabled': {
+                      color: 'rgba(255,255,255,0.5)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                    },
+                  }}
+                >
+                  <Maximize2 size={18} />
+                </IconButton>
+              </>
+            )}
+          </Box>
+        </Box>
       )}
 
       {/* Expanded Modal */}
