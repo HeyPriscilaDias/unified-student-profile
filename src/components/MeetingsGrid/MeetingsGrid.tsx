@@ -282,52 +282,24 @@ export function MeetingsGrid() {
           Keep track of meaningful conversations and follow-ups with students.
         </Typography>
 
-        {/* Empty state card */}
+        {/* Empty state */}
         <Box
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            py: 8,
-            px: 4,
             border: '1px solid #D5D7DA',
             borderRadius: '8px',
+            p: 4,
+            textAlign: 'center',
           }}
         >
-          <Box
-            sx={{
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              backgroundColor: '#F3F4F6',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mb: 3,
-            }}
-          >
-            <MeetingIcon size={28} color="#9CA3AF" />
-          </Box>
           <Typography
             sx={{
-              fontSize: '18px',
-              fontWeight: 600,
-              color: '#374151',
-              mb: 1,
-            }}
-          >
-            No meetings yet
-          </Typography>
-          <Typography
-            sx={{
+              fontFamily: "'Inter', sans-serif",
               fontSize: '14px',
-              color: '#6B7280',
-              textAlign: 'center',
-              maxWidth: 320,
+              fontWeight: 400,
+              color: '#535862',
             }}
           >
-            Start a new meeting to begin tracking your student interactions.
+            No 1:1 meetings yet
           </Typography>
         </Box>
 

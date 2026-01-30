@@ -1,7 +1,8 @@
 'use client';
 
-import { Box, Typography, Button } from '@mui/material';
-import { Plus, Mic, MessageSquare, ChevronRight, Calendar } from 'lucide-react';
+import { Box, Typography, IconButton } from '@mui/material';
+import { Plus } from 'lucide-react';
+import { formatDate } from '@/lib/dateUtils';
 import type { Interaction } from '@/types/student';
 
 interface MeetingsTabProps {
@@ -11,248 +12,174 @@ interface MeetingsTabProps {
   onScheduleInteraction: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
-/**
- * Formats an interaction date string (YYYY-MM-DD) to a human-readable format.
- */
-function formatMeetingDate(dateStr: string): string {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+// Status icons
+function HeldIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6.875 10.625L8.75 12.5L13.125 8.125M17.5 10C17.5 14.1421 14.1421 17.5 10 17.5C5.85786 17.5 2.5 14.1421 2.5 10C2.5 5.85786 5.85786 2.5 10 2.5C14.1421 2.5 17.5 5.85786 17.5 10Z" stroke="#414651" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
 }
 
-/**
- * Individual meeting card component for display in the meetings grid.
- */
-function MeetingCard({
+function NotHeldIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8.12505 2.73356C9.35467 2.41433 10.6454 2.41433 11.875 2.73356M2.77271 7.99137C3.11127 6.76717 3.75663 5.64962 4.64771 4.7445M4.64771 15.2547C3.7564 14.3491 3.11102 13.231 2.77271 12.0062M11.875 17.2648C10.6454 17.584 9.35467 17.584 8.12505 17.2648M17.2274 12.007C16.8888 13.2312 16.2435 14.3487 15.3524 15.2539M15.3524 4.74371C16.2437 5.64928 16.8891 6.7674 17.2274 7.99215" stroke="#414651" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+// Meeting icon
+function MeetingIcon({ size = 16, color = '#A4A7AE' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6.25 6.75C6.66421 6.75 7 6.41421 7 6C7 5.58579 6.66421 5.25 6.25 5.25C5.83579 5.25 5.5 5.58579 5.5 6C5.5 6.41421 5.83579 6.75 6.25 6.75Z" fill={color}/>
+      <path d="M9.75 6.75C10.1642 6.75 10.5 6.41421 10.5 6C10.5 5.58579 10.1642 5.25 9.75 5.25C9.33579 5.25 9 5.58579 9 6C9 6.41421 9.33579 6.75 9.75 6.75Z" fill={color}/>
+      <path d="M9.75 8.5C9.22479 8.82679 8.61858 9 8 9C7.38142 9 6.77521 8.82679 6.25 8.5M2.82188 13.3819C2.74905 13.4431 2.66025 13.4823 2.56591 13.4949C2.47158 13.5074 2.37562 13.4928 2.28931 13.4527C2.20301 13.4126 2.12994 13.3487 2.07869 13.2685C2.02744 13.1883 2.00014 13.0952 2 13V3C2 2.86739 2.05268 2.74021 2.14645 2.64645C2.24021 2.55268 2.36739 2.5 2.5 2.5H13.5C13.6326 2.5 13.7598 2.55268 13.8536 2.64645C13.9473 2.74021 14 2.86739 14 3V11C14 11.1326 13.9473 11.2598 13.8536 11.3536C13.7598 11.4473 13.6326 11.5 13.5 11.5H5L2.82188 13.3819Z" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+// Format participants string (counselor + attendees)
+function formatParticipants(interaction: Interaction): string {
+  const parts: string[] = [];
+
+  if (interaction.counselorName) {
+    parts.push(interaction.counselorName);
+  }
+
+  if (interaction.attendees && interaction.attendees.length > 0) {
+    parts.push(...interaction.attendees);
+  }
+
+  if (parts.length === 0) return '';
+  return `with ${parts.join(', ')}`;
+}
+
+// Get status label
+function getStatusLabel(status: 'draft' | 'completed'): string {
+  return status === 'completed' ? 'Held' : 'Not held yet';
+}
+
+// Meeting row component
+function MeetingRow({
   interaction,
   onClick,
+  isLast,
 }: {
   interaction: Interaction;
   onClick: () => void;
+  isLast: boolean;
 }) {
-  const hasRecording = !!interaction.recordingUrl || !!interaction.transcript;
-  const isDraft = interaction.status === 'draft';
+  const statusLabel = getStatusLabel(interaction.status);
+  const participants = formatParticipants(interaction);
 
   return (
     <Box
       onClick={onClick}
       sx={{
         display: 'flex',
-        alignItems: 'flex-start',
         gap: 2,
-        p: 2.5,
-        borderRadius: '12px',
+        alignItems: 'center',
+        p: 2,
         cursor: 'pointer',
-        backgroundColor: '#FFFFFF',
-        border: '1px solid #E5E7EB',
-        transition: 'all 0.2s ease',
+        borderBottom: isLast ? 'none' : '1px solid #D5D7DA',
+        transition: 'background-color 0.15s ease',
         '&:hover': {
           backgroundColor: '#F9FAFB',
-          borderColor: '#D1D5DB',
-          transform: 'translateY(-1px)',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
         },
       }}
     >
-      {/* Icon */}
-      <Box
-        sx={{
-          width: 44,
-          height: 44,
-          borderRadius: '10px',
-          backgroundColor: hasRecording ? '#062F29' : '#6B7280',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        {hasRecording ? (
-          <Mic size={20} color="#fff" />
-        ) : (
-          <MessageSquare size={20} color="#fff" />
-        )}
-      </Box>
-
-      {/* Content */}
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+      {/* Left: Icon + Title/Participants */}
+      <Box sx={{ display: 'flex', flex: 1, gap: 2, alignItems: 'center', minWidth: 0 }}>
+        <Box sx={{ flexShrink: 0 }}><MeetingIcon /></Box>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography
             sx={{
-              fontSize: '15px',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '14px',
               fontWeight: 600,
-              color: '#111827',
+              lineHeight: '20px',
+              color: '#252B37',
+              whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
             }}
           >
             {interaction.title}
           </Typography>
-          {isDraft && (
-            <Box
+          {participants && (
+            <Typography
               sx={{
-                px: 1,
-                py: 0.25,
-                borderRadius: '6px',
-                backgroundColor: '#F3F4F6',
-                fontSize: '11px',
-                fontWeight: 600,
-                color: '#6B7280',
-                textTransform: 'uppercase',
-                letterSpacing: '0.025em',
-                flexShrink: 0,
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '12px',
+                fontWeight: 400,
+                lineHeight: '16px',
+                color: '#535862',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
-              Draft
-            </Box>
-          )}
-        </Box>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          {interaction.interactionDate ? (
-            <Typography sx={{ fontSize: '13px', color: '#6B7280' }}>
-              {formatMeetingDate(interaction.interactionDate)}
-            </Typography>
-          ) : (
-            <Typography sx={{ fontSize: '13px', color: '#9CA3AF', fontStyle: 'italic' }}>
-              No date set
+              {participants}
             </Typography>
           )}
-          {hasRecording && (
-            <>
-              <Box
-                sx={{
-                  width: 4,
-                  height: 4,
-                  borderRadius: '50%',
-                  backgroundColor: '#D1D5DB',
-                }}
-              />
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Mic size={12} color="#6B7280" />
-                <Typography sx={{ fontSize: '13px', color: '#6B7280' }}>
-                  Recorded
-                </Typography>
-              </Box>
-            </>
-          )}
         </Box>
-
-        {/* Show counselor name if available */}
-        {interaction.counselorName && (
-          <Typography
-            sx={{
-              fontSize: '12px',
-              color: '#9CA3AF',
-              mt: 0.75,
-            }}
-          >
-            with {interaction.counselorName}
-          </Typography>
-        )}
       </Box>
 
-      {/* Chevron */}
-      <Box
+      {/* Date */}
+      <Typography
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          alignSelf: 'center',
+          fontFamily: "'Inter', sans-serif",
+          fontSize: '14px',
+          fontWeight: 400,
+          lineHeight: '20px',
+          color: '#535862',
+          width: 150,
+          flexShrink: 0,
+          textAlign: 'left',
         }}
       >
-        <ChevronRight size={18} color="#9CA3AF" />
-      </Box>
-    </Box>
-  );
-}
+        {interaction.interactionDate ? formatDate(interaction.interactionDate) : 'No date'}
+      </Typography>
 
-/**
- * Empty state component for when there are no meetings.
- */
-function MeetingsEmptyState({
-  onSchedule,
-}: {
-  onSchedule: (event: React.MouseEvent<HTMLElement>) => void;
-}) {
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        py: 8,
-        px: 4,
-        textAlign: 'center',
-      }}
-    >
+      {/* Status pill */}
       <Box
         sx={{
-          width: 64,
-          height: 64,
-          borderRadius: '16px',
-          backgroundColor: '#F3F4F6',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          mb: 2.5,
+          gap: 0.5,
+          height: 24,
+          px: 1,
+          borderRadius: '100px',
+          border: '1px solid #D5D7DA',
+          backgroundColor: '#fff',
+          flexShrink: 0,
         }}
       >
-        <Calendar size={32} color="#9CA3AF" />
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {interaction.status === 'completed' ? <HeldIcon /> : <NotHeldIcon />}
+        </Box>
+        <Typography
+          sx={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: '12px',
+            fontWeight: 400,
+            lineHeight: '16px',
+            color: '#414651',
+          }}
+        >
+          {statusLabel}
+        </Typography>
       </Box>
-      <Typography
-        sx={{
-          fontSize: '16px',
-          fontWeight: 600,
-          color: '#374151',
-          mb: 1,
-        }}
-      >
-        No meetings yet
-      </Typography>
-      <Typography
-        sx={{
-          fontSize: '14px',
-          color: '#6B7280',
-          mb: 3,
-          maxWidth: 320,
-        }}
-      >
-        Track conversations, check-ins, and follow-ups with this student by creating your first meeting.
-      </Typography>
-      <Button
-        variant="contained"
-        startIcon={<Plus size={18} />}
-        onClick={onSchedule}
-        sx={{
-          textTransform: 'none',
-          fontSize: '14px',
-          fontWeight: 500,
-          px: 3,
-          py: 1,
-          backgroundColor: '#062F29',
-          borderRadius: '8px',
-          '&:hover': {
-            backgroundColor: '#2B4C46',
-          },
-        }}
-      >
-        Add meeting
-      </Button>
     </Box>
   );
 }
 
 /**
  * MeetingsTab component displays a list of meetings (interactions) for a student.
- * Meetings are sorted by date ascending (oldest first).
- * Meetings without dates are shown at the end.
+ * Meetings are sorted by date descending (newest first).
  */
 export function MeetingsTab({
   studentId,
@@ -260,101 +187,85 @@ export function MeetingsTab({
   onInteractionClick,
   onScheduleInteraction,
 }: MeetingsTabProps) {
-  // Sort interactions by date ascending, meetings without dates at the end
+  // Sort interactions by date descending (newest first)
   const sortedMeetings = [...interactions].sort((a, b) => {
-    if (!a.interactionDate && !b.interactionDate) return 0;
-    if (!a.interactionDate) return 1;
-    if (!b.interactionDate) return -1;
-    return a.interactionDate.localeCompare(b.interactionDate);
+    const dateA = a.interactionDate ? new Date(a.interactionDate).getTime() : 0;
+    const dateB = b.interactionDate ? new Date(b.interactionDate).getTime() : 0;
+    return dateB - dateA;
   });
-
-  const AddMeetingButton = (
-    <Button
-      variant="contained"
-      size="small"
-      startIcon={<Plus size={16} />}
-      onClick={onScheduleInteraction}
-      sx={{
-        textTransform: 'none',
-        fontSize: '13px',
-        fontWeight: 500,
-        px: 2,
-        py: 0.75,
-        backgroundColor: '#062F29',
-        borderRadius: '8px',
-        '&:hover': {
-          backgroundColor: '#2B4C46',
-        },
-      }}
-    >
-      Add meeting
-    </Button>
-  );
 
   return (
     <Box sx={{ py: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box>
-        {/* Header */}
+      {/* Header */}
+      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        <Typography
+          sx={{
+            fontFamily: "'Poppins', sans-serif",
+            fontSize: '22px',
+            fontWeight: 500,
+            lineHeight: '28px',
+            letterSpacing: '-1px',
+            color: '#03120F',
+          }}
+        >
+          1:1 Meetings
+        </Typography>
+        <IconButton
+          onClick={onScheduleInteraction}
+          sx={{
+            width: 32,
+            height: 32,
+            borderRadius: '8px',
+            border: '1px solid #D5D7DA',
+            backgroundColor: '#fff',
+            '&:hover': {
+              backgroundColor: '#F9FAFB',
+            },
+          }}
+        >
+          <Plus size={20} color="#414651" />
+        </IconButton>
+      </Box>
+
+      {/* Meetings list or empty state */}
+      {interactions.length === 0 ? (
         <Box
           sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            mb: 2,
+            border: '1px solid #D5D7DA',
+            borderRadius: '8px',
+            p: 4,
+            textAlign: 'center',
           }}
         >
           <Typography
-            component="h3"
             sx={{
-              fontFamily: '"Poppins", sans-serif',
-              fontWeight: 600,
-              fontSize: '22px',
-              color: '#111827',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '14px',
+              fontWeight: 400,
+              color: '#535862',
             }}
           >
-            Meetings
+            No 1:1 meetings yet
           </Typography>
-          {interactions.length > 0 && AddMeetingButton}
         </Box>
-
-        {interactions.length === 0 ? (
-          <MeetingsEmptyState onSchedule={onScheduleInteraction} />
-        ) : (
-          <Box>
-            {/* Description */}
-            <Typography
-              sx={{
-                fontSize: '14px',
-                color: '#6B7280',
-                mb: 3,
-              }}
-            >
-              Keep track of meaningful conversations and follow-ups with this student.
-            </Typography>
-
-            {/* Meetings grid - 2 columns on larger screens */}
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  md: 'repeat(2, 1fr)',
-                },
-                gap: 2,
-              }}
-            >
-              {sortedMeetings.map((meeting) => (
-                <MeetingCard
-                  key={meeting.id}
-                  interaction={meeting}
-                  onClick={() => onInteractionClick(meeting)}
-                />
-              ))}
-            </Box>
-
-          </Box>
-        )}
-      </Box>
+      ) : (
+        <Box
+          sx={{
+            border: '1px solid #D5D7DA',
+            borderRadius: '8px',
+            backgroundColor: '#fff',
+          }}
+        >
+          {sortedMeetings.map((meeting, index) => (
+            <MeetingRow
+              key={meeting.id}
+              interaction={meeting}
+              onClick={() => onInteractionClick(meeting)}
+              isLast={index === sortedMeetings.length - 1}
+            />
+          ))}
+        </Box>
+      )}
     </Box>
   );
 }
