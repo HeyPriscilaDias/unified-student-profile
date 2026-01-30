@@ -83,12 +83,23 @@ export function BreadcrumbsBar({ items, actionButton }: BreadcrumbsBarProps) {
         {/* Breadcrumbs */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {/* Home icon */}
-          <Link href="/" style={{ display: 'flex', alignItems: 'center' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
             <Home
               size={18}
               color="#6B7280"
               style={{ cursor: 'pointer' }}
             />
+            {items.length === 0 && (
+              <Typography
+                sx={{
+                  fontSize: '14px',
+                  color: '#374151',
+                  fontWeight: 500,
+                }}
+              >
+                Home
+              </Typography>
+            )}
           </Link>
 
           {items.map((item, index) => (
